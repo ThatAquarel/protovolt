@@ -1,0 +1,10 @@
+*.lck
+*.kicad_prl
+*.zip
+fp-*
+**/gerber/
+*.bak
+*sym-lib-table
+*.pyc
+*.egg-info
+**/__MACOSX/
