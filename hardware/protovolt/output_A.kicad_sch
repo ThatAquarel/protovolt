@@ -3146,6 +3146,12 @@
 		(uuid "203e49cc-a350-4042-bb03-6b571a7491a3")
 	)
 	(junction
+		(at 129.54 163.83)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "20712687-634a-486a-9496-95503b963bda")
+	)
+	(junction
 		(at 212.09 173.99)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3408,12 +3414,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "a0bd011c-8f53-40ad-9ab1-0d9e6537540c")
-	)
-	(junction
-		(at 129.54 168.91)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "a67d8d06-78d4-4c61-a7a9-fee8ea0c5579")
 	)
 	(junction
 		(at 152.4 163.83)
@@ -3783,7 +3783,7 @@
 	)
 	(wire
 		(pts
-			(xy 129.54 168.91) (xy 154.94 168.91)
+			(xy 110.49 168.91) (xy 154.94 168.91)
 		)
 		(stroke
 			(width 0)
@@ -4073,7 +4073,7 @@
 	)
 	(wire
 		(pts
-			(xy 105.41 163.83) (xy 152.4 163.83)
+			(xy 105.41 163.83) (xy 129.54 163.83)
 		)
 		(stroke
 			(width 0)
@@ -4530,6 +4530,16 @@
 			(type default)
 		)
 		(uuid "58bbe349-0d13-46f3-abda-203b31400a17")
+	)
+	(wire
+		(pts
+			(xy 129.54 163.83) (xy 152.4 163.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "592e1615-099c-49a7-9db0-3f562266c889")
 	)
 	(wire
 		(pts
@@ -5653,16 +5663,6 @@
 	)
 	(wire
 		(pts
-			(xy 129.54 195.58) (xy 129.54 168.91)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b28505c8-6125-48b8-9ca4-d32782390029")
-	)
-	(wire
-		(pts
 			(xy 144.78 203.2) (xy 154.94 203.2)
 		)
 		(stroke
@@ -6363,6 +6363,16 @@
 	)
 	(wire
 		(pts
+			(xy 129.54 163.83) (xy 129.54 195.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ef56c589-efdf-401b-ab86-851f63a3cbdf")
+	)
+	(wire
+		(pts
 			(xy 320.04 151.13) (xy 322.58 151.13)
 		)
 		(stroke
@@ -6541,16 +6551,6 @@
 		)
 		(uuid "fef08a17-84aa-43a4-a147-13921909344d")
 	)
-	(wire
-		(pts
-			(xy 110.49 168.91) (xy 129.54 168.91)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "feff054e-1f4d-45a0-b271-88cada59a04d")
-	)
 	(text "UVLO\n- RISING 4.28V\n- FALLING 4.11V"
 		(exclude_from_sim no)
 		(at 99.06 107.442 0)
@@ -6584,7 +6584,7 @@
 		)
 		(uuid "52cde26c-8b8f-4a07-8f51-51e1f8185688")
 	)
-	(text "BSC0702LS\n60V 84A 83W 2.7mΩ@10V,50A 2.3V 1 N-channel TDSON-8-EP(5x6) MOSFETs ROHS\n\nBSC028N06LS3\n60V 100A 2.8mΩ@10V,50A 139W 2.2V 1 N-channel TDSON-8(5.2x5.9) MOSFETs ROHS\n"
+	(text "BSC0702LS\n60V 84A 83W 2.7mΩ@10V,50A 2.3V 1 N-channel TDSON-8-EP(5x6) MOSFETs ROHS\n\nBSC028N06LS3\n60V 100A 2.8mΩ@10V,50A 139W 2.2V 1 N-channel TDSON-8(5.2x5.9) MOSFETs ROHS\n\nIAUC60N04S6L030HATMA\nHALF-BRIDGE"
 		(exclude_from_sim no)
 		(at 138.684 53.34 0)
 		(effects
@@ -6771,6 +6771,17 @@
 		)
 		(uuid "35c5500e-117d-4a69-952f-6e0ba355b2d5")
 	)
+	(label "CS_P"
+		(at 196.85 193.04 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "3aae9d37-c4ec-4b76-901b-c7578047f8c0")
+	)
 	(label "SW2"
 		(at 194.31 85.09 180)
 		(fields_autoplaced yes)
@@ -6826,6 +6837,17 @@
 		)
 		(uuid "50dffc6a-a467-4e32-ba95-33a9b3f67d79")
 	)
+	(label "ISNS_P"
+		(at 196.85 161.29 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "531ea351-0bcf-4106-91f1-03277947b872")
+	)
 	(label "SW1"
 		(at 143.51 85.09 0)
 		(fields_autoplaced yes)
@@ -6836,6 +6858,17 @@
 			(justify left bottom)
 		)
 		(uuid "53fce54e-7799-4b9f-aaed-e1ad5bc3942c")
+	)
+	(label "CS_N"
+		(at 196.85 195.58 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "54b7a1d1-8390-40d8-83fe-37520fd20c7d")
 	)
 	(label "MODE"
 		(at 144.78 179.07 0)
@@ -6902,6 +6935,17 @@
 			(justify left bottom)
 		)
 		(uuid "7d3e7e23-2105-4eb0-bf3c-e6a47ab375fd")
+	)
+	(label "ISNS_N"
+		(at 196.85 163.83 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "91286293-17ac-4f18-8987-0c8c6c04ea90")
 	)
 	(label "SYNC"
 		(at 144.78 181.61 0)
@@ -10669,21 +10713,21 @@
 		(dnp no)
 		(uuid "7019e945-675e-40cd-b0d1-59c0b87e25a8")
 		(property "Reference" "R22"
-			(at 130.81 195.326 0)
+			(at 134.366 191.262 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
+				(justify right)
 			)
 		)
-		(property "Value" "0R"
-			(at 133.35 195.326 0)
+		(property "Value" "6.98k"
+			(at 134.366 193.294 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
+				(justify right)
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
@@ -14501,7 +14545,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C5375459"
+		(property "LCSC" "C20539438"
 			(at 166.37 85.09 0)
 			(effects
 				(font
