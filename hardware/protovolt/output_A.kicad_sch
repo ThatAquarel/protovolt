@@ -9050,7 +9050,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Inductor_SMD:L_Changjiang_FXL1050"
+		(property "Footprint" "protovolt:L_Changjiang_FXL1050"
 			(at 179.07 85.09 0)
 			(effects
 				(font
@@ -14518,7 +14518,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_2512_6332Metric"
+		(property "Footprint" "Resistor_SMD:R_1206_3216Metric"
 			(at 166.37 86.868 90)
 			(effects
 				(font
@@ -14545,7 +14545,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C20539438"
+		(property "LCSC" "C326610 "
 			(at 166.37 85.09 0)
 			(effects
 				(font

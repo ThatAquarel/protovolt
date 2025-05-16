@@ -1,0 +1,243 @@
+(footprint "L_Changjiang_FXL1050"
+	(version 20240108)
+	(generator "pcbnew")
+	(generator_version "8.0")
+	(layer "F.Cu")
+	(descr "Inductor, Changjiang, FXL1050, 10.95x10.0x4.8mm, (https://www.lcsc.com/datasheet/lcsc_datasheet_2404260921_cjiang--Changjiang-Microelectronics-Tech-FXL0420-2R2-M_C167206.pdf), generated with kicad-footprint-generator gen_inductor.py")
+	(tags "Inductor power shielded cjiang fxl")
+	(property "Reference" "REF**"
+		(at 0 -6 0)
+		(layer "F.SilkS")
+		(uuid "c39ef635-10a4-47e6-a661-871c6d73190a")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "L_Changjiang_FXL1050"
+		(at 0 6 0)
+		(layer "F.Fab")
+		(uuid "93aa4ec3-1984-4e9b-ad33-1805a3f8d2f7")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Footprint" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "1dee2f75-838d-4fbd-abdf-e61f38a30158")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "ea52a6b6-0eee-4e17-a7a0-d93db8f351fb")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "4c3b1568-d892-48f9-8ab0-cdd6692e0eaa")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_line
+		(start -5.735 -5.26)
+		(end -5.735 -2.31)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "00d0481f-c572-471b-bd75-21ba819821b7")
+	)
+	(fp_line
+		(start -5.735 -5.26)
+		(end 5.735 -5.26)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "69f6cb17-a811-477d-9197-ccb077f1bb2e")
+	)
+	(fp_line
+		(start -5.735 5.26)
+		(end -5.735 2.31)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "2896f511-2055-4564-a831-8694c11ff0be")
+	)
+	(fp_line
+		(start -5.735 5.26)
+		(end 5.735 5.26)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "8dda5e9d-1e0a-4e69-90e1-972165511f96")
+	)
+	(fp_line
+		(start 5.735 -5.26)
+		(end 5.735 -2.31)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "605b60cb-997b-4879-bf5c-f053a0ea6629")
+	)
+	(fp_line
+		(start 5.735 5.26)
+		(end 5.735 2.31)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "78791272-7791-4fc2-aaa8-495240033f58")
+	)
+	(fp_line
+		(start -7.05 -5.25)
+		(end -7.05 5.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "73098b48-ef30-4dcc-9b68-fe8332db9fcb")
+	)
+	(fp_line
+		(start -7.05 5.25)
+		(end 7.05 5.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "c6a10949-39da-44e9-b888-141e8a427fa0")
+	)
+	(fp_line
+		(start 7.05 -5.25)
+		(end -7.05 -5.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "e64878a3-0ad2-4122-94af-7b66d7c22cd1")
+	)
+	(fp_line
+		(start 7.05 5.25)
+		(end 7.05 -5.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "cf0e54de-7507-4e02-ace8-597e2a83bac8")
+	)
+	(fp_line
+		(start -5.475 -5)
+		(end -5.475 5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "9614bd89-6cdd-44c0-8073-54533874938b")
+	)
+	(fp_line
+		(start -5.475 5)
+		(end 5.475 5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "53a27cd7-d4e3-44bf-af79-b82b187735fe")
+	)
+	(fp_line
+		(start 5.475 -5)
+		(end -5.475 -5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "96fe7c1d-f02c-4fae-a361-837c4417536b")
+	)
+	(fp_line
+		(start 5.475 5)
+		(end 5.475 -5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "26d7dab9-54d5-4966-a428-447cf26febd1")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(uuid "0c92bc6f-d7e1-47c9-a322-29bc9f6e6dd8")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" smd roundrect
+		(at -4.75 0)
+		(size 4.1 4.1)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(roundrect_rratio 0.25)
+		(uuid "26fd677b-7d9b-4a91-8bb2-b3210609b4cf")
+	)
+	(pad "2" smd roundrect
+		(at 4.75 0)
+		(size 4.1 4.1)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(roundrect_rratio 0.25)
+		(uuid "76ddae3e-6ae7-4d31-9d1c-71c2909494ad")
+	)
+	(model "${KIPRJMOD}/protovolt.pretty/CIP1040.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)
