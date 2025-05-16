@@ -3547,10 +3547,6 @@
 		(color 0 0 0 0)
 		(uuid "f9f32e42-7da0-41f1-8588-3a9cceda2482")
 	)
-	(no_connect
-		(at 69.85 149.86)
-		(uuid "2cf3f54f-266b-446a-b990-00154cf3ced6")
-	)
 	(wire
 		(pts
 			(xy 144.78 181.61) (xy 154.94 181.61)
@@ -6683,6 +6679,17 @@
 		)
 		(uuid "104f500a-7ed2-405f-9c31-8facc21d6579")
 	)
+	(label "DTRK"
+		(at 77.47 208.28 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "10b4cc2a-13ff-4068-bad9-700ff54dda5c")
+	)
 	(label "ISNSR_P"
 		(at 294.64 158.75 0)
 		(fields_autoplaced yes)
@@ -7024,28 +7031,6 @@
 		)
 		(uuid "a8141b02-5965-41cb-8aaf-271e78a02572")
 	)
-	(label "DTRK"
-		(at 77.47 205.74 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "aacb2c40-eff4-4d48-8988-d4cfabe7aced")
-	)
-	(label "ATRK"
-		(at 77.47 208.28 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "affb1c35-c5f7-49c3-ad84-4cf7f009a50b")
-	)
 	(label "SCL"
 		(at 144.78 186.69 0)
 		(fields_autoplaced yes)
@@ -7056,6 +7041,17 @@
 			(justify left bottom)
 		)
 		(uuid "b031e9f2-19ec-4ac5-a735-6628df2c4988")
+	)
+	(label "ATRK"
+		(at 77.47 205.74 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "bb2554c9-7553-43f6-9565-bd1662440c13")
 	)
 	(label "VCC2"
 		(at 144.78 163.83 0)
@@ -13899,6 +13895,72 @@
 			(project "protovolt"
 				(path "/ea7037dc-92a2-412b-b904-472cbab72219/4a270319-7ef6-4bc5-85c2-eebc7d78bfc0"
 					(reference "C14")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDA")
+		(at 69.85 149.86 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "cde98a0b-e25f-48d6-873f-3bea2b522c25")
+		(property "Reference" "#PWR028"
+			(at 69.85 156.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GNDA"
+			(at 69.85 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 69.85 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 69.85 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDA\" , analog ground"
+			(at 69.85 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "7ce6a96f-0355-43a9-9123-8f4703b93b22")
+		)
+		(instances
+			(project "protovolt"
+				(path "/ea7037dc-92a2-412b-b904-472cbab72219/4a270319-7ef6-4bc5-85c2-eebc7d78bfc0"
+					(reference "#PWR028")
 					(unit 1)
 				)
 			)
