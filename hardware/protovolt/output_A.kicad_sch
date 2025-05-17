@@ -7446,7 +7446,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Package_TO_SOT_SMD:TDSON-8-1"
+		(property "Footprint" "protovolt:TDSON-8-1"
 			(at 142.24 80.645 0)
 			(effects
 				(font
@@ -8825,7 +8825,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Package_TO_SOT_SMD:TDSON-8-1"
+		(property "Footprint" "protovolt:TDSON-8-1"
 			(at 200.66 93.345 0)
 			(effects
 				(font
@@ -9659,7 +9659,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Package_TO_SOT_SMD:TDSON-8-1"
+		(property "Footprint" "protovolt:TDSON-8-1"
 			(at 200.66 80.645 0)
 			(effects
 				(font
@@ -10492,7 +10492,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Package_TO_SOT_SMD:TDSON-8-1"
+		(property "Footprint" "protovolt:TDSON-8-1"
 			(at 142.24 93.345 0)
 			(effects
 				(font
@@ -14790,7 +14790,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Package_TO_SOT_SMD:TDSON-8-1"
+		(property "Footprint" "protovolt:TDSON-8-1"
 			(at 299.085 67.31 0)
 			(effects
 				(font
