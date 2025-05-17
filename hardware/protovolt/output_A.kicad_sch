@@ -1024,6 +1024,127 @@
 				)
 			)
 		)
+		(symbol "Device:NetTie_2"
+			(pin_numbers hide)
+			(pin_names
+				(offset 0) hide)
+			(exclude_from_sim no)
+			(in_bom no)
+			(on_board yes)
+			(property "Reference" "NT"
+				(at 0 1.27 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "NetTie_2"
+				(at 0 -1.27 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Net tie, 2 pins"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "net tie short"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "Net*Tie*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "NetTie_2_0_1"
+				(polyline
+					(pts
+						(xy -1.27 0) (xy 1.27 0)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "NetTie_2_1_1"
+				(pin passive line
+					(at -2.54 0 0)
+					(length 2.54)
+					(name "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 2.54 0 180)
+					(length 2.54)
+					(name "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
 		(symbol "Device:R"
 			(pin_numbers hide)
 			(pin_names
@@ -3092,12 +3213,6 @@
 		(uuid "0a67813b-8261-4468-a720-0bd374957ef8")
 	)
 	(junction
-		(at 186.69 220.98)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "0a7ec2bf-4a77-4bee-a89a-b3de0fbdee3e")
-	)
-	(junction
 		(at 271.78 69.85)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3114,12 +3229,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "0e67574f-dc59-4732-aea1-217aafac9d3b")
-	)
-	(junction
-		(at 317.5 100.33)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "0ee46548-dcd7-4a4d-b816-62121fcfa856")
 	)
 	(junction
 		(at 74.93 72.39)
@@ -3162,12 +3271,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "28b5c713-0b03-42f9-aecd-e1dee91d62c3")
-	)
-	(junction
-		(at 194.31 220.98)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "2986477a-463a-49b0-8bbf-0f1b4a3757f8")
 	)
 	(junction
 		(at 359.41 163.83)
@@ -3236,12 +3339,6 @@
 		(uuid "46fc8e8a-a34d-48c8-9cee-b91beede2b54")
 	)
 	(junction
-		(at 240.03 100.33)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "4d613505-e41d-43a2-a5b7-d99f23f7f91e")
-	)
-	(junction
 		(at 194.31 218.44)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3278,6 +3375,12 @@
 		(uuid "5b368fbd-2b1a-4166-961e-5d236998d964")
 	)
 	(junction
+		(at 186.69 220.98)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "5f96c818-75eb-4e3d-afa8-a9bc2cd835b5")
+	)
+	(junction
 		(at 279.4 69.85)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3312,12 +3415,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "6ac0c389-4264-4587-b6b8-a84d899afcbf")
-	)
-	(junction
-		(at 322.58 69.85)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "6b34a46b-6e2e-40b0-8b40-f98d04b27850")
 	)
 	(junction
 		(at 245.11 69.85)
@@ -3452,6 +3549,12 @@
 		(uuid "bc72bdb9-f7a9-4a5e-b341-94bf57cfb4ff")
 	)
 	(junction
+		(at 194.31 220.98)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "bf777112-ca59-434e-81c0-6ea9b7f7a3e6")
+	)
+	(junction
 		(at 74.93 69.85)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3492,12 +3595,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "e85422da-b04c-4cab-8685-0e648a76938e")
-	)
-	(junction
-		(at 240.03 69.85)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "eaab4c1d-8e8d-48af-a585-1beeea8d43bd")
 	)
 	(junction
 		(at 212.09 171.45)
@@ -3679,16 +3776,6 @@
 	)
 	(wire
 		(pts
-			(xy 317.5 100.33) (xy 322.58 100.33)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0c5acc54-7270-4995-b021-8ae4db573d8f")
-	)
-	(wire
-		(pts
 			(xy 123.19 153.67) (xy 149.86 153.67)
 		)
 		(stroke
@@ -3796,16 +3883,6 @@
 			(type default)
 		)
 		(uuid "17eecfc1-093e-41be-8dad-2d9607feb01f")
-	)
-	(wire
-		(pts
-			(xy 240.03 82.55) (xy 240.03 100.33)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1a42461a-fce6-4663-8ea2-97bd05c5f5b9")
 	)
 	(wire
 		(pts
@@ -3959,7 +4036,7 @@
 	)
 	(wire
 		(pts
-			(xy 317.5 100.33) (xy 317.5 101.6)
+			(xy 317.5 82.55) (xy 317.5 101.6)
 		)
 		(stroke
 			(width 0)
@@ -4179,16 +4256,6 @@
 	)
 	(wire
 		(pts
-			(xy 322.58 95.25) (xy 322.58 100.33)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "38644b0d-8bca-4a82-8ae9-2c35ef1ebcfc")
-	)
-	(wire
-		(pts
 			(xy 271.78 69.85) (xy 269.24 72.39)
 		)
 		(stroke
@@ -4289,16 +4356,6 @@
 	)
 	(wire
 		(pts
-			(xy 186.69 220.98) (xy 194.31 220.98)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3fa163b0-0053-4059-b30b-d0bb97866aba")
-	)
-	(wire
-		(pts
 			(xy 303.53 69.85) (xy 317.5 69.85)
 		)
 		(stroke
@@ -4386,16 +4443,6 @@
 			(type default)
 		)
 		(uuid "4e53656a-8111-4ccf-af36-36e5788e3236")
-	)
-	(wire
-		(pts
-			(xy 322.58 69.85) (xy 328.93 69.85)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4f2c4c2d-62a7-44b6-82af-08d064d63297")
 	)
 	(wire
 		(pts
@@ -4679,6 +4726,16 @@
 	)
 	(wire
 		(pts
+			(xy 186.69 220.98) (xy 187.96 220.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "67726466-6253-4ed1-82de-2c32b327cf7d")
+	)
+	(wire
+		(pts
 			(xy 170.18 85.09) (xy 175.26 85.09)
 		)
 		(stroke
@@ -4869,7 +4926,7 @@
 	)
 	(wire
 		(pts
-			(xy 317.5 69.85) (xy 322.58 69.85)
+			(xy 317.5 69.85) (xy 328.93 69.85)
 		)
 		(stroke
 			(width 0)
@@ -4909,7 +4966,7 @@
 	)
 	(wire
 		(pts
-			(xy 194.31 220.98) (xy 194.31 231.14)
+			(xy 194.31 218.44) (xy 194.31 220.98)
 		)
 		(stroke
 			(width 0)
@@ -4976,16 +5033,6 @@
 			(type default)
 		)
 		(uuid "7da81983-208e-4570-9410-695312853bcf")
-	)
-	(wire
-		(pts
-			(xy 240.03 69.85) (xy 240.03 74.93)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7ddcfc48-9f5e-4c83-9519-9a49e4768359")
 	)
 	(wire
 		(pts
@@ -5349,16 +5396,6 @@
 	)
 	(wire
 		(pts
-			(xy 240.03 69.85) (xy 245.11 69.85)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9c024798-eb7c-466b-b085-77fed1c81907")
-	)
-	(wire
-		(pts
 			(xy 320.04 132.08) (xy 320.04 151.13)
 		)
 		(stroke
@@ -5499,6 +5536,16 @@
 	)
 	(wire
 		(pts
+			(xy 194.31 220.98) (xy 194.31 231.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a3271eb9-3217-40cf-acfb-aa2756ca79d2")
+	)
+	(wire
+		(pts
 			(xy 355.6 69.85) (xy 355.6 72.39)
 		)
 		(stroke
@@ -5539,7 +5586,7 @@
 	)
 	(wire
 		(pts
-			(xy 236.22 69.85) (xy 240.03 69.85)
+			(xy 236.22 69.85) (xy 245.11 69.85)
 		)
 		(stroke
 			(width 0)
@@ -5636,16 +5683,6 @@
 			(type default)
 		)
 		(uuid "b17b3cb9-0d82-42e7-94c1-37b676f84015")
-	)
-	(wire
-		(pts
-			(xy 322.58 69.85) (xy 322.58 87.63)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b230a500-3e3a-46d2-b098-eee503e436c8")
 	)
 	(wire
 		(pts
@@ -5769,7 +5806,7 @@
 	)
 	(wire
 		(pts
-			(xy 240.03 100.33) (xy 245.11 100.33)
+			(xy 236.22 100.33) (xy 245.11 100.33)
 		)
 		(stroke
 			(width 0)
@@ -6219,16 +6256,6 @@
 	)
 	(wire
 		(pts
-			(xy 236.22 100.33) (xy 240.03 100.33)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "dbd10847-0d39-4170-9790-d8734054a1c7")
-	)
-	(wire
-		(pts
 			(xy 198.12 73.66) (xy 198.12 69.85)
 		)
 		(stroke
@@ -6379,16 +6406,6 @@
 	)
 	(wire
 		(pts
-			(xy 194.31 218.44) (xy 194.31 220.98)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f0f758fe-1233-4ec5-9a01-d34d91c0b086")
-	)
-	(wire
-		(pts
 			(xy 228.6 69.85) (xy 232.41 69.85)
 		)
 		(stroke
@@ -6409,13 +6426,13 @@
 	)
 	(wire
 		(pts
-			(xy 317.5 82.55) (xy 317.5 100.33)
+			(xy 193.04 220.98) (xy 194.31 220.98)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "f38ac73e-9569-46b6-9a8b-7804c314c1b6")
+		(uuid "f2be3cf7-b415-48bc-8c2b-2f7272471301")
 	)
 	(wire
 		(pts
@@ -6580,9 +6597,9 @@
 		)
 		(uuid "52cde26c-8b8f-4a07-8f51-51e1f8185688")
 	)
-	(text "BSC0702LS\n60V 84A 83W 2.7mΩ@10V,50A 2.3V 1 N-channel TDSON-8-EP(5x6) MOSFETs ROHS\n\nBSC028N06LS3\n60V 100A 2.8mΩ@10V,50A 139W 2.2V 1 N-channel TDSON-8(5.2x5.9) MOSFETs ROHS\n\nIAUC60N04S6L030HATMA\nHALF-BRIDGE"
+	(text "BSC0702LS\n60V 84A 83W 2.7mΩ@10V,50A 2.3V 1 N-channel TDSON-8-EP(5x6) MOSFETs ROHS\n\nBSC028N06LS3\n60V 100A 2.8mΩ@10V,50A 139W 2.2V 1 N-channel TDSON-8(5.2x5.9) MOSFETs ROHS\n\nIAUC60N04S6L030HATMA\nHALF-BRIDGE\n\nAGM612MBQ\nHALF-BRIDGE\n\nHYG090ND06LS1C2\nHALF-BRIDGE\n"
 		(exclude_from_sim no)
-		(at 138.684 53.34 0)
+		(at 139.954 46.228 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7437,7 +7454,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "BSC0702LS"
+		(property "Value" "HSBB6054"
 			(at 142.24 80.0099 0)
 			(effects
 				(font
@@ -7446,7 +7463,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "protovolt:TDSON-8-1"
+		(property "Footprint" "Package_SON:Diodes_PowerDI3333-8"
 			(at 142.24 80.645 0)
 			(effects
 				(font
@@ -7457,7 +7474,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://www.infineon.com/dgdl/Infineon-BSC0702LS-DataSheet-v02_04-EN.pdf?fileId=5546d4626fc1ce0b016ff0909c6f4eda"
+		(property "Datasheet" "https://lcsc.com/datasheet/lcsc_datasheet_2410121655_HUASHUO-HSBB6054_C5341686.pdf"
 			(at 142.24 82.55 0)
 			(effects
 				(font
@@ -7476,7 +7493,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C501503"
+		(property "LCSC" "C5341686"
 			(at 137.16 78.74 0)
 			(effects
 				(font
@@ -7760,7 +7777,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 309.5752 166.37 0)
 			(effects
 				(font
@@ -7787,7 +7804,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C30926"
+		(property "LCSC" "C77020"
 			(at 308.61 162.56 0)
 			(effects
 				(font
@@ -8537,7 +8554,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 210.82 184.4548 0)
 			(effects
 				(font
@@ -8564,7 +8581,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C30926"
+		(property "LCSC" "C77020"
 			(at 207.01 185.42 0)
 			(effects
 				(font
@@ -8615,7 +8632,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 160.02 139.3952 0)
 			(effects
 				(font
@@ -8642,7 +8659,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C88219"
+		(property "LCSC" "C162178"
 			(at 163.83 138.43 0)
 			(effects
 				(font
@@ -8816,7 +8833,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "BSC0702LS"
+		(property "Value" "HSBB6054"
 			(at 200.66 92.7099 0)
 			(effects
 				(font
@@ -8825,7 +8842,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "protovolt:TDSON-8-1"
+		(property "Footprint" "Package_SON:Diodes_PowerDI3333-8"
 			(at 200.66 93.345 0)
 			(effects
 				(font
@@ -8836,7 +8853,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://www.infineon.com/dgdl/Infineon-BSC0702LS-DataSheet-v02_04-EN.pdf?fileId=5546d4626fc1ce0b016ff0909c6f4eda"
+		(property "Datasheet" "https://lcsc.com/datasheet/lcsc_datasheet_2410121655_HUASHUO-HSBB6054_C5341686.pdf"
 			(at 200.66 95.25 0)
 			(effects
 				(font
@@ -8855,7 +8872,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C501503"
+		(property "LCSC" "C5341686"
 			(at 195.58 91.44 0)
 			(effects
 				(font
@@ -9427,7 +9444,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 244.1448 158.75 0)
 			(effects
 				(font
@@ -9454,7 +9471,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C30926"
+		(property "LCSC" "C77020"
 			(at 245.11 162.56 0)
 			(effects
 				(font
@@ -9650,7 +9667,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "BSC0702LS"
+		(property "Value" "HSBB6054"
 			(at 200.66 80.0099 0)
 			(effects
 				(font
@@ -9659,7 +9676,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "protovolt:TDSON-8-1"
+		(property "Footprint" "Package_SON:Diodes_PowerDI3333-8"
 			(at 200.66 80.645 0)
 			(effects
 				(font
@@ -9670,7 +9687,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://www.infineon.com/dgdl/Infineon-BSC0702LS-DataSheet-v02_04-EN.pdf?fileId=5546d4626fc1ce0b016ff0909c6f4eda"
+		(property "Datasheet" "https://lcsc.com/datasheet/lcsc_datasheet_2410121655_HUASHUO-HSBB6054_C5341686.pdf"
 			(at 200.66 82.55 0)
 			(effects
 				(font
@@ -9689,7 +9706,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C501503"
+		(property "LCSC" "C5341686"
 			(at 195.58 78.74 0)
 			(effects
 				(font
@@ -9827,7 +9844,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 220.98 184.4548 0)
 			(effects
 				(font
@@ -9854,7 +9871,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C1630"
+		(property "LCSC" "C107030 "
 			(at 217.17 185.42 0)
 			(effects
 				(font
@@ -10060,7 +10077,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_2512_6332Metric"
+		(property "Footprint" "protovolt:R_2512_6332Metric_SHUNT"
 			(at 275.59 71.628 90)
 			(effects
 				(font
@@ -10483,7 +10500,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "BSC0702LS"
+		(property "Value" "HSBB6054"
 			(at 142.24 92.7099 0)
 			(effects
 				(font
@@ -10492,7 +10509,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "protovolt:TDSON-8-1"
+		(property "Footprint" "Package_SON:Diodes_PowerDI3333-8"
 			(at 142.24 93.345 0)
 			(effects
 				(font
@@ -10503,7 +10520,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://www.infineon.com/dgdl/Infineon-BSC0702LS-DataSheet-v02_04-EN.pdf?fileId=5546d4626fc1ce0b016ff0909c6f4eda"
+		(property "Datasheet" "https://lcsc.com/datasheet/lcsc_datasheet_2410121655_HUASHUO-HSBB6054_C5341686.pdf"
 			(at 142.24 95.25 0)
 			(effects
 				(font
@@ -10522,7 +10539,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C501503"
+		(property "LCSC" "C5341686"
 			(at 137.16 91.44 0)
 			(effects
 				(font
@@ -10753,7 +10770,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C21376"
+		(property "LCSC" "C47500"
 			(at 137.16 195.58 0)
 			(effects
 				(font
@@ -10795,7 +10812,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "10u 100V"
+		(property "Value" "10u 50V"
 			(at 91.694 76.581 0)
 			(effects
 				(font
@@ -10804,7 +10821,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_1210_3225Metric"
+		(property "Footprint" "Capacitor_SMD:C_0805_2012Metric"
 			(at 92.4052 82.55 0)
 			(effects
 				(font
@@ -10831,7 +10848,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C5156756"
+		(property "LCSC" "C440198"
 			(at 91.44 78.74 0)
 			(effects
 				(font
@@ -11239,84 +11256,6 @@
 			(project "protovolt"
 				(path "/ea7037dc-92a2-412b-b904-472cbab72219/4a270319-7ef6-4bc5-85c2-eebc7d78bfc0"
 					(reference "R6")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C_Polarized")
-		(at 322.58 91.44 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "7e2acbfb-3612-4040-b7dd-081f76860f3b")
-		(property "Reference" "C10"
-			(at 322.834 86.36 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "39u 50V"
-			(at 322.834 88.9 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:CP_Elec_8x11.9"
-			(at 323.5452 95.25 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 322.58 91.44 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Polarized capacitor"
-			(at 322.58 91.44 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC" "C193240"
-			(at 322.58 91.44 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "0c7e3140-a25c-41d4-b84e-70aa2a7eeea1")
-		)
-		(pin "1"
-			(uuid "0bb48df6-a992-4fe2-8313-25b71ced6ea9")
-		)
-		(instances
-			(project "protovolt"
-				(path "/ea7037dc-92a2-412b-b904-472cbab72219/4a270319-7ef6-4bc5-85c2-eebc7d78bfc0"
-					(reference "C10")
 					(unit 1)
 				)
 			)
@@ -11773,6 +11712,74 @@
 			(project ""
 				(path "/ea7037dc-92a2-412b-b904-472cbab72219/4a270319-7ef6-4bc5-85c2-eebc7d78bfc0"
 					(reference "C3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:NetTie_2")
+		(at 190.5 220.98 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "8e51e15a-a0f5-45c4-b96d-70eb7b7baa12")
+		(property "Reference" "NT1"
+			(at 190.5 215.9 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "NetTie_2"
+			(at 190.5 218.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "NetTie:NetTie-2_SMD_Pad0.5mm"
+			(at 190.5 220.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 190.5 220.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Net tie, 2 pins"
+			(at 190.5 220.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "62f24dcd-b8d1-4c9f-b01c-9473e7003a60")
+		)
+		(pin "1"
+			(uuid "7fd05ff4-546d-4fd6-ba13-10daed487766")
+		)
+		(instances
+			(project ""
+				(path "/ea7037dc-92a2-412b-b904-472cbab72219/4a270319-7ef6-4bc5-85c2-eebc7d78bfc0"
+					(reference "NT1")
 					(unit 1)
 				)
 			)
@@ -12251,7 +12258,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-123"
+		(property "Footprint" "Diode_SMD:D_SOD-523"
 			(at 303.53 74.93 0)
 			(effects
 				(font
@@ -12278,7 +12285,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C2104"
+		(property "LCSC" "C131800"
 			(at 303.53 74.93 0)
 			(effects
 				(font
@@ -12562,7 +12569,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 210.82 173.0248 0)
 			(effects
 				(font
@@ -12589,7 +12596,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C30926"
+		(property "LCSC" "C77020"
 			(at 207.01 173.99 0)
 			(effects
 				(font
@@ -12940,7 +12947,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 101.2952 179.07 0)
 			(effects
 				(font
@@ -12967,7 +12974,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C84419"
+		(property "LCSC" "C3845593"
 			(at 100.33 175.26 0)
 			(effects
 				(font
@@ -13310,7 +13317,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "39u 50V"
+		(property "Value" "47u 63V"
 			(at 245.364 88.9 0)
 			(effects
 				(font
@@ -13319,7 +13326,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:CP_Elec_8x11.9"
+		(property "Footprint" "Capacitor_SMD:CP_Elec_8x10.5"
 			(at 246.0752 95.25 0)
 			(effects
 				(font
@@ -13346,7 +13353,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C193240"
+		(property "LCSC" "C5246568"
 			(at 245.11 91.44 0)
 			(effects
 				(font
@@ -13694,7 +13701,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 109.5248 171.45 0)
 			(effects
 				(font
@@ -13721,7 +13728,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C88219"
+		(property "LCSC" "C162178"
 			(at 110.49 175.26 0)
 			(effects
 				(font
@@ -13849,7 +13856,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 340.36 143.8148 0)
 			(effects
 				(font
@@ -13876,7 +13883,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C30926"
+		(property "LCSC" "C77020"
 			(at 336.55 144.78 0)
 			(effects
 				(font
@@ -14137,7 +14144,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 110.7948 91.44 0)
 			(effects
 				(font
@@ -14164,7 +14171,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C88219"
+		(property "LCSC" "C162178"
 			(at 111.76 95.25 0)
 			(effects
 				(font
@@ -14206,7 +14213,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "39u 50V"
+		(property "Value" "47u 63V"
 			(at 86.614 88.9 0)
 			(effects
 				(font
@@ -14215,7 +14222,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:CP_Elec_8x11.9"
+		(property "Footprint" "Capacitor_SMD:CP_Elec_8x10.5"
 			(at 87.3252 95.25 0)
 			(effects
 				(font
@@ -14242,7 +14249,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C193240"
+		(property "LCSC" "C5246568"
 			(at 86.36 91.44 0)
 			(effects
 				(font
@@ -14293,7 +14300,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 172.72 139.3952 0)
 			(effects
 				(font
@@ -14320,7 +14327,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C88219"
+		(property "LCSC" "C162178"
 			(at 176.53 138.43 0)
 			(effects
 				(font
@@ -14339,84 +14346,6 @@
 			(project "protovolt"
 				(path "/ea7037dc-92a2-412b-b904-472cbab72219/4a270319-7ef6-4bc5-85c2-eebc7d78bfc0"
 					(reference "C13")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C")
-		(at 240.03 78.74 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "df4760bb-0261-4c18-a910-f9dffc9912d7")
-		(property "Reference" "C4"
-			(at 240.284 74.041 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "10u 100V"
-			(at 240.284 76.581 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_1210_3225Metric"
-			(at 240.9952 82.55 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 240.03 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Unpolarized capacitor"
-			(at 240.03 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC" "C5156756"
-			(at 240.03 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "9b00507e-a9ce-4c2a-bb03-d18fb0893840")
-		)
-		(pin "2"
-			(uuid "c03d77a4-e989-46cf-a61e-5215ce0debc3")
-		)
-		(instances
-			(project "protovolt"
-				(path "/ea7037dc-92a2-412b-b904-472cbab72219/4a270319-7ef6-4bc5-85c2-eebc7d78bfc0"
-					(reference "C4")
 					(unit 1)
 				)
 			)
@@ -14580,7 +14509,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_1206_3216Metric"
+		(property "Footprint" "protovolt:R_2512_6332Metric_SHUNT"
 			(at 166.37 86.868 90)
 			(effects
 				(font
@@ -14781,7 +14710,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "BSC0702LS"
+		(property "Value" "HSBB6054"
 			(at 292.862 65.024 90)
 			(effects
 				(font
@@ -14790,7 +14719,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "protovolt:TDSON-8-1"
+		(property "Footprint" "Package_SON:Diodes_PowerDI3333-8"
 			(at 299.085 67.31 0)
 			(effects
 				(font
@@ -14801,7 +14730,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://www.infineon.com/dgdl/Infineon-BSC0702LS-DataSheet-v02_04-EN.pdf?fileId=5546d4626fc1ce0b016ff0909c6f4eda"
+		(property "Datasheet" "https://lcsc.com/datasheet/lcsc_datasheet_2410121655_HUASHUO-HSBB6054_C5341686.pdf"
 			(at 300.99 67.31 0)
 			(effects
 				(font
@@ -14820,7 +14749,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C501503"
+		(property "LCSC" "C5341686"
 			(at 297.18 72.39 0)
 			(effects
 				(font
@@ -14956,7 +14885,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 106.3752 179.07 0)
 			(effects
 				(font
@@ -14983,7 +14912,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C84419"
+		(property "LCSC" "C3845593"
 			(at 105.41 175.26 0)
 			(effects
 				(font
@@ -15175,7 +15104,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 220.98 173.0248 0)
 			(effects
 				(font
@@ -15202,7 +15131,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C1630"
+		(property "LCSC" "C107030 "
 			(at 217.17 173.99 0)
 			(effects
 				(font
