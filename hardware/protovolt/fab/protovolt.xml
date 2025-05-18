@@ -2,7 +2,7 @@
 <export version="E">
   <design>
     <source>/home/tianyi/src/protovolt/hardware/protovolt/protovolt.kicad_sch</source>
-    <date>2025-05-18T17:04:48-0400</date>
+    <date>2025-05-18T17:06:35-0400</date>
     <tool>Eeschema 8.0.7-8.0.7-0~ubuntu22.04.1</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
@@ -256,13 +256,13 @@
       <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
       <description>Unpolarized capacitor</description>
       <fields>
-        <field name="LCSC">C77020</field>
+        <field name="LCSC">C307331</field>
         <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Unpolarized capacitor</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
-      <property name="LCSC" value="C77020"/>
+      <property name="LCSC" value="C307331"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="cap capacitor"/>
@@ -275,13 +275,13 @@
       <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
       <description>Unpolarized capacitor</description>
       <fields>
-        <field name="LCSC">C77020</field>
+        <field name="LCSC">C307331</field>
         <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Unpolarized capacitor</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
-      <property name="LCSC" value="C77020"/>
+      <property name="LCSC" value="C307331"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="cap capacitor"/>
@@ -294,13 +294,13 @@
       <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
       <description>Unpolarized capacitor</description>
       <fields>
-        <field name="LCSC">C77020</field>
+        <field name="LCSC">C307331</field>
         <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Unpolarized capacitor</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
-      <property name="LCSC" value="C77020"/>
+      <property name="LCSC" value="C307331"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="cap capacitor"/>
@@ -313,13 +313,13 @@
       <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
       <description>Unpolarized capacitor</description>
       <fields>
-        <field name="LCSC">C77020</field>
+        <field name="LCSC">C307331</field>
         <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Unpolarized capacitor</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
-      <property name="LCSC" value="C77020"/>
+      <property name="LCSC" value="C307331"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="cap capacitor"/>
@@ -408,13 +408,13 @@
       <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
       <description>Unpolarized capacitor</description>
       <fields>
-        <field name="LCSC">C77020</field>
+        <field name="LCSC">C307331</field>
         <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Unpolarized capacitor</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
-      <property name="LCSC" value="C77020"/>
+      <property name="LCSC" value="C307331"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="cap capacitor"/>
@@ -926,13 +926,13 @@
       <footprint>protovolt:R_2512_6332Metric_SHUNT</footprint>
       <description>Resistor</description>
       <fields>
-        <field name="LCSC">C326610 </field>
+        <field name="LCSC">C5375459</field>
         <field name="Footprint">protovolt:R_2512_6332Metric_SHUNT</field>
         <field name="Datasheet"/>
         <field name="Description">Resistor</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
-      <property name="LCSC" value="C326610 "/>
+      <property name="LCSC" value="C5375459"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="R res resistor"/>
@@ -945,13 +945,13 @@
       <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
       <description>Resistor</description>
       <fields>
-        <field name="LCSC">C25138</field>
+        <field name="LCSC">C25076</field>
         <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Resistor</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
-      <property name="LCSC" value="C25138"/>
+      <property name="LCSC" value="C25076"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="R res resistor"/>
@@ -983,13 +983,13 @@
       <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
       <description>Resistor</description>
       <fields>
-        <field name="LCSC">C21376</field>
+        <field name="LCSC">C17168</field>
         <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Resistor</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
-      <property name="LCSC" value="C21376"/>
+      <property name="LCSC" value="C17168"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="R res resistor"/>
@@ -1002,13 +1002,13 @@
       <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
       <description>Resistor</description>
       <fields>
-        <field name="LCSC">C21376</field>
+        <field name="LCSC">C17168</field>
         <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Resistor</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
-      <property name="LCSC" value="C21376"/>
+      <property name="LCSC" value="C17168"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="R res resistor"/>
@@ -1040,13 +1040,13 @@
       <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
       <description>Resistor</description>
       <fields>
-        <field name="LCSC">C21376</field>
+        <field name="LCSC">C17168</field>
         <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Resistor</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
-      <property name="LCSC" value="C21376"/>
+      <property name="LCSC" value="C17168"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="R res resistor"/>
@@ -1059,13 +1059,13 @@
       <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
       <description>Resistor</description>
       <fields>
-        <field name="LCSC">C25139</field>
+        <field name="LCSC">C25077</field>
         <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Resistor</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
-      <property name="LCSC" value="C25139"/>
+      <property name="LCSC" value="C25077"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="R res resistor"/>
@@ -1116,13 +1116,13 @@
       <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
       <description>Resistor</description>
       <fields>
-        <field name="LCSC">C21376</field>
+        <field name="LCSC">C17168</field>
         <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Resistor</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
-      <property name="LCSC" value="C21376"/>
+      <property name="LCSC" value="C17168"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="R res resistor"/>
@@ -1135,13 +1135,13 @@
       <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
       <description>Resistor</description>
       <fields>
-        <field name="LCSC">C25139</field>
+        <field name="LCSC">C25077</field>
         <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Resistor</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
-      <property name="LCSC" value="C25139"/>
+      <property name="LCSC" value="C25077"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="R res resistor"/>
@@ -1268,13 +1268,13 @@
       <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
       <description>Resistor</description>
       <fields>
-        <field name="LCSC">C25139</field>
+        <field name="LCSC">C25077</field>
         <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Resistor</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
-      <property name="LCSC" value="C25139"/>
+      <property name="LCSC" value="C25077"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="R res resistor"/>
@@ -1306,13 +1306,13 @@
       <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
       <description>Resistor</description>
       <fields>
-        <field name="LCSC">C25139</field>
+        <field name="LCSC">C25077</field>
         <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Resistor</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
-      <property name="LCSC" value="C25139"/>
+      <property name="LCSC" value="C25077"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="R res resistor"/>
@@ -1382,13 +1382,13 @@
       <footprint>Resistor_SMD:R_0402_1005Metric</footprint>
       <description>Resistor</description>
       <fields>
-        <field name="LCSC">C21376</field>
+        <field name="LCSC">C17168</field>
         <field name="Footprint">Resistor_SMD:R_0402_1005Metric</field>
         <field name="Datasheet"/>
         <field name="Description">Resistor</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
-      <property name="LCSC" value="C21376"/>
+      <property name="LCSC" value="C17168"/>
       <property name="Sheetname" value="output_A"/>
       <property name="Sheetfile" value="output_A.kicad_sch"/>
       <property name="ki_keywords" value="R res resistor"/>
