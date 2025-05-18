@@ -536,7 +536,7 @@
           "group_by": false,
           "label": "Datasheet",
           "name": "Datasheet",
-          "show": true
+          "show": false
         },
         {
           "group_by": false,
@@ -548,13 +548,13 @@
           "group_by": false,
           "label": "Qty",
           "name": "${QUANTITY}",
-          "show": true
+          "show": false
         },
         {
           "group_by": false,
           "label": "DNP",
           "name": "${DNP}",
-          "show": true
+          "show": false
         },
         {
           "group_by": false,
