@@ -71,7 +71,7 @@
 # This rule handles diameter minimum and maximum for ALL holes.
 # Other specialized rules handle restrictions (e.g. Via, PTH, NPTH) 
 (rule "Hole diameter"
-	(constraint hole_size (min 0.15mm) (max 6.3mm))
+	(constraint hole_size (min 0.2mm) (max 6.3mm))
 )
 
 (rule "Hole (NPTH) diameter"
@@ -98,13 +98,13 @@
 (rule "Clearance: hole to hole (perimeter), different nets"
 	(layer outer)
 	(condition "A.Net != B.Net")
-	(constraint hole_to_hole (min 0.2mm))
+	(constraint hole_to_hole (min 0.5mm))
 )
 
 (rule "Clearance: hole to hole (perimeter), same net"
 	(layer outer)
 	(condition "A.Net == B.Net")
-	(constraint hole_to_hole (min 0.2mm))
+	(constraint hole_to_hole (min 0.254mm))
 )
 
 (rule "Clearance: track to NPTH hole (perimeter)"
@@ -115,7 +115,7 @@
 
 (rule "Clearance: track to PTH hole perimeter"
 	(condition "A.isPlated() && B.Type == 'track' && A.Net != B.Net")
-	(constraint hole_clearance (min 0.27mm))
+	(constraint hole_clearance (min 0.33mm))
 )
 
 # TODO: try combining with rule "Clearance: PTH to track, different nets"

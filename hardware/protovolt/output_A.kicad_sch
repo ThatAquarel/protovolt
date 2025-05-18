@@ -3201,6 +3201,12 @@
 		(uuid "058f63d3-6f6b-4975-86dc-4d968f03a683")
 	)
 	(junction
+		(at 186.69 220.98)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "09912380-22f9-41d6-b478-8d51e4b8c024")
+	)
+	(junction
 		(at 356.87 161.29)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3373,12 +3379,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "5b368fbd-2b1a-4166-961e-5d236998d964")
-	)
-	(junction
-		(at 186.69 220.98)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "5f96c818-75eb-4e3d-afa8-a9bc2cd835b5")
 	)
 	(junction
 		(at 279.4 69.85)
@@ -3963,6 +3963,16 @@
 			(type default)
 		)
 		(uuid "1fca17e3-1e81-4ea9-8bb5-925971e1bab4")
+	)
+	(wire
+		(pts
+			(xy 186.69 228.6) (xy 186.69 231.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1fd4a6c0-afc1-4931-ae25-afbcd24393c1")
 	)
 	(wire
 		(pts
@@ -4726,16 +4736,6 @@
 	)
 	(wire
 		(pts
-			(xy 186.69 220.98) (xy 187.96 220.98)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "67726466-6253-4ed1-82de-2c32b327cf7d")
-	)
-	(wire
-		(pts
 			(xy 170.18 85.09) (xy 175.26 85.09)
 		)
 		(stroke
@@ -5213,16 +5213,6 @@
 			(type default)
 		)
 		(uuid "88bb4dcc-f4cc-411a-84ed-108ef501a376")
-	)
-	(wire
-		(pts
-			(xy 186.69 220.98) (xy 186.69 231.14)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "896a39cd-3187-431c-8c84-f1b7ac2b5190")
 	)
 	(wire
 		(pts
@@ -6046,6 +6036,16 @@
 	)
 	(wire
 		(pts
+			(xy 360.68 228.6) (xy 360.68 231.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ce094f11-e75f-485d-af5b-88ea6dd96ab8")
+	)
+	(wire
+		(pts
 			(xy 342.9 151.13) (xy 350.52 151.13)
 		)
 		(stroke
@@ -6193,6 +6193,16 @@
 			(type default)
 		)
 		(uuid "d6dec1d6-71c3-43bd-a90e-af338be7dc95")
+	)
+	(wire
+		(pts
+			(xy 186.69 220.98) (xy 186.69 223.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d70e6a68-7e06-46d9-a0e3-97968f3bff0e")
 	)
 	(wire
 		(pts
@@ -6426,13 +6436,13 @@
 	)
 	(wire
 		(pts
-			(xy 193.04 220.98) (xy 194.31 220.98)
+			(xy 186.69 220.98) (xy 194.31 220.98)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "f2be3cf7-b415-48bc-8c2b-2f7272471301")
+		(uuid "f2c19bcb-2605-4fdf-a0ea-d5b597e6ef35")
 	)
 	(wire
 		(pts
@@ -8684,6 +8694,76 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:NetTie_2")
+		(at 186.69 226.06 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "1d115444-37b2-4d7e-8df0-34d40b4f3166")
+		(property "Reference" "NT1"
+			(at 187.96 224.7899 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "NetTie_2"
+			(at 187.96 227.3299 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "protovolt:NetTie-2_SMD_Pad10mil"
+			(at 186.69 226.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 186.69 226.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Net tie, 2 pins"
+			(at 186.69 226.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "7af951d2-84a1-4a69-b046-2fc019ab6e7d")
+		)
+		(pin "1"
+			(uuid "b303491b-80e8-4961-9281-5192fe20c509")
+		)
+		(instances
+			(project "protovolt"
+				(path "/ea7037dc-92a2-412b-b904-472cbab72219/4a270319-7ef6-4bc5-85c2-eebc7d78bfc0"
+					(reference "NT1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:PWR_FLAG")
 		(at 353.06 231.14 180)
 		(unit 1)
@@ -9418,6 +9498,72 @@
 		)
 	)
 	(symbol
+		(lib_id "power:GNDA")
+		(at 360.68 228.6 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "3e674729-8e2d-4180-ba87-339e1f0868aa")
+		(property "Reference" "#PWR029"
+			(at 360.68 222.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GNDA"
+			(at 360.68 223.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 360.68 228.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 360.68 228.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDA\" , analog ground"
+			(at 360.68 228.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "9e6c9d77-8e3a-40f3-b7bd-c504c6356097")
+		)
+		(instances
+			(project "protovolt"
+				(path "/ea7037dc-92a2-412b-b904-472cbab72219/4a270319-7ef6-4bc5-85c2-eebc7d78bfc0"
+					(reference "#PWR029")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:C")
 		(at 245.11 162.56 180)
 		(unit 1)
@@ -9490,6 +9636,72 @@
 			(project ""
 				(path "/ea7037dc-92a2-412b-b904-472cbab72219/4a270319-7ef6-4bc5-85c2-eebc7d78bfc0"
 					(reference "C15")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 360.68 231.14 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "3fe4611f-4e32-4266-bf80-493a8e519f78")
+		(property "Reference" "#FLG04"
+			(at 360.68 233.045 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 360.68 236.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 360.68 231.14 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 360.68 231.14 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Special symbol for telling ERC where power comes from"
+			(at 360.68 231.14 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "f6ea0caf-afae-4240-b99c-ec74b1d5107a")
+		)
+		(instances
+			(project "protovolt"
+				(path "/ea7037dc-92a2-412b-b904-472cbab72219/4a270319-7ef6-4bc5-85c2-eebc7d78bfc0"
+					(reference "#FLG04")
 					(unit 1)
 				)
 			)
@@ -11712,74 +11924,6 @@
 			(project ""
 				(path "/ea7037dc-92a2-412b-b904-472cbab72219/4a270319-7ef6-4bc5-85c2-eebc7d78bfc0"
 					(reference "C3")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:NetTie_2")
-		(at 190.5 220.98 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "8e51e15a-a0f5-45c4-b96d-70eb7b7baa12")
-		(property "Reference" "NT1"
-			(at 190.5 215.9 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "NetTie_2"
-			(at 190.5 218.44 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "NetTie:NetTie-2_SMD_Pad0.5mm"
-			(at 190.5 220.98 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 190.5 220.98 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Net tie, 2 pins"
-			(at 190.5 220.98 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "62f24dcd-b8d1-4c9f-b01c-9473e7003a60")
-		)
-		(pin "1"
-			(uuid "7fd05ff4-546d-4fd6-ba13-10daed487766")
-		)
-		(instances
-			(project ""
-				(path "/ea7037dc-92a2-412b-b904-472cbab72219/4a270319-7ef6-4bc5-85c2-eebc7d78bfc0"
-					(reference "NT1")
 					(unit 1)
 				)
 			)
