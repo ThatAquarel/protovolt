@@ -412,6 +412,14 @@
     [
       "c10b329a-3e80-40f7-8d71-cf4cf98a3d8a",
       "regulation"
+    ],
+    [
+      "8b41b6d2-86e1-4532-aab6-6836f2aae95a",
+      "mcu"
+    ],
+    [
+      "efbc8d7e-7e8d-48c8-b271-6b12c6e27a73",
+      "measurement"
     ]
   ],
   "text_variables": {}

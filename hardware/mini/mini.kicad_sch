@@ -6,6 +6,44 @@
 	(paper "A4")
 	(lib_symbols)
 	(sheet
+		(at 167.005 82.55)
+		(size 35.56 33.655)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "8b41b6d2-86e1-4532-aab6-6836f2aae95a")
+		(property "Sheetname" "mcu"
+			(at 167.005 81.8384 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "mcu.kicad_sch"
+			(at 167.005 116.7896 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "mini"
+				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
 		(at 87.63 83.82)
 		(size 28.575 33.02)
 		(fields_autoplaced yes)
@@ -77,6 +115,44 @@
 			(project "mini"
 				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705"
 					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 223.52 89.535)
+		(size 22.86 26.035)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "efbc8d7e-7e8d-48c8-b271-6b12c6e27a73")
+		(property "Sheetname" "measurement"
+			(at 223.52 88.8234 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "measurement.kicad_sch"
+			(at 223.52 116.1546 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "mini"
+				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705"
+					(page "5")
 				)
 			)
 		)
