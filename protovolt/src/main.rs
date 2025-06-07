@@ -10,11 +10,12 @@ mod measure;
 mod buck_boost;
 
 
+use embedded_graphics::primitives::{PrimitiveStyle, Rectangle};
 use panic_probe as _;
 
 use core::cell::RefCell;
 
-use defmt::*;
+use defmt::{info};
 use display_interface_spi::SPIInterface;
 use embassy_embedded_hal::shared_bus::blocking::i2c::I2cDeviceWithConfig;
 use embassy_embedded_hal::shared_bus::blocking::spi::SpiDeviceWithConfig;
@@ -28,9 +29,9 @@ use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_time::{Delay, Timer};
 use embedded_graphics::image::{Image, ImageRawLE};
-use embedded_graphics::mono_font::ascii::FONT_10X20;
+use embedded_graphics::mono_font::ascii::{FONT_10X20};
 use embedded_graphics::mono_font::MonoTextStyle;
-use embedded_graphics::pixelcolor::Rgb565;
+use embedded_graphics::pixelcolor::{BinaryColor, Rgb565};
 use embedded_graphics::prelude::*;
 // use embedded_graphics::primitives::{PrimitiveStyleBuilder, Rectangle};
 use embedded_graphics::text::Text;
@@ -42,6 +43,10 @@ use mipidsi::options::{Orientation, Rotation, ColorInversion};
 use mipidsi::Builder;
 // use display_interface::WriteOnlyDataCommand;
 use {defmt_rtt as _, panic_probe as _};
+
+use heapless::String;
+// use heapless::consts::*; // for capacity types
+
 
 use crate::measure::PowerMonitor;
 use crate::buck_boost::BuckBoostConverter;
@@ -149,13 +154,17 @@ async fn main(_spawner: Spawner) {
     buck_boost.set_output_voltage(9.53, true).unwrap();
     buck_boost.enable().unwrap();
     
+    
+    
     loop {
         Timer::after_millis(500).await;
-
+        
         let shunt_voltage = power_monitor.read_shunt_voltage().unwrap();
         let bus_voltage = power_monitor.read_bus_voltage().unwrap();
         let current = power_monitor.read_current().unwrap();
         let power = power_monitor.read_power().unwrap();
+        
+        let style = MonoTextStyle::new(&FONT_10X20, Rgb565::WHITE);
 
         // info!(
         // "Shunt Voltage: {} mV, Bus Voltage: {} V, Current: {} mA, Power: {} mW",
@@ -175,6 +184,34 @@ async fn main(_spawner: Spawner) {
             shunt_mv, bus_v, current_ma, power_mw
         );
 
+
+        // Draw each line at increasing vertical positions
+// Create and draw each line
+        let mut buf: String<32> = String::new();
+
+        use core::fmt::Write;
+
+        let clear_style = PrimitiveStyle::with_fill(Rgb565::BLUE);
+        Rectangle::new(Point::new(0, 0), Size::new(160, 120))
+            .into_styled(clear_style)
+            .draw(&mut display)
+            .unwrap();
+
+        buf.clear();
+        write!(buf, "Shunt:   {} mV", shunt_mv).unwrap();
+        Text::new(&buf, Point::new(10, 10), style).draw(&mut display).unwrap();
+
+        buf.clear();
+        write!(buf, "Bus:     {} mV", bus_v).unwrap();
+        Text::new(&buf, Point::new(10, 30), style).draw(&mut display).unwrap();
+
+        buf.clear();
+        write!(buf, "Current: {} mA", current_ma).unwrap();
+        Text::new(&buf, Point::new(10, 50), style).draw(&mut display).unwrap();
+
+        buf.clear();
+        write!(buf, "Power:   {} mW", power_mw).unwrap();
+        Text::new(&buf, Point::new(10, 70), style).draw(&mut display).unwrap();
 
 
         // if let Some((x, y)) = touch.read() {
