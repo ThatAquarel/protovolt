@@ -7,6 +7,7 @@ mod ina226 {
     // A0, A1 --> GND: default addr
     pub const ADDR: u8 = 0x40;
 
+    // REGISTERS
     pub const CONFIG: u8 = 0x00;
 
     pub const SHUNT_VOLTAGE: u8 = 0x01;
@@ -40,16 +41,16 @@ const fn compute_cal(current_lsb: f32, shunt_resistance: f32) -> [u8;2] {
 
 use ina226::*;
 
-pub struct PowerMonitor<I2C: I2c> {
-    i2c: I2C,
+pub struct PowerMonitor<BUS: I2c> {
+    i2c: BUS,
     addr: u8,
 }
 
-impl<I2C> PowerMonitor<I2C>
+impl<BUS> PowerMonitor<BUS>
 where
-    I2C: I2c,
+    BUS: I2c,
 {
-    pub fn new(i2c: I2C, addr_offset: u8) -> Self {
+    pub fn new(i2c: BUS, addr_offset: u8) -> Self {
         Self {
             i2c,
             addr: ADDR + addr_offset,
@@ -69,6 +70,9 @@ where
         }
         info!("verfied manufaturer id:  got 0x{:04X}", id);
         // TODO: verify DIE_ID also
+
+        info!("cal 0 {}", CAL[0]);
+        info!("cal 1 {}", CAL[1]);
 
         self.i2c.write(self.addr, &[CALIBRATION, CAL[0], CAL[1]]).unwrap();
         // TODO: verify CAL is correctly written
@@ -97,13 +101,16 @@ where
     }
 
     pub fn read_current(&mut self) -> Result<f32, ()> {
-        let reg = self.read_word(BUS_VOLTAGE)?;
+        let reg = self.read_word(CURRENT)?;
+
+        // info!("read current reg {}", reg);
+
         Ok((reg as f32) * CURRENT_LSB)
         // TODO: move 1.25mV LSB out into INA226 constants
     }
 
     pub fn read_power(&mut self) -> Result<f32, ()> {
-        let reg = self.read_word(BUS_VOLTAGE)?;
+        let reg = self.read_word(POWER)?;
         Ok((reg as f32) * POWER_LSB)
         // TODO: move 1.25mV LSB out into INA226 constants
     }

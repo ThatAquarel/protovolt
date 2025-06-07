@@ -7,7 +7,10 @@
 #![no_main]
 
 mod measure;
+mod buck_boost;
 
+
+use panic_probe as _;
 
 use core::cell::RefCell;
 
@@ -29,8 +32,9 @@ use embedded_graphics::mono_font::ascii::FONT_10X20;
 use embedded_graphics::mono_font::MonoTextStyle;
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
-use embedded_graphics::primitives::{PrimitiveStyleBuilder, Rectangle};
+// use embedded_graphics::primitives::{PrimitiveStyleBuilder, Rectangle};
 use embedded_graphics::text::Text;
+
 // use embedded_hal::i2c::I2c;
 use mipidsi::models::ST7789;
 // use mipidsi::options::{Orientation, Rotation, ColorOrder};
@@ -40,6 +44,7 @@ use mipidsi::Builder;
 use {defmt_rtt as _, panic_probe as _};
 
 use crate::measure::PowerMonitor;
+use crate::buck_boost::BuckBoostConverter;
 
 // use crate::touch::Touch;
 
@@ -61,7 +66,7 @@ async fn main(_spawner: Spawner) {
     let miso = p.PIN_12;
     let mosi = p.PIN_11;
     let clk = p.PIN_10;
-    let touch_cs = p.PIN_16;
+    // let touch_cs = p.PIN_16;
     //let touch_irq = p.PIN_17;
 
     // create SPI
@@ -132,10 +137,17 @@ async fn main(_spawner: Spawner) {
     let i2c_bus: Mutex<NoopRawMutex, _> = Mutex::new(RefCell::new(i2c));
 
     let measure_i2c = I2cDeviceWithConfig::new(&i2c_bus, i2c::Config::default());
+    let buck_boost_i2c = I2cDeviceWithConfig::new(&i2c_bus, i2c::Config::default());
 
     let mut power_monitor = PowerMonitor::new(measure_i2c, 0u8);
+    let enable = Output::new(p.PIN_0, Level::Low);
+    let mut buck_boost = BuckBoostConverter::new(buck_boost_i2c, 0u8, enable);
 
     power_monitor.init().unwrap();
+    buck_boost.init().unwrap();
+
+    buck_boost.set_output_voltage(9.53, true).unwrap();
+    buck_boost.enable().unwrap();
     
     loop {
         Timer::after_millis(500).await;
