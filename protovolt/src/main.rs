@@ -8,6 +8,7 @@
 
 mod measure;
 mod buck_boost;
+mod interface;
 
 
 use embedded_graphics::primitives::{PrimitiveStyle, Rectangle};
@@ -21,7 +22,7 @@ use embassy_embedded_hal::shared_bus::blocking::i2c::I2cDeviceWithConfig;
 use embassy_embedded_hal::shared_bus::blocking::spi::SpiDeviceWithConfig;
 // use embassy_embedded_hal::shared_bus::blocking::i2c::I2cDevice;
 use embassy_executor::Spawner;
-use embassy_rp::gpio::{Level, Output};
+use embassy_rp::gpio::{Input, Level, Output, Pull};
 use embassy_rp::i2c::{self, I2c};
 use embassy_rp::spi;
 use embassy_rp::spi::Spi;
@@ -30,7 +31,7 @@ use embassy_sync::blocking_mutex::Mutex;
 use embassy_time::{Delay, Timer};
 use embedded_graphics::image::{Image, ImageRawLE};
 use embedded_graphics::mono_font::ascii::{FONT_10X20};
-use embedded_graphics::mono_font::MonoTextStyle;
+use embedded_graphics::mono_font::{MonoTextStyle, MonoTextStyleBuilder};
 use embedded_graphics::pixelcolor::{BinaryColor, Rgb565};
 use embedded_graphics::prelude::*;
 // use embedded_graphics::primitives::{PrimitiveStyleBuilder, Rectangle};
@@ -50,11 +51,12 @@ use heapless::String;
 
 use crate::measure::PowerMonitor;
 use crate::buck_boost::BuckBoostConverter;
+// use crate::interface::ButtonInterface;
 
 // use crate::touch::Touch;
 
 // const DISPLAY_FREQ: u32 = 64_000_000;
-const DISPLAY_FREQ: u32 = 64_000_000;
+const DISPLAY_FREQ: u32 = 32_00_000;
 const TOUCH_FREQ: u32 = 200_000;
 
 // type I2C1Bus = Mutex<NoopRawMutex, I2c<'static, I2C1, i2c::Async>>;
@@ -151,13 +153,53 @@ async fn main(_spawner: Spawner) {
     power_monitor.init().unwrap();
     buck_boost.init().unwrap();
 
-    buck_boost.set_output_voltage(9.53, true).unwrap();
+    let mut output_voltage = 9.53;
+
+    buck_boost.set_output_voltage(output_voltage, true).unwrap();
     buck_boost.enable().unwrap();
     
-    
-    
+    // INIT button matrix
+    let mut rows = [Output::new(p.PIN_20, Level::High), Output::new(p.PIN_21, Level::High)];
+    let mut cols = [Input::new(p.PIN_18, Pull::Up), Input::new(p.PIN_19, Pull::Up)];
+    let mut matrix = [false; 4];
+
+    let mut i  = 0;
+
     loop {
-        Timer::after_millis(500).await;
+        matrix.fill(false);
+        for (i, row) in rows.iter_mut().enumerate() {
+            row.set_low();
+
+            for (j, col) in cols.iter_mut().enumerate() {
+                if col.is_low() {
+                    matrix[i * 2 + j] = true;
+                }
+            }
+
+            row.set_high();
+        }
+
+        // for (i, val) in matrix.iter_mut().enumerate() {
+        //     if *val {
+        //         info!("button {} pressed", i);
+        //     }
+        // }
+
+        // Timer::after_millis(500).await;
+        i += 1;
+        if i % 50_000 != 1 {
+            continue;
+        }
+
+        if matrix[0] {
+            info!("increase voltage");
+            output_voltage += 0.01;
+            buck_boost.set_output_voltage(output_voltage, true).unwrap();
+        } else if matrix[3] {
+            info!("decrease voltage");
+            output_voltage -= 0.01;
+            buck_boost.set_output_voltage(output_voltage, true).unwrap();
+        }
         
         let shunt_voltage = power_monitor.read_shunt_voltage().unwrap();
         let bus_voltage = power_monitor.read_bus_voltage().unwrap();
@@ -165,14 +207,6 @@ async fn main(_spawner: Spawner) {
         let power = power_monitor.read_power().unwrap();
         
         let style = MonoTextStyle::new(&FONT_10X20, Rgb565::WHITE);
-
-        // info!(
-        // "Shunt Voltage: {} mV, Bus Voltage: {} V, Current: {} mA, Power: {} mW",
-        //     shunt_voltage * 1000.0,     // V → mV
-        //     bus_voltage,                // V
-        //     current * 1000.0,           // A → mA
-        //     power * 1000.0              // W → mW
-        // );
 
         let shunt_mv = (shunt_voltage * 1000.0) as i32;
         let bus_v = (bus_voltage * 1000.0) as i32; // optionally scale to mV for consistency
@@ -186,17 +220,19 @@ async fn main(_spawner: Spawner) {
 
 
         // Draw each line at increasing vertical positions
-// Create and draw each line
-        let mut buf: String<32> = String::new();
-
+    
         use core::fmt::Write;
 
-        let clear_style = PrimitiveStyle::with_fill(Rgb565::BLUE);
-        Rectangle::new(Point::new(0, 0), Size::new(160, 120))
-            .into_styled(clear_style)
-            .draw(&mut display)
-            .unwrap();
+        let style = MonoTextStyleBuilder::new()
+            .font(&FONT_10X20)
+            .text_color(Rgb565::WHITE)
+            .background_color(Rgb565::BLUE)
+            .build();
 
+        // You already have this somewhere:
+        let mut buf = heapless::String::<32>::new();  // or whatever buffer you're using
+
+        // Write each line with background automatically filled (no need for rectangles)
         buf.clear();
         write!(buf, "Shunt:   {} mV", shunt_mv).unwrap();
         Text::new(&buf, Point::new(10, 10), style).draw(&mut display).unwrap();
@@ -212,7 +248,6 @@ async fn main(_spawner: Spawner) {
         buf.clear();
         write!(buf, "Power:   {} mW", power_mw).unwrap();
         Text::new(&buf, Point::new(10, 70), style).draw(&mut display).unwrap();
-
 
         // if let Some((x, y)) = touch.read() {
         //     let style = PrimitiveStyleBuilder::new().fill_color(Rgb565::BLUE).build();
