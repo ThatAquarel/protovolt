@@ -1599,7 +1599,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
 			(at 187.198 96.52 90)
 			(effects
 				(font
@@ -1618,6 +1618,15 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 185.42 96.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C25741"
 			(at 185.42 96.52 0)
 			(effects
 				(font
@@ -2106,7 +2115,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 180.6448 92.71 0)
 			(effects
 				(font
@@ -2125,6 +2134,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 181.61 96.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C107007"
 			(at 181.61 96.52 0)
 			(effects
 				(font
@@ -2243,7 +2261,7 @@
 				)
 			)
 		)
-		(property "Value" "22.1k"
+		(property "Value" "22k"
 			(at 190.246 110.236 0)
 			(effects
 				(font
@@ -2251,7 +2269,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
 			(at 187.198 109.22 90)
 			(effects
 				(font
@@ -2270,6 +2288,15 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 185.42 109.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C25768"
 			(at 185.42 109.22 0)
 			(effects
 				(font
@@ -2443,7 +2470,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "510k"
+		(property "Value" "680k"
 			(at 117.602 97.282 90)
 			(effects
 				(font
@@ -2452,7 +2479,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
 			(at 120.65 90.932 90)
 			(effects
 				(font
@@ -2472,6 +2499,15 @@
 		)
 		(property "Description" "Resistor"
 			(at 120.65 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C4131"
+			(at 120.65 92.71 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2540,6 +2576,15 @@
 			)
 		)
 		(property "Description" "2A, 4.5 to 28V Input, EMI Friendly integrated switch synchronous step-down regulator, pulse-skipping, SOT-23-6"
+			(at 143.51 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C191884"
 			(at 143.51 90.17 0)
 			(effects
 				(font
