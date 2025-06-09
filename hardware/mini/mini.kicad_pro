@@ -633,24 +633,28 @@
       "Root"
     ],
     [
-      "db59faf7-ff72-42c9-bad7-b1b3c313a20c",
-      "power"
+      "2f5f237b-0f73-4b73-a622-46731dbdbc6c",
+      "channel_A"
     ],
     [
-      "c10b329a-3e80-40f7-8d71-cf4cf98a3d8a",
+      "b5f4469e-cca9-4b96-8151-d3c520fcf3a5",
       "regulation"
     ],
     [
-      "8b41b6d2-86e1-4532-aab6-6836f2aae95a",
+      "8fbd1251-7beb-4aac-9406-53fe608f326c",
       "mcu"
     ],
     [
-      "51a716c7-7564-47ea-9e38-c95591b20483",
-      "usb"
+      "2f6f259a-8708-4cff-b8be-2da8284c0274",
+      "channel_B"
     ],
     [
-      "eae4f2ad-406c-49f9-9316-420e01e3b6d1",
+      "3af8cda0-3e08-4c10-a3a3-6e0091c6ad6e",
       "interface"
+    ],
+    [
+      "1cbbc356-180d-474b-929e-739812c8bd10",
+      "usb"
     ]
   ],
   "text_variables": {}
