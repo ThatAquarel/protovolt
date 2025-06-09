@@ -4622,7 +4622,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_SK6812_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "protovolt_mini_fp:LED_SK6812_EC20_2.0x2.0mm"
 			(at 73.66 64.77 0)
 			(effects
 				(font
@@ -4851,7 +4851,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_SK6812_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "protovolt_mini_fp:LED_SK6812_EC20_2.0x2.0mm"
 			(at 49.53 171.45 0)
 			(effects
 				(font
@@ -4935,7 +4935,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_SK6812_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "protovolt_mini_fp:LED_SK6812_EC20_2.0x2.0mm"
 			(at 73.66 100.33 0)
 			(effects
 				(font
@@ -5392,7 +5392,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "protovolt_mini_fp:SW_PUSH_SKPM_6x5mm"
 			(at 190.5 92.71 0)
 			(effects
 				(font
@@ -5814,7 +5814,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_SK6812_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "protovolt_mini_fp:LED_SK6812_EC20_2.0x2.0mm"
 			(at 49.53 64.77 0)
 			(effects
 				(font
@@ -5898,7 +5898,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_SK6812_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "protovolt_mini_fp:LED_SK6812_EC20_2.0x2.0mm"
 			(at 73.66 135.89 0)
 			(effects
 				(font
@@ -6049,7 +6049,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "protovolt_mini_fp:JUSHUO_AFC07-S12ECA-00_1x12-1MP_P0.5mm_Horizontal"
 			(at 270.51 69.85 0)
 			(effects
 				(font
@@ -6252,7 +6252,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_SK6812_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "protovolt_mini_fp:LED_SK6812_EC20_2.0x2.0mm"
 			(at 99.06 64.77 0)
 			(effects
 				(font
@@ -6336,7 +6336,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "protovolt_mini_fp:SW_PUSH_SKPM_6x5mm"
 			(at 156.21 127 0)
 			(effects
 				(font
@@ -6997,7 +6997,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_SK6812_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "protovolt_mini_fp:LED_SK6812_EC20_2.0x2.0mm"
 			(at 99.06 171.45 0)
 			(effects
 				(font
@@ -7902,7 +7902,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "protovolt_mini_fp:SW_PUSH_SKPM_6x5mm"
 			(at 190.5 58.42 0)
 			(effects
 				(font
@@ -8418,7 +8418,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_SK6812_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "protovolt_mini_fp:LED_SK6812_EC20_2.0x2.0mm"
 			(at 49.53 135.89 0)
 			(effects
 				(font
@@ -8502,7 +8502,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "protovolt_mini_fp:SW_PUSH_SKPM_6x5mm"
 			(at 156.21 110.49 0)
 			(effects
 				(font
@@ -8656,7 +8656,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "protovolt_mini_fp:SW_PUSH_SKPM_6x5mm"
 			(at 190.5 127 0)
 			(effects
 				(font
@@ -8942,7 +8942,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "protovolt_mini_fp:SW_PUSH_SKPM_6x5mm"
 			(at 156.21 92.71 0)
 			(effects
 				(font
@@ -9085,7 +9085,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_SK6812_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "protovolt_mini_fp:LED_SK6812_EC20_2.0x2.0mm"
 			(at 73.66 171.45 0)
 			(effects
 				(font
@@ -9303,7 +9303,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_SK6812_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "protovolt_mini_fp:LED_SK6812_EC20_2.0x2.0mm"
 			(at 99.06 100.33 0)
 			(effects
 				(font
@@ -9945,7 +9945,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "protovolt_mini_fp:SW_PUSH_SKPM_6x5mm"
 			(at 190.5 110.49 0)
 			(effects
 				(font
@@ -10394,7 +10394,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_SK6812_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "protovolt_mini_fp:LED_SK6812_EC20_2.0x2.0mm"
 			(at 49.53 100.33 0)
 			(effects
 				(font
@@ -10545,7 +10545,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "protovolt_mini_fp:SW_PUSH_SKPM_6x5mm"
 			(at 190.5 76.2 0)
 			(effects
 				(font
@@ -10621,7 +10621,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_SK6812_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "protovolt_mini_fp:LED_SK6812_EC20_2.0x2.0mm"
 			(at 99.06 135.89 0)
 			(effects
 				(font
@@ -10783,7 +10783,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "protovolt_mini_fp:SW_PUSH_SKPM_6x5mm"
 			(at 156.21 58.42 0)
 			(effects
 				(font
@@ -10859,7 +10859,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "protovolt_mini_fp:SW_PUSH_SKPM_6x5mm"
 			(at 156.21 76.2 0)
 			(effects
 				(font
