@@ -235,15 +235,15 @@
 		(uuid "9642a239-aa53-42fa-95f8-86b925d38501")
 	)
 	(embedded_fonts no)
-	(model "${KICAD9_3DMODEL_DIR}/Connector_FFC-FPC.3dshapes/JUSHUO_AFA07-S12FCA-00_1x12-1MP_P1.0mm_Horizontal.step"
+	(model "${KICAD9_3DMODEL_DIR}/Connector_FFC-FPC.3dshapes/Hirose_FH12-12S-0.5SH_1x12-1MP_P0.50mm_Horizontal.wrl"
 		(offset
-			(xyz 0 0 0)
+			(xyz 0 -1.5 0)
 		)
 		(scale
 			(xyz 1 1 1)
 		)
 		(rotate
-			(xyz 0 0 0)
+			(xyz -0 -0 -0)
 		)
 	)
 )

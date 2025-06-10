@@ -1,0 +1,149 @@
+(footprint "L_SOREDE_SRTC.1010"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 0 -7 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "bc05166f-a15b-499e-b993-adee37d596ba")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Value" "L_SOREDE_SRTC.1010"
+		(at 0 8.75 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "39cd5254-7297-4945-8cdd-5f92a1640acd")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "f2590ffe-8a4b-4952-ac8b-c64ff9063562")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "009f0e24-7222-4b5c-ba30-6ffce6110c59")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_rect
+		(start -6.05 -5.6)
+		(end 6.05 5.6)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "ed74af8b-66c5-4175-a811-2fdc549ca137")
+	)
+	(fp_rect
+		(start -6.45 -6)
+		(end 6.45 6)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "20c99a2b-fbd6-4ad6-906d-73cb5ace9f00")
+	)
+	(fp_rect
+		(start -5.95 -5.5)
+		(end 5.95 5.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "acc1865d-3ecb-4bbd-bc6a-cc917082ee42")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 7.25 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "b6dbd468-3749-4727-a913-e296af9645bf")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" smd custom
+		(at 0 -3.55)
+		(size 11 3.4)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(options
+			(clearance outline)
+			(anchor rect)
+		)
+		(primitives)
+		(uuid "3c8ace05-5301-4066-a102-afa14fe8abb4")
+	)
+	(pad "2" smd custom
+		(at 0 3.55)
+		(size 11 3.4)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(options
+			(clearance outline)
+			(anchor rect)
+		)
+		(primitives)
+		(uuid "a375f56a-1f72-4186-8066-5c72b6a9973d")
+	)
+	(embedded_fonts no)
+	(model "${KIPRJMOD}/protovolt_mini.pretty/Coilcraft-XAL1010.wrl"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 0.9 1 1)
+		)
+		(rotate
+			(xyz -0 -0 -0)
+		)
+	)
+	(model "${KIPRJMOD}/protovolt_mini.pretty/Coilcraft-XAL1010.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1.05 1 0.95)
+		)
+		(rotate
+			(xyz -90 -0 -0)
+		)
+	)
+)
