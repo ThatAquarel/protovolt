@@ -2777,12 +2777,6 @@
 		(uuid "cb75470b-f72d-4d36-8503-5d0426cdcbe3")
 	)
 	(junction
-		(at 157.48 43.18)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "cfb30798-d7e3-468c-95d5-a915af03a9b1")
-	)
-	(junction
 		(at 157.48 120.65)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -2805,12 +2799,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "e8aafc4c-3f8b-44ce-96fd-1d7327f01d6f")
-	)
-	(junction
-		(at 166.37 53.34)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "edcf3352-cd6b-4a1f-b7cd-adf0067c10cd")
 	)
 	(junction
 		(at 261.62 123.19)
@@ -3246,16 +3234,6 @@
 	)
 	(wire
 		(pts
-			(xy 157.48 53.34) (xy 166.37 53.34)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "362f4b35-db11-47eb-b323-7f0f1d6a168f")
-	)
-	(wire
-		(pts
 			(xy 55.88 118.11) (xy 67.31 118.11)
 		)
 		(stroke
@@ -3466,16 +3444,6 @@
 	)
 	(wire
 		(pts
-			(xy 166.37 44.45) (xy 166.37 43.18)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "504f624d-069d-417b-9157-4f02be84fa3d")
-	)
-	(wire
-		(pts
 			(xy 118.11 95.25) (xy 172.72 95.25)
 		)
 		(stroke
@@ -3506,7 +3474,7 @@
 	)
 	(wire
 		(pts
-			(xy 166.37 53.34) (xy 166.37 54.61)
+			(xy 157.48 53.34) (xy 157.48 54.61)
 		)
 		(stroke
 			(width 0)
@@ -4326,16 +4294,6 @@
 	)
 	(wire
 		(pts
-			(xy 166.37 52.07) (xy 166.37 53.34)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c678d72c-f6f5-4dee-9354-c844df634b00")
-	)
-	(wire
-		(pts
 			(xy 118.11 143.51) (xy 162.56 143.51)
 		)
 		(stroke
@@ -4493,16 +4451,6 @@
 			(type default)
 		)
 		(uuid "dbba695f-c618-42ea-b1b5-795ac835da20")
-	)
-	(wire
-		(pts
-			(xy 157.48 43.18) (xy 166.37 43.18)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "dea7624e-82e7-47df-afe5-c9697cf968d0")
 	)
 	(wire
 		(pts
@@ -7485,7 +7433,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 166.37 54.61 0)
+		(at 157.48 54.61 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -7494,7 +7442,7 @@
 		(fields_autoplaced yes)
 		(uuid "7d6466e4-f013-4532-ba3c-3a3741425535")
 		(property "Reference" "#PWR039"
-			(at 166.37 60.96 0)
+			(at 157.48 60.96 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7503,7 +7451,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 166.37 59.69 0)
+			(at 157.48 59.69 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7511,7 +7459,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 166.37 54.61 0)
+			(at 157.48 54.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7520,7 +7468,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 166.37 54.61 0)
+			(at 157.48 54.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7529,7 +7477,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 166.37 54.61 0)
+			(at 157.48 54.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9003,84 +8951,6 @@
 			(project "mini"
 				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/8fbd1251-7beb-4aac-9406-53fe608f326c"
 					(reference "#PWR031")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C")
-		(at 166.37 48.26 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "cc587a53-4afb-4817-bfab-9db19ebd2f0e")
-		(property "Reference" "C40"
-			(at 166.624 46.228 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "100n"
-			(at 166.878 50.292 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at 167.3352 52.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 166.37 48.26 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Unpolarized capacitor"
-			(at 166.37 48.26 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC" "C307331"
-			(at 166.37 48.26 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "67061acb-7b4d-4987-a248-4f22548cc9db")
-		)
-		(pin "1"
-			(uuid "39509370-e836-47ba-8164-763eccc182f6")
-		)
-		(instances
-			(project "mini"
-				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/8fbd1251-7beb-4aac-9406-53fe608f326c"
-					(reference "C40")
 					(unit 1)
 				)
 			)

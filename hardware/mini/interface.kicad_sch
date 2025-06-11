@@ -3867,7 +3867,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_1206_3216Metric"
+		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
 			(at 227.0252 77.47 0)
 			(effects
 				(font
@@ -3894,7 +3894,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C1848"
+		(property "LCSC" "C15849"
 			(at 226.06 73.66 0)
 			(effects
 				(font
