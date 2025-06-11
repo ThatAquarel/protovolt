@@ -3728,6 +3728,15 @@
 		(at 173.99 104.14)
 		(uuid "b1c9f10b-bb20-4813-84ef-fb5201875b25")
 	)
+	(bus_entry
+		(at 118.11 148.59)
+		(size 2.54 2.54)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "60af5cf9-43c0-4a3a-9240-711a2c524095")
+	)
 	(wire
 		(pts
 			(xy 270.51 55.88) (xy 270.51 57.15)
