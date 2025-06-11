@@ -4211,16 +4211,6 @@
 		(uuid "ffcac908-0ec0-4ac9-ae74-fac01d13c179")
 	)
 	(label "IS+"
-		(at 69.85 138.43 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "120f7614-8930-4a5f-958d-51b1d0284ba3")
-	)
-	(label "IS+"
 		(at 228.6 54.61 90)
 		(effects
 			(font
@@ -4259,6 +4249,16 @@
 			(justify right bottom)
 		)
 		(uuid "66b03c65-2206-481a-9834-63e3ccf96349")
+	)
+	(label "IS-"
+		(at 69.85 138.43 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "8f4c4055-1087-47a8-afef-a1ce9903b217")
 	)
 	(label "ISF+"
 		(at 154.94 76.2 0)
