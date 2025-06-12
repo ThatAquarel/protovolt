@@ -2518,6 +2518,10 @@
 		(color 0 0 0 0)
 		(uuid "fc24fc98-ea99-45dc-9425-3bce69ee0d70")
 	)
+	(no_connect
+		(at 151.13 88.9)
+		(uuid "33f950ad-a6e3-4442-bf92-2d30913169d5")
+	)
 	(wire
 		(pts
 			(xy 223.52 45.72) (xy 223.52 55.88)
@@ -3050,16 +3054,6 @@
 	)
 	(wire
 		(pts
-			(xy 152.4 88.9) (xy 152.4 90.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "61150189-1b7e-4dd8-9e82-1489e7194d1f")
-	)
-	(wire
-		(pts
 			(xy 184.15 63.5) (xy 184.15 72.39)
 		)
 		(stroke
@@ -3117,16 +3111,6 @@
 			(type default)
 		)
 		(uuid "727782c9-bfd6-4991-bfd3-95a763bf4887")
-	)
-	(wire
-		(pts
-			(xy 152.4 97.79) (xy 152.4 100.33)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "73ebf343-6fd6-44a6-9370-ef482805e45f")
 	)
 	(wire
 		(pts
@@ -4147,16 +4131,6 @@
 			(type default)
 		)
 		(uuid "ff083c99-946f-43e5-9104-556a19dc5170")
-	)
-	(wire
-		(pts
-			(xy 151.13 88.9) (xy 152.4 88.9)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ffcac908-0ec0-4ac9-ae74-fac01d13c179")
 	)
 	(label "IS+"
 		(at 228.6 54.61 90)
@@ -5213,86 +5187,6 @@
 	)
 	(symbol
 		(lib_id "Device:R")
-		(at 152.4 93.98 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp yes)
-		(uuid "3f348e73-6336-4255-ab75-7bca28578341")
-		(property "Reference" "R4"
-			(at 154.686 93.98 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "100k"
-			(at 156.464 93.472 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 154.178 93.98 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 152.4 93.98 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor"
-			(at 152.4 93.98 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC" "C25741"
-			(at 152.4 93.98 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "c29bae04-36fc-4240-a953-a1590e42ea5a")
-		)
-		(pin "2"
-			(uuid "79c16fa5-6051-44d4-b509-04e5aee3d346")
-		)
-		(instances
-			(project "mini"
-				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/2f5f237b-0f73-4b73-a622-46731dbdbc6c"
-					(reference "R4")
-					(unit 1)
-				)
-				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/2f6f259a-8708-4cff-b8be-2da8284c0274"
-					(reference "R30")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R")
 		(at 102.87 93.98 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -5450,76 +5344,6 @@
 				)
 				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/2f6f259a-8708-4cff-b8be-2da8284c0274"
 					(reference "C62")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 152.4 100.33 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "4779b61c-f7c1-4ad6-a8ad-9cb81bf68091")
-		(property "Reference" "#PWR016"
-			(at 152.4 106.68 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 152.4 105.41 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 152.4 100.33 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 152.4 100.33 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 152.4 100.33 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "81a7ed79-245a-4e62-bc1a-349c51edafb2")
-		)
-		(instances
-			(project "mini"
-				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/2f5f237b-0f73-4b73-a622-46731dbdbc6c"
-					(reference "#PWR016")
-					(unit 1)
-				)
-				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/2f6f259a-8708-4cff-b8be-2da8284c0274"
-					(reference "#PWR054")
 					(unit 1)
 				)
 			)
