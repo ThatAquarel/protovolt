@@ -3858,7 +3858,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "1u"
+		(property "Value" "1u 25V"
 			(at 226.314 75.6921 0)
 			(effects
 				(font
@@ -3867,7 +3867,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 227.0252 77.47 0)
 			(effects
 				(font
@@ -3894,7 +3894,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C15849"
+		(property "LCSC" "C52923"
 			(at 226.06 73.66 0)
 			(effects
 				(font
@@ -5075,7 +5075,7 @@
 				)
 			)
 		)
-		(property "Value" "FPC_12P_TOP_CONTACT"
+		(property "Value" "FPC_12P_BOTTOM_CONTACT"
 			(at 270.51 53.34 0)
 			(effects
 				(font
@@ -5110,7 +5110,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C262585"
+		(property "LCSC" "C262559"
 			(at 270.51 69.85 0)
 			(effects
 				(font
