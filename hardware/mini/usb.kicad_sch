@@ -1174,132 +1174,6 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "Device:NetTie_2"
-			(pin_numbers
-				(hide yes)
-			)
-			(pin_names
-				(offset 0)
-				(hide yes)
-			)
-			(exclude_from_sim no)
-			(in_bom no)
-			(on_board yes)
-			(property "Reference" "NT"
-				(at 0 1.27 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "NetTie_2"
-				(at 0 -1.27 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "~"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Net tie, 2 pins"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "net tie short"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "Net*Tie*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "NetTie_2_0_1"
-				(polyline
-					(pts
-						(xy -1.27 0) (xy 1.27 0)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-			)
-			(symbol "NetTie_2_1_1"
-				(pin passive line
-					(at -2.54 0 0)
-					(length 2.54)
-					(name "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 2.54 0 180)
-					(length 2.54)
-					(name "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
 		(symbol "Device:R"
 			(pin_numbers
 				(hide yes)
@@ -3515,17 +3389,6 @@
 			(embedded_fonts no)
 		)
 	)
-	(text "Place next to STUB4500\nTransfer of power domain\ninto GND from GNDPWR"
-		(exclude_from_sim no)
-		(at 197.866 143.256 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "8cfb1188-84e3-4c12-b095-e5f0afb60c8e")
-	)
 	(junction
 		(at 209.55 76.2)
 		(diameter 0)
@@ -3543,12 +3406,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "02f24b04-c5c0-4278-a8f1-56f9070acc8d")
-	)
-	(junction
-		(at 91.44 80.01)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "05a700f5-ae4a-4708-b77c-d9894f1066c9")
 	)
 	(junction
 		(at 209.55 66.04)
@@ -3857,16 +3714,6 @@
 			(type default)
 		)
 		(uuid "18c87a78-8984-4fb6-b7d1-32769e3328b6")
-	)
-	(wire
-		(pts
-			(xy 91.44 78.74) (xy 91.44 80.01)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1b1eedc8-d535-4fb2-b2bb-0dbf8150a21a")
 	)
 	(wire
 		(pts
@@ -4500,7 +4347,7 @@
 	)
 	(wire
 		(pts
-			(xy 204.47 132.08) (xy 201.93 132.08)
+			(xy 201.93 132.08) (xy 212.09 132.08)
 		)
 		(stroke
 			(width 0)
@@ -4968,16 +4815,6 @@
 		)
 		(uuid "fa13f77d-d513-4850-8ba5-5392e57151e8")
 	)
-	(wire
-		(pts
-			(xy 209.55 132.08) (xy 212.09 132.08)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ff1ebf69-1833-427a-a06d-8d6325d6db7a")
-	)
 	(label "CC2"
 		(at 59.69 87.63 0)
 		(effects
@@ -5421,73 +5258,6 @@
 			(project "mini"
 				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/1cbbc356-180d-474b-929e-739812c8bd10"
 					(reference "#PWR044")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:PWR_FLAG")
-		(at 91.44 78.74 0)
-		(mirror y)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "0b5e89b3-3b9f-40b4-b92a-c3f4a74c920d")
-		(property "Reference" "#FLG01"
-			(at 91.44 76.835 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "PWR_FLAG"
-			(at 91.44 73.66 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 91.44 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 91.44 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Special symbol for telling ERC where power comes from"
-			(at 91.44 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "e7f4a75d-1391-4a72-9b07-59255c3f883d")
-		)
-		(instances
-			(project ""
-				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/1cbbc356-180d-474b-929e-739812c8bd10"
-					(reference "#FLG01")
 					(unit 1)
 				)
 			)
@@ -7815,73 +7585,6 @@
 			(project "mini"
 				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/1cbbc356-180d-474b-929e-739812c8bd10"
 					(reference "#PWR0106")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:NetTie_2")
-		(at 207.01 132.08 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(dnp no)
-		(uuid "b968a394-1fd1-41c2-9172-bb05c304e9e5")
-		(property "Reference" "NT1"
-			(at 198.374 127.254 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "NetTie_2"
-			(at 198.374 129.794 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "NetTie:NetTie-2_SMD_Pad0.5mm"
-			(at 207.01 132.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 207.01 132.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Net tie, 2 pins"
-			(at 207.01 132.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "b15c4f4f-3bdc-4449-ab84-e76f06cf53e3")
-		)
-		(pin "1"
-			(uuid "1f9c8712-04e8-4306-9c32-8658703714d0")
-		)
-		(instances
-			(project ""
-				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/1cbbc356-180d-474b-929e-739812c8bd10"
-					(reference "NT1")
 					(unit 1)
 				)
 			)
