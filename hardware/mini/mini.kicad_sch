@@ -3613,7 +3613,7 @@
 		(lib_id "Graphic:Logo_Open_Hardware_Small")
 		(at 276.86 173.99 0)
 		(unit 1)
-		(exclude_from_sim no)
+		(exclude_from_sim yes)
 		(in_bom no)
 		(on_board no)
 		(dnp no)
@@ -3656,15 +3656,6 @@
 			)
 		)
 		(property "Description" "Open Hardware logo, small"
-			(at 276.86 173.99 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Enable" "0"
 			(at 276.86 173.99 0)
 			(effects
 				(font

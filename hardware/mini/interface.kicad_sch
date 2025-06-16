@@ -4,6 +4,13 @@
 	(generator_version "9.0")
 	(uuid "f7e944de-b3aa-4de2-8840-743fc18499a5")
 	(paper "A4")
+	(title_block
+		(title "Protovolt MINI")
+		(date "2025-06-16")
+		(rev "A")
+		(comment 3 "MINI")
+		(comment 4 "Protovolt")
+	)
 	(lib_symbols
 		(symbol "+3V3_1"
 			(power)
