@@ -3693,7 +3693,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
+		(property "Footprint" "protovolt_mini_fp:D_SOD-323"
 			(at 189.23 123.19 0)
 			(effects
 				(font
@@ -4174,7 +4174,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
+		(property "Footprint" "protovolt_mini_fp:D_SOD-323"
 			(at 148.59 104.14 0)
 			(effects
 				(font
@@ -6308,7 +6308,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
+		(property "Footprint" "protovolt_mini_fp:D_SOD-323"
 			(at 189.23 104.14 0)
 			(effects
 				(font
@@ -6616,7 +6616,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
+		(property "Footprint" "protovolt_mini_fp:D_SOD-323"
 			(at 168.91 85.09 0)
 			(effects
 				(font
@@ -7525,7 +7525,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
+		(property "Footprint" "protovolt_mini_fp:D_SOD-323"
 			(at 148.59 85.09 0)
 			(effects
 				(font
@@ -7889,7 +7889,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
+		(property "Footprint" "protovolt_mini_fp:D_SOD-323"
 			(at 148.59 123.19 0)
 			(effects
 				(font
@@ -8197,7 +8197,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
+		(property "Footprint" "protovolt_mini_fp:D_SOD-323"
 			(at 189.23 85.09 0)
 			(effects
 				(font
@@ -8611,7 +8611,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
+		(property "Footprint" "protovolt_mini_fp:D_SOD-323"
 			(at 168.91 123.19 0)
 			(effects
 				(font
@@ -8707,7 +8707,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
+		(property "Footprint" "protovolt_mini_fp:D_SOD-323"
 			(at 168.91 104.14 0)
 			(effects
 				(font
