@@ -470,7 +470,9 @@
     "pinned_footprint_libs": [
       "protovolt_mini_fp"
     ],
-    "pinned_symbol_libs": []
+    "pinned_symbol_libs": [
+      "protovolt_mini"
+    ]
   },
   "meta": {
     "filename": "mini.kicad_pro",
@@ -637,7 +639,7 @@
       "version": 1
     },
     "net_format_name": "",
-    "page_layout_descr_file": "",
+    "page_layout_descr_file": "Protovolt MINI",
     "plot_directory": "",
     "space_save_all_events": true,
     "spice_current_sheet_as_root": false,
