@@ -30,6 +30,8 @@ embassy-time = { version = "0.4", features = ["defmt", "defmt-timestamp-uptime"]
 cortex-m = { version = "0.7.6" }
 embassy-rp = { version = "0.4", features = ["defmt", "unstable-pac", "time-driver", "critical-section-impl", "rp2040"] }
 
+portable-atomic = { version = "1.5", features = ["critical-section"] }
+critical-section = "1.1"
 display-interface-spi = "0.5.0"
 embedded-graphics = "0.8.1"
 mipidsi = "0.8.0"
@@ -38,6 +40,8 @@ display-interface = "0.5.0"
 
 # ufmt = "0.2"
 heapless = "0.8"
+static_cell = "2.1.0"
+u8g2-fonts = "0.7.0"
 
 [profile.release]
 debug = 2

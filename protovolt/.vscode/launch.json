@@ -1,17 +1,13 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
         {
             "type": "probe-rs-debug",
             "request": "launch",
-            "name": "probe-rs Test",
+            "name": "Debug RP2040",
             "cwd": "${workspaceFolder}",
-            "connectUnderReset": true,
-            "chip": "rp2040",
+            "chip": "RP2040",
+            "connectUnderReset": false,
             "flashingConfig": {
                 "flashingEnabled": true,
                 "haltAfterReset": true
@@ -19,7 +15,7 @@
             "coreConfigs": [
                 {
                     "coreIndex": 0,
-                    "programBinary": "./target/thumbv6m-none-eabi/debug/${workspaceFolderBasename}"
+                    "programBinary": "${workspaceFolder}/target/thumbv6m-none-eabi/debug/${workspaceFolderBasename}"
                 }
             ]
         }
