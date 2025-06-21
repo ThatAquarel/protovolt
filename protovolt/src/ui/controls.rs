@@ -1,10 +1,13 @@
 use embedded_graphics::{
+    image::Image,
     pixelcolor::Rgb565,
     prelude::*,
     primitives::{
         CornerRadii, PrimitiveStyleBuilder, Rectangle, RoundedRectangle, StrokeAlignment,
     },
 };
+
+use tinybmp::Bmp;
 use u8g2_fonts::{
     FontRenderer, fonts,
     types::{FontColor, HorizontalAlignment, VerticalPosition},
@@ -198,6 +201,110 @@ where
         target,
     )
     .map_err(|_| ())?;
+
+    Ok(())
+}
+
+pub fn draw_self_check<D>(target: &mut D) -> Result<(), ()>
+where
+    D: DrawTarget<Color = Rgb565>,
+{
+    let bmp: Bmp<Rgb565> = Bmp::from_slice(include_bytes!("../assets/protovolt_mini.bmp")).unwrap();
+
+    // To draw the `bmp` object to the display it needs to be wrapped in an `Image` object to set
+    // the position at which it should drawn. Here, the top left corner of the image is set to
+    // `(32, 32)`.
+    let left_padding = (320 - 220) / 2;
+    let image: Image<'_, Bmp<'_, Rgb565>> = Image::new(&bmp, Point::new(left_padding, 32));
+
+    // Display the image
+    image.draw(target).map_err(|_| ())?;
+
+    let font = FontRenderer::new::<fonts::u8g2_font_helvB08_tf>();
+
+    font.render_aligned(
+        "INPUT",
+        Point::new(160 - 60, 0 + 100 + 48),
+        VerticalPosition::Center,
+        HorizontalAlignment::Left,
+        FontColor::Transparent(Rgb565::CSS_WHITE),
+        target,
+    )
+    .map_err(|_| ())?;
+
+    font.render_aligned(
+        "20V 5A",
+        Point::new(160 - 60 + 10, 12 + 100 + 48),
+        VerticalPosition::Center,
+        HorizontalAlignment::Left,
+        FontColor::Transparent(Rgb565::CSS_DIM_GRAY),
+        target,
+    )
+    .map_err(|_| ())?;
+
+    font.render_aligned(
+        "USB-C PD",
+        Point::new(160 - 60 + 10, 24 + 100 + 48),
+        VerticalPosition::Center,
+        HorizontalAlignment::Left,
+        FontColor::Transparent(Rgb565::CSS_DIM_GRAY),
+        target,
+    )
+    .map_err(|_| ())?;
+
+    font.render_aligned(
+        "SELF-CHECK",
+        Point::new(160 - 60, 40 + 100 + 48),
+        VerticalPosition::Center,
+        HorizontalAlignment::Left,
+        FontColor::Transparent(Rgb565::CSS_WHITE),
+        target,
+    )
+    .map_err(|_| ())?;
+
+    font.render_aligned(
+        "SW v0.1.9",
+        Point::new(160 - 60 + 10, 40 + 12 + 100 + 48),
+        VerticalPosition::Center,
+        HorizontalAlignment::Left,
+        FontColor::Transparent(Rgb565::CSS_DIM_GRAY),
+        target,
+    )
+    .map_err(|_| ())?;
+
+    font.render_aligned(
+        "HW v0.1.1",
+        Point::new(160 - 60 + 10, 40 + 24 + 100 + 48),
+        VerticalPosition::Center,
+        HorizontalAlignment::Left,
+        FontColor::Transparent(Rgb565::CSS_DIM_GRAY),
+        target,
+    )
+    .map_err(|_| ())?;
+
+    let icons = FontRenderer::new::<fonts::u8g2_font_open_iconic_all_2x_t>();
+
+    icons
+        .render_aligned(
+            "\u{0073}",
+            Point::new(160 + 60, 0 + 100 + 48),
+            VerticalPosition::Center,
+            HorizontalAlignment::Right,
+            FontColor::Transparent(Rgb565::CSS_WHITE),
+            target,
+        )
+        .map_err(|_| ())?;
+
+    icons
+        .render_aligned(
+            "\u{0073}",
+            Point::new(160 + 60, 40 + 100 + 48),
+            VerticalPosition::Center,
+            HorizontalAlignment::Right,
+            FontColor::Transparent(Rgb565::CSS_WHITE),
+            target,
+        )
+        .map_err(|_| ())?;
 
     Ok(())
 }

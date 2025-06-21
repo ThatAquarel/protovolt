@@ -1,6 +1,6 @@
 use defmt::*;
 
-use crate::lib::{event::HardwareEvent};
+use crate::lib::{event::InterfaceEvent};
 use embassy_rp::gpio::{AnyPin, Input, Level, Output, Pull};
 
 
@@ -14,14 +14,14 @@ pub mod matrix {
     pub const POLL_TIME_MS: u64 = 10;
 }
 
-pub struct ButtonInterface<'a> {
+pub struct ButtonsInterface<'a> {
     rows: [Output<'a>; matrix::N_ROWS],
     cols: [Input<'a>; matrix::N_COLS],
     current_state: [bool; matrix::N_BUTTONS],
     debounce: [u16; matrix::N_BUTTONS],
 }
 
-impl ButtonInterface<'_> {
+impl ButtonsInterface<'_> {
     pub fn new(row_pins: [AnyPin; 3], col_pins: [AnyPin; 3]) -> Self {
         let row = row_pins.map(|p| Output::new(p, Level::High));
         let col = col_pins.map(|p| Input::new(p, Pull::Up));
@@ -34,7 +34,7 @@ impl ButtonInterface<'_> {
         }
     }
 
-    pub fn poll(&mut self) -> Option<HardwareEvent> {
+    pub fn poll(&mut self) -> Option<InterfaceEvent> {
         for (i, row) in self.rows.iter_mut().enumerate() {
             row.set_low();
 
@@ -64,15 +64,15 @@ impl ButtonInterface<'_> {
             if *state == true{
                 // info!("pressed {} time {}", i, self.debounce[i]);
                 return match i {
-                    0 => Some(HardwareEvent::ButtonUp),
-                    1 => Some(HardwareEvent::ButtonDown),
-                    2 => Some(HardwareEvent::ButtonLeft),
-                    3 => Some(HardwareEvent::ButtonRight),
-                    4 => Some(HardwareEvent::ButtonEnter),
-                    5 => Some(HardwareEvent::ButtonSwitch),
-                    6 => Some(HardwareEvent::ButtonSettings),
-                    7 => Some(HardwareEvent::ButtonChannelA),
-                    8 => Some(HardwareEvent::ButtonChannelB),
+                    0 => Some(InterfaceEvent::ButtonUp),
+                    1 => Some(InterfaceEvent::ButtonDown),
+                    2 => Some(InterfaceEvent::ButtonLeft),
+                    3 => Some(InterfaceEvent::ButtonRight),
+                    4 => Some(InterfaceEvent::ButtonEnter),
+                    5 => Some(InterfaceEvent::ButtonSwitch),
+                    6 => Some(InterfaceEvent::ButtonSettings),
+                    7 => Some(InterfaceEvent::ButtonChannelA),
+                    8 => Some(InterfaceEvent::ButtonChannelB),
                     _ => None
                 };
             }
