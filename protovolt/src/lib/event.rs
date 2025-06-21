@@ -1,7 +1,23 @@
+use embassy_time::Duration;
+
+#[derive(Debug)]
 pub enum HardwareEvent {
+    PowerOn,
+
     PowerDeliveryReady,
     SenseReady,
-    ConverterReady,    
+    ConverterReady,
+
+    StartMainInterface,
+
+    ReadoutAcquired(Channel, Readout)
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Readout {
+    pub voltage: f32,
+    pub current: f32,
+    pub power: f32,
 }
 
 pub enum InterfaceEvent {
@@ -28,9 +44,15 @@ pub enum HardwareTask {
     EnableSense,
     EnableConverter,
 
+
     // Idle
+    EnableReadoutLoop,
+
+
+    DelayedHardwareEvent(Duration, HardwareEvent)
 }
 
+#[derive(Debug)]
 pub enum Channel {
     A,
     B
@@ -47,7 +69,7 @@ pub enum DisplayTask {
     // Main Readout
     SetupMain,
 
-    UpdateReadout(Channel),
+    UpdateReadout(Channel, Readout),
     UpdateSetpoint(Channel),
 
     // Settings

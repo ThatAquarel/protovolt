@@ -3,18 +3,22 @@ use embedded_graphics::{
     pixelcolor::Rgb565,
     prelude::*,
     primitives::{
-        CornerRadii, PrimitiveStyleBuilder, Rectangle, RoundedRectangle, StrokeAlignment,
+        CornerRadii, PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, RoundedRectangle,
+        StrokeAlignment, StyledDrawable,
+    },
+    text::{
+        Alignment, Baseline, Text, TextStyleBuilder,
+        renderer::{CharacterStyle, TextRenderer},
     },
 };
 
 use tinybmp::Bmp;
 use u8g2_fonts::{
-    FontRenderer, fonts,
+    FontRenderer, U8g2TextStyle, fonts,
     types::{FontColor, HorizontalAlignment, VerticalPosition},
 };
 
-use crate::ui::Display;
-
+use crate::{lib::event::Readout, ui::Display};
 
 pub fn clear<D>(target: &mut D) -> Result<(), D::Error>
 where
@@ -172,16 +176,83 @@ where
     Ok(())
 }
 
-pub fn draw_measurements<D>(target: &mut D) -> Result<(), ()>
+use core::fmt::Write;
+use heapless::String;
+
+pub fn format_f32<const N: usize>(value: f32, decimals: u32) -> String<N> {
+    let mut buf = String::<N>::new();
+
+    let is_negative = value.is_sign_negative();
+    let abs_value = if is_negative { -value } else { value };
+
+    let int_part = abs_value as u32;
+    let mut frac_part = abs_value - (int_part as f32);
+
+    // Scale fractional part manually (no powi)
+    let mut scale = 1.0;
+    for _ in 0..decimals {
+        scale *= 10.0;
+    }
+
+    frac_part = frac_part * scale;
+    let frac_part = frac_part as u32;
+
+    if is_negative {
+        let _ = buf.write_char('-');
+    }
+
+    let _ = write!(buf, "{}", int_part);
+    if decimals > 0 {
+        let _ = buf.write_char('.');
+        let _ = write!(buf, "{:0width$}", frac_part, width = decimals as usize);
+    }
+
+    buf
+}
+
+pub fn draw_measurements<D>(target: &mut D, readout: Readout) -> Result<(), ()>
 where
     D: Display,
 {
-    let font = FontRenderer::new::<fonts::u8g2_font_logisoso32_tn>();
+    let font: FontRenderer = FontRenderer::new::<fonts::u8g2_font_logisoso32_tn>();
 
-    // let text = "12.034";
+    // let mut style = U8g2TextStyle::new(fonts::u8g2_font_logisoso32_tn, Rgb565::CSS_WHITE);
+    // let pos = Point::new(122, 30);
+    // let string = format_f32::<8>(readout.voltage, 3);
+    // let text = string.as_str();
 
+    // let metrics = style.measure_string(text, pos, Baseline::Top);
+
+    // let rect =  metrics.bounding_box.translate(Point::new(-(metrics.bounding_box.size.width as i32), 0));
+
+    // let color_iter = {
+    //     move || -> Option<D::Color> {
+    //         Some(Rgb565::BLUE)
+    //     }
+    // };
+
+    // target.fill_contiguous(&rect, core::iter::from_fn(color_iter)).map_err(|_| ())?;
+
+    // let mut style = U8g2TextStyle::new(fonts::u8g2_font_7_Seg_33x19_mn, Rgb565::CSS_WHITE);
+    // style.set_background_color(Some(Rgb565::BLACK));
+
+    // let align = TextStyleBuilder::new()
+    //     .alignment(Alignment::Right)
+    //     .baseline(Baseline::Top)
+    //     .build();
+
+    // Text::with_text_style(
+    //     format_f32::<8>(readout.voltage, 3).as_str(),
+    //     Point::new(122, 30),
+    //     style.clone(),
+    //     align,
+    // )
+    // .draw(target)
+    // .map_err(|_| ())?;
+
+    // Now render the text on top
     font.render_aligned(
-        "12.034",
+        format_f32::<8>(readout.voltage, 3).as_str(),
         Point::new(122, 30),
         VerticalPosition::Top,
         HorizontalAlignment::Right,
@@ -190,8 +261,17 @@ where
     )
     .map_err(|_| ())?;
 
+    // Text::with_text_style(
+    //     format_f32::<8>(readout.current, 3).as_str(),
+    //     Point::new(122, 30 + 62),
+    //     style.clone(),
+    //     align,
+    // )
+    // .draw(target)
+    // .map_err(|_| ())?;
+
     font.render_aligned(
-        "5.678",
+        format_f32::<8>(readout.current, 3).as_str(),
         Point::new(122, 30 + 62),
         VerticalPosition::Top,
         HorizontalAlignment::Right,
@@ -201,7 +281,7 @@ where
     .map_err(|_| ())?;
 
     font.render_aligned(
-        "91.023",
+        format_f32::<8>(readout.power, 3).as_str(),
         Point::new(122, 30 + 124),
         VerticalPosition::Top,
         HorizontalAlignment::Right,
@@ -209,6 +289,15 @@ where
         target,
     )
     .map_err(|_| ())?;
+
+    // Text::with_text_style(
+    //     format_f32::<8>(readout.power, 3).as_str(),
+    //     Point::new(122, 30 + 124),
+    //     style,
+    //     align,
+    // )
+    // .draw(target)
+    // .map_err(|_| ())?;
 
     Ok(())
 }
@@ -313,6 +402,105 @@ where
             target,
         )
         .map_err(|_| ())?;
+
+    Ok(())
+}
+
+pub fn draw_power_header<D>(target: &mut D) -> Result<(), ()>
+where
+    D: DrawTarget<Color = Rgb565>,
+{
+    let font = FontRenderer::new::<fonts::u8g2_font_open_iconic_all_4x_t>();
+
+    font.render_aligned(
+        "\u{0060}",
+        Point::new(0, 16),
+        VerticalPosition::Center,
+        HorizontalAlignment::Left,
+        FontColor::Transparent(Rgb565::CSS_DARK_GRAY),
+        target,
+    )
+    .map_err(|_| ())?;
+
+    let mode_font = FontRenderer::new::<fonts::u8g2_font_helvB08_tf>();
+
+    mode_font
+        .render_aligned(
+            "USB-C PD",
+            Point::new(36, 6),
+            VerticalPosition::Center,
+            HorizontalAlignment::Left,
+            FontColor::Transparent(Rgb565::CSS_DARK_GRAY),
+            target,
+        )
+        .map_err(|_| ())?;
+
+    mode_font
+        .render_aligned(
+            "20 V  5 A",
+            Point::new(36, 16),
+            VerticalPosition::Center,
+            HorizontalAlignment::Left,
+            FontColor::Transparent(Rgb565::CSS_DARK_GRAY),
+            target,
+        )
+        .map_err(|_| ())?;
+
+    mode_font
+        .render_aligned(
+            "100 W",
+            Point::new(36, 26),
+            VerticalPosition::Center,
+            HorizontalAlignment::Left,
+            FontColor::Transparent(Rgb565::CSS_DARK_GRAY),
+            target,
+        )
+        .map_err(|_| ())?;
+
+    Ok(())
+}
+
+pub fn draw_buttons<D>(target: &mut D) -> Result<(), ()>
+where
+    D: DrawTarget<Color = Rgb565>,
+{
+    let font = FontRenderer::new::<fonts::u8g2_font_open_iconic_all_2x_t>();
+    let box_style = PrimitiveStyleBuilder::new()
+        // .fill_color(Rgb565::CSS_WHITE)
+        .stroke_color(Rgb565::CSS_WHITE)
+        .stroke_width(2)
+        .stroke_alignment(StrokeAlignment::Inside)
+        .build();
+
+    //https://github.com/olikraus/u8g2/wiki/fntgrpiconic
+
+    let gap = 64;
+    let w = 60;
+
+    let icons = ['\u{0078}', '\u{0081}', '\u{00CC}'];
+
+    for (i, &icon) in icons.iter().enumerate() {
+        let center = 354 - (3 - i as i32) * gap;
+        let left = center - w / 2;
+
+        RoundedRectangle::new(
+            Rectangle::new(Point::new(left, 0), Size::new(w as u32, 30)),
+            CornerRadii::new(Size::new(10, 10)),
+        )
+        .into_styled(box_style)
+        .draw(target)
+        .map_err(|_| ())?;
+
+        font.render_aligned(
+            icon,
+            Point::new(center, 15),
+            VerticalPosition::Center,
+            HorizontalAlignment::Center,
+            FontColor::Transparent(Rgb565::CSS_WHITE),
+            target,
+        )
+        .map_err(|_| ())?;
+    }
 
     Ok(())
 }
