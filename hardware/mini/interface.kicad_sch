@@ -2065,6 +2065,12 @@
 		(uuid "561ca739-b56a-4c7b-9952-799d32779dc9")
 	)
 	(junction
+		(at 270.51 52.07)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "6080d8cf-e7a3-4df9-bea0-8d2d2fc28a0a")
+	)
+	(junction
 		(at 72.39 83.82)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -2087,12 +2093,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "869ed2e8-e9d6-48bc-baaf-44f87f0cae5f")
-	)
-	(junction
-		(at 262.89 85.09)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "8749e8fb-7fcc-41df-93f2-d826c5eee41a")
 	)
 	(junction
 		(at 157.48 95.25)
@@ -2382,6 +2382,16 @@
 	)
 	(wire
 		(pts
+			(xy 259.08 74.93) (xy 265.43 74.93)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2da0f7e4-aec4-4d13-88f1-548b5202275b")
+	)
+	(wire
+		(pts
 			(xy 46.99 83.82) (xy 48.26 83.82)
 		)
 		(stroke
@@ -2492,6 +2502,16 @@
 	)
 	(wire
 		(pts
+			(xy 274.32 52.07) (xy 274.32 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3abb12cb-b7cd-4e9e-bb29-64d5a3047878")
+	)
+	(wire
+		(pts
 			(xy 38.1 119.38) (xy 38.1 120.65)
 		)
 		(stroke
@@ -2549,16 +2569,6 @@
 			(type default)
 		)
 		(uuid "406f7dfb-cd9d-41da-a88f-f91a0b55eb61")
-	)
-	(wire
-		(pts
-			(xy 259.08 74.93) (xy 265.43 74.93)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "43ff7fed-e52d-4cfa-ad3d-d6547151f68c")
 	)
 	(wire
 		(pts
@@ -2639,6 +2649,16 @@
 			(type default)
 		)
 		(uuid "4cdb82d7-5edd-4d73-a8c9-ed4563e5c488")
+	)
+	(wire
+		(pts
+			(xy 262.89 57.15) (xy 262.89 52.07)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4dacd405-8ecd-46d5-bede-6f22f6ef1653")
 	)
 	(wire
 		(pts
@@ -2882,6 +2902,16 @@
 	)
 	(wire
 		(pts
+			(xy 270.51 52.07) (xy 274.32 52.07)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "82aac311-e551-4ab7-9631-95fb8573ed88")
+	)
+	(wire
+		(pts
 			(xy 157.48 76.2) (xy 157.48 95.25)
 		)
 		(stroke
@@ -2919,6 +2949,16 @@
 			(type default)
 		)
 		(uuid "88c09a3d-d621-4272-9e69-abab80427241")
+	)
+	(wire
+		(pts
+			(xy 262.89 52.07) (xy 270.51 52.07)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "89138e4d-4f88-4344-a61a-aef0626810a6")
 	)
 	(wire
 		(pts
@@ -3119,16 +3159,6 @@
 			(type default)
 		)
 		(uuid "b7275330-0575-48ee-9f9f-d53b2cd0acde")
-	)
-	(wire
-		(pts
-			(xy 270.51 91.44) (xy 270.51 90.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b7858da5-6041-4653-9d0e-b4459f65bcb2")
 	)
 	(wire
 		(pts
@@ -3342,16 +3372,6 @@
 	)
 	(wire
 		(pts
-			(xy 262.89 57.15) (xy 262.89 85.09)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d6392961-2145-4294-aafa-8ce8e32d69b0")
-	)
-	(wire
-		(pts
 			(xy 257.81 111.76) (xy 262.89 111.76)
 		)
 		(stroke
@@ -3412,7 +3432,7 @@
 	)
 	(wire
 		(pts
-			(xy 262.89 91.44) (xy 270.51 91.44)
+			(xy 262.89 91.44) (xy 274.32 91.44)
 		)
 		(stroke
 			(width 0)
@@ -5067,7 +5087,8 @@
 	)
 	(symbol
 		(lib_id "Connector_Generic_Shielded:Conn_01x12_Shielded")
-		(at 270.51 69.85 0)
+		(at 270.51 72.39 0)
+		(mirror x)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -5075,7 +5096,7 @@
 		(dnp no)
 		(uuid "3e9d4297-d0d5-47f4-9d34-0665419aaa8b")
 		(property "Reference" "J4"
-			(at 270.51 50.8 0)
+			(at 288.036 92.202 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5083,7 +5104,7 @@
 			)
 		)
 		(property "Value" "FPC_12P_BOTTOM_CONTACT"
-			(at 270.51 53.34 0)
+			(at 288.036 89.662 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5091,7 +5112,7 @@
 			)
 		)
 		(property "Footprint" "protovolt_mini_fp:JUSHUO_AFC07-S12ECA-00_1x12-1MP_P0.5mm_Horizontal"
-			(at 270.51 69.85 0)
+			(at 270.51 72.39 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5100,7 +5121,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 270.51 69.85 0)
+			(at 270.51 72.39 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5109,7 +5130,7 @@
 			)
 		)
 		(property "Description" "Generic shielded connector, single row, 01x12, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 270.51 69.85 0)
+			(at 270.51 72.39 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5118,7 +5139,7 @@
 			)
 		)
 		(property "LCSC" "C262559"
-			(at 270.51 69.85 0)
+			(at 270.51 72.39 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6001,7 +6022,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "5.1k"
+		(property "Value" "10k"
 			(at 229.362 126.238 90)
 			(effects
 				(font
@@ -6037,7 +6058,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C25905"
+		(property "LCSC" "C25744"
 			(at 240.03 127 0)
 			(effects
 				(font

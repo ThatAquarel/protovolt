@@ -2114,7 +2114,7 @@
 				)
 			)
 		)
-		(property "Value" "56p"
+		(property "Value" "47p"
 			(at 176.53 97.282 0)
 			(effects
 				(font
@@ -2149,7 +2149,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C107007"
+		(property "LCSC" "C1567"
 			(at 181.61 96.52 0)
 			(effects
 				(font
@@ -2466,7 +2466,7 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "ccb6904a-ac29-4941-aaa2-750e87704095")
 		(property "Reference" "R11"
 			(at 117.602 95.504 90)

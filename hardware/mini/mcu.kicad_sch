@@ -3271,16 +3271,6 @@
 	)
 	(wire
 		(pts
-			(xy 218.44 153.67) (xy 226.06 153.67)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3cb7adcc-bbdf-4436-a1af-fff4729d8698")
-	)
-	(wire
-		(pts
 			(xy 157.48 138.43) (xy 157.48 140.97)
 		)
 		(stroke
@@ -3581,7 +3571,7 @@
 	)
 	(wire
 		(pts
-			(xy 118.11 158.75) (xy 123.19 158.75)
+			(xy 118.11 158.75) (xy 128.27 158.75)
 		)
 		(stroke
 			(width 0)
@@ -3638,6 +3628,16 @@
 			(type default)
 		)
 		(uuid "62a30232-d1f1-415b-a046-da9ff756bb01")
+	)
+	(wire
+		(pts
+			(xy 218.44 153.67) (xy 226.06 153.67)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "62e450a5-0f06-4c42-a9af-342a47f8e3bf")
 	)
 	(wire
 		(pts
@@ -4571,13 +4571,13 @@
 	)
 	(wire
 		(pts
-			(xy 118.11 135.89) (xy 128.27 135.89)
+			(xy 118.11 135.89) (xy 123.19 135.89)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "f32b8d5a-e068-4c97-95c2-669c3ddc57ae")
+		(uuid "f1ab7927-029b-4600-8408-4592d5dec8e4")
 	)
 	(wire
 		(pts
@@ -4668,6 +4668,16 @@
 			(type default)
 		)
 		(uuid "ff2e223c-9eb1-4719-92b2-82c01657ad15")
+	)
+	(label "P20"
+		(at 218.44 153.67 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "094d1fba-ba46-4667-9b8f-03ec74ad6e18")
 	)
 	(label "QSPI_SCLK"
 		(at 55.88 118.11 0)
@@ -4829,15 +4839,15 @@
 		)
 		(uuid "c32c0150-f4ae-4b06-92e9-ab0241697fa6")
 	)
-	(label "P28"
-		(at 218.44 153.67 0)
+	(label "P20"
+		(at 123.19 135.89 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
-		(uuid "d998df95-ce05-4c29-9045-b6340ac8eede")
+		(uuid "d4b90e98-e5fb-49a5-b5c3-06c257677479")
 	)
 	(label "QSPI_SD1"
 		(at 214.63 64.77 0)
@@ -4848,16 +4858,6 @@
 			(justify left bottom)
 		)
 		(uuid "f1687dd3-25b3-4540-b1ea-dee5b3ce2ae9")
-	)
-	(label "P28"
-		(at 123.19 158.75 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "f239f005-b97c-4520-bd1a-5955af3b400b")
 	)
 	(label "QSPI_SS"
 		(at 55.88 102.87 0)
@@ -4890,17 +4890,6 @@
 			(justify left)
 		)
 		(uuid "24c27e05-7708-4caa-8e6b-2d98c08b653d")
-	)
-	(hierarchical_label "DISP_RST"
-		(shape output)
-		(at 128.27 135.89 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "2d0b3a1e-1534-47fe-be16-22b7370b328d")
 	)
 	(hierarchical_label "USB_GPIO"
 		(shape input)
@@ -5144,6 +5133,17 @@
 		)
 		(uuid "cea46a69-3ec6-43ed-9c74-5b0709def257")
 	)
+	(hierarchical_label "DISP_RST"
+		(shape output)
+		(at 128.27 158.75 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "cfefd42f-fc3d-4896-973e-9edd2907bb01")
+	)
 	(hierarchical_label "SENS_INT_A"
 		(shape input)
 		(at 172.72 115.57 0)
@@ -5239,7 +5239,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "5.1k"
+		(property "Value" "4.7k"
 			(at 162.814 84.074 0)
 			(effects
 				(font
@@ -5275,7 +5275,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C25905"
+		(property "LCSC" "C25900"
 			(at 162.56 78.74 0)
 			(effects
 				(font
@@ -5355,7 +5355,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C25905"
+		(property "LCSC" "C25744"
 			(at 229.87 52.07 0)
 			(effects
 				(font
@@ -5596,6 +5596,72 @@
 			(project "mini"
 				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/8fbd1251-7beb-4aac-9406-53fe608f326c"
 					(reference "#PWR045")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 226.06 153.67 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "18c28556-4ee6-45f9-abb1-d7b0449d4dbd")
+		(property "Reference" "TP1"
+			(at 231.14 152.146 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "P29"
+			(at 231.14 154.432 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 226.06 158.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 226.06 158.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 226.06 153.67 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "062b7477-0d15-4805-93a8-c634e565b661")
+		)
+		(instances
+			(project "mini"
+				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/8fbd1251-7beb-4aac-9406-53fe608f326c"
+					(reference "TP1")
 					(unit 1)
 				)
 			)
@@ -6071,7 +6137,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "5.1k"
+		(property "Value" "4.7k"
 			(at 157.734 84.074 0)
 			(effects
 				(font
@@ -6107,7 +6173,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C25905"
+		(property "LCSC" "C25900"
 			(at 157.48 78.74 0)
 			(effects
 				(font
@@ -7022,7 +7088,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "5.1k"
+		(property "Value" "4.7k"
 			(at 147.828 84.074 0)
 			(effects
 				(font
@@ -7058,7 +7124,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C25905"
+		(property "LCSC" "C25900"
 			(at 147.32 78.74 0)
 			(effects
 				(font
@@ -7166,7 +7232,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "5.1k"
+		(property "Value" "4.7k"
 			(at 152.654 84.074 0)
 			(effects
 				(font
@@ -7202,7 +7268,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C25905"
+		(property "LCSC" "C25900"
 			(at 152.4 78.74 0)
 			(effects
 				(font
@@ -7588,7 +7654,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "5.1k"
+		(property "Value" "4.7k"
 			(at 157.988 139.954 0)
 			(effects
 				(font
@@ -7624,7 +7690,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C25905"
+		(property "LCSC" "C25900"
 			(at 157.48 134.62 0)
 			(effects
 				(font
@@ -8484,7 +8550,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "5.1k"
+		(property "Value" "4.7k"
 			(at 162.814 139.954 0)
 			(effects
 				(font
@@ -8520,7 +8586,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C25905"
+		(property "LCSC" "C25900"
 			(at 162.56 134.62 0)
 			(effects
 				(font
@@ -8826,72 +8892,6 @@
 			(project "mini"
 				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/8fbd1251-7beb-4aac-9406-53fe608f326c"
 					(reference "#PWR036")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Connector:TestPoint")
-		(at 226.06 153.67 270)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "c3af0afb-47c6-45ef-afcc-2bfebe203b99")
-		(property "Reference" "TP5"
-			(at 231.14 152.146 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "P28"
-			(at 231.14 154.432 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
-			(at 226.06 158.75 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 226.06 158.75 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "test point"
-			(at 226.06 153.67 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "695ddbaf-946f-4e8f-b014-5c47bdcc2a51")
-		)
-		(instances
-			(project "mini"
-				(path "/5aaaac9a-5acd-4aef-ad51-a6d04aa88705/8fbd1251-7beb-4aac-9406-53fe608f326c"
-					(reference "TP5")
 					(unit 1)
 				)
 			)
@@ -9256,7 +9256,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "5.1k"
+		(property "Value" "4.7k"
 			(at 152.654 114.554 0)
 			(effects
 				(font
@@ -9292,7 +9292,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C25905"
+		(property "LCSC" "C25900"
 			(at 152.4 109.22 0)
 			(effects
 				(font
@@ -9412,7 +9412,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "5.1k"
+		(property "Value" "4.7k"
 			(at 147.828 114.554 0)
 			(effects
 				(font
@@ -9448,7 +9448,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C25905"
+		(property "LCSC" "C25900"
 			(at 147.32 109.22 0)
 			(effects
 				(font
