@@ -25,13 +25,15 @@ use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::{Channel, Sender};
 use embassy_time::{Duration, Ticker, Timer};
 
+use embedded_graphics::pixelcolor::Rgb565;
+use embedded_graphics::prelude::RgbColor;
 use embedded_hal::spi::SpiBus;
 use lib::event::InterfaceEvent;
 use lib::interface::{ButtonsInterface, matrix};
 
 use crate::lib::display::DisplayInterface;
 use crate::lib::event::{AppEvent, DisplayTask, HardwareEvent};
-use crate::ui::controls::draw_self_check;
+use crate::ui::controls::{clear, draw_channel_background, draw_self_check};
 use embassy_rp::gpio::{Level, Output};
 
 use {defmt_rtt as _, panic_probe as _};
@@ -61,6 +63,9 @@ async fn main(spawner: Spawner) {
     );
     let mut target = display.target;
 
+    clear(&mut target);
+    draw_self_check(&mut target);
+
 
     // State Machine
     let mut a = App::new();
@@ -83,7 +88,9 @@ async fn main(spawner: Spawner) {
             if let Some(display_task) = task.display {
                 match display_task {
                     DisplayTask::SetupSplash => {
-                        draw_self_check(&mut target);
+                        clear(&mut target);
+                        draw_channel_background(&mut target, Rgb565::RED);
+                        // draw_self_check(&mut target);
                     }
                     DisplayTask::ConfirmPowerDelivery => {
                         

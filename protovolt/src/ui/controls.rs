@@ -15,6 +15,14 @@ use u8g2_fonts::{
 
 use crate::ui::Display;
 
+
+pub fn clear<D>(target: &mut D) -> Result<(), D::Error>
+where
+    D: Display,
+{
+    target.clear(Rgb565::BLACK)
+}
+
 pub fn draw_channel_background<D>(target: &mut D, color: Rgb565) -> Result<(), D::Error>
 where
     D: Display,

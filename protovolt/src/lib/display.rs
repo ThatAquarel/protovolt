@@ -22,14 +22,14 @@ mod st7789 {
     use embassy_rp::spi;
     use mipidsi::options::{ColorInversion, Rotation};
 
-    pub const SPI_FREQ: u32 = 32_00_000;
+    pub const SPI_FREQ: u32 = 64_00_000;
     pub const SPI_PHASE: spi::Phase = spi::Phase::CaptureOnSecondTransition;
     pub const SPI_POLARITY: spi::Polarity = spi::Polarity::IdleHigh;
 
     pub const WIDTH: u16 = 240;
     pub const HEIGHT: u16 = 320;
     pub const COLOR_INVERSION: ColorInversion = ColorInversion::Inverted;
-    pub const ORIENTATION: Rotation = Rotation::Deg90;
+    pub const ORIENTATION: Rotation = Rotation::Deg270;
 }
 
 pub struct DisplayInterface<'d, T: Instance> {
