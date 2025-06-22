@@ -87,37 +87,21 @@ pub fn draw_units<D>(target: &mut D) -> Result<(), ()>
 where
     D: Display,
 {
-    let font = FontRenderer::new::<fonts::u8g2_font_helvR14_tf>();
+    let font = FontRenderer::new::<fonts::u8g2_font_helvR14_tr>();
 
-    font.render_aligned(
-        "V",
-        Point::new(140, 30),
+    let units = ["V", "A", "W"];
+
+    for (i, unit) in units.iter().enumerate() {
+        font.render_aligned(
+        *unit,
+        Point::new(140, 30 + 62 * i as i32),
         VerticalPosition::Top,
         HorizontalAlignment::Center,
         FontColor::Transparent(Rgb565::CSS_WHITE),
         target,
     )
-    .map_err(|_| ())?;
-
-    font.render_aligned(
-        "A",
-        Point::new(140, 30 + 62),
-        VerticalPosition::Top,
-        HorizontalAlignment::Center,
-        FontColor::Transparent(Rgb565::CSS_WHITE),
-        target,
-    )
-    .map_err(|_| ())?;
-
-    font.render_aligned(
-        "W",
-        Point::new(140, 30 + 124),
-        VerticalPosition::Top,
-        HorizontalAlignment::Center,
-        FontColor::Transparent(Rgb565::CSS_WHITE),
-        target,
-    )
-    .map_err(|_| ())?;
+            .map_err(|_| ())?;    
+    }
 
     Ok(())
 }
@@ -197,7 +181,6 @@ pub fn format_f32<const N: usize>(value: f32, decimals: u32) -> String<N> {
     frac_part = frac_part * scale;
     let frac_part = frac_part as u32;
 
-    
     if is_negative {
         let _ = buf.write_char('-');
     }
@@ -215,10 +198,6 @@ pub fn format_f32<const N: usize>(value: f32, decimals: u32) -> String<N> {
     buf
 }
 
-static mut PREV_VOLTAGE: f32 = 0f32;
-static mut PREV_CURRENT: f32 = 0f32;
-static mut PREV_POWER: f32 = 0f32;
-
 pub fn draw_measurements<D>(target: &mut D, readout: Readout) -> Result<(), ()>
 where
     D: Display,
@@ -231,210 +210,21 @@ where
         .baseline(Baseline::Top)
         .build();
 
-    Text::with_text_style(
-        format_f32::<8>(readout.voltage, 3).as_str(),
-        Point::new(122, 30),
-        style.clone(),
-        align,
-    )
-    .draw(target)
-    .map_err(|_| ())?;
-
-
-    Text::with_text_style(
-        format_f32::<8>(readout.current, 3).as_str(),
-        Point::new(122, 30 + 62),
-        style.clone(),
-        align,
-    )
-    .draw(target)
-    .map_err(|_| ())?;
-
-
-    Text::with_text_style(
-        format_f32::<8>(readout.power, 3).as_str(),
-        Point::new(122, 30 + 124),
-        style,
-        align,
-    )
-    .draw(target)
-    .map_err(|_| ())?;
-
-//     unsafe {
-// font.render_aligned(
-//         format_f32::<8>(PREV_VOLTAGE, 3).as_str(),
-//         Point::new(122, 30),
-//         VerticalPosition::Top,
-//         HorizontalAlignment::Right,
-//         FontColor::Transparent(Rgb565::CSS_BLACK),
-//         target,
-//     )
-//     .map_err(|_| ())?;
-
-//     font.render_aligned(
-//         format_f32::<8>(PREV_CURRENT, 3).as_str(),
-//         Point::new(122, 30 + 62),
-//         VerticalPosition::Top,
-//         HorizontalAlignment::Right,
-//         FontColor::Transparent(Rgb565::CSS_BLACK),
-//         target,
-//     )
-//     .map_err(|_| ())?;
-
-//     font.render_aligned(
-//         format_f32::<8>(PREV_POWER, 3).as_str(),
-//         Point::new(122, 30 + 124),
-//         VerticalPosition::Top,
-//         HorizontalAlignment::Right,
-//         FontColor::Transparent(Rgb565::CSS_BLACK),
-//         target,
-//     )
-//     .map_err(|_| ())?;
-//     }
-    
-
-    // font.render_aligned(
-    //     format_f32::<8>(readout.voltage, 3).as_str(),
-    //     Point::new(122, 30),
-    //     VerticalPosition::Top,
-    //     HorizontalAlignment::Right,
-    //     FontColor::Transparent(Rgb565::CSS_WHITE),
-    //     target,
-    // )
-    // .map_err(|_| ())?;
-
-    // font.render_aligned(
-    //     format_f32::<8>(readout.current, 3).as_str(),
-    //     Point::new(122, 30 + 62),
-    //     VerticalPosition::Top,
-    //     HorizontalAlignment::Right,
-    //     FontColor::Transparent(Rgb565::CSS_WHITE),
-    //     target,
-    // )
-    // .map_err(|_| ())?;
-
-    // font.render_aligned(
-    //     format_f32::<8>(readout.power, 3).as_str(),
-    //     Point::new(122, 30 + 124),
-    //     VerticalPosition::Top,
-    //     HorizontalAlignment::Right,
-    //     FontColor::Transparent(Rgb565::CSS_WHITE),
-    //     target,
-    // )
-    // .map_err(|_| ())?;
-
-    unsafe {
-        PREV_VOLTAGE = readout.voltage;
-        PREV_CURRENT = readout.current;
-        PREV_POWER = readout.power;
+    let readouts = [readout.voltage, readout.current, readout.power];
+    for (i, value) in readouts.iter().enumerate() {
+        Text::with_text_style(
+            format_f32::<8>(*value, 3).as_str(),
+            Point::new(122, 30 + 62 * i as i32),
+            style.clone(),
+            align,
+        )
+        .draw(target)
+        .map_err(|_| ())?;
     }
 
     Ok(())
 }
 
-pub fn draw_self_check<D>(target: &mut D) -> Result<(), ()>
-where
-    D: DrawTarget<Color = Rgb565>,
-{
-    let bmp: Bmp<Rgb565> = Bmp::from_slice(include_bytes!("../assets/protovolt_mini.bmp")).unwrap();
-
-    // To draw the `bmp` object to the display it needs to be wrapped in an `Image` object to set
-    // the position at which it should drawn. Here, the top left corner of the image is set to
-    // `(32, 32)`.
-    let left_padding = (320 - 220) / 2;
-    let image: Image<'_, Bmp<'_, Rgb565>> = Image::new(&bmp, Point::new(left_padding, 32));
-
-    // Display the image
-    image.draw(target).map_err(|_| ())?;
-
-    let font = FontRenderer::new::<fonts::u8g2_font_helvB08_tf>();
-
-    font.render_aligned(
-        "INPUT",
-        Point::new(160 - 60, 0 + 100 + 48),
-        VerticalPosition::Center,
-        HorizontalAlignment::Left,
-        FontColor::Transparent(Rgb565::CSS_WHITE),
-        target,
-    )
-    .map_err(|_| ())?;
-
-    font.render_aligned(
-        "20V 5A",
-        Point::new(160 - 60 + 10, 12 + 100 + 48),
-        VerticalPosition::Center,
-        HorizontalAlignment::Left,
-        FontColor::Transparent(Rgb565::CSS_DIM_GRAY),
-        target,
-    )
-    .map_err(|_| ())?;
-
-    font.render_aligned(
-        "USB-C PD",
-        Point::new(160 - 60 + 10, 24 + 100 + 48),
-        VerticalPosition::Center,
-        HorizontalAlignment::Left,
-        FontColor::Transparent(Rgb565::CSS_DIM_GRAY),
-        target,
-    )
-    .map_err(|_| ())?;
-
-    font.render_aligned(
-        "SELF-CHECK",
-        Point::new(160 - 60, 40 + 100 + 48),
-        VerticalPosition::Center,
-        HorizontalAlignment::Left,
-        FontColor::Transparent(Rgb565::CSS_WHITE),
-        target,
-    )
-    .map_err(|_| ())?;
-
-    font.render_aligned(
-        "SW v0.1.9",
-        Point::new(160 - 60 + 10, 40 + 12 + 100 + 48),
-        VerticalPosition::Center,
-        HorizontalAlignment::Left,
-        FontColor::Transparent(Rgb565::CSS_DIM_GRAY),
-        target,
-    )
-    .map_err(|_| ())?;
-
-    font.render_aligned(
-        "HW v0.1.1",
-        Point::new(160 - 60 + 10, 40 + 24 + 100 + 48),
-        VerticalPosition::Center,
-        HorizontalAlignment::Left,
-        FontColor::Transparent(Rgb565::CSS_DIM_GRAY),
-        target,
-    )
-    .map_err(|_| ())?;
-
-    let icons = FontRenderer::new::<fonts::u8g2_font_open_iconic_all_2x_t>();
-
-    icons
-        .render_aligned(
-            "\u{0073}",
-            Point::new(160 + 60, 0 + 100 + 48),
-            VerticalPosition::Center,
-            HorizontalAlignment::Right,
-            FontColor::Transparent(Rgb565::CSS_WHITE),
-            target,
-        )
-        .map_err(|_| ())?;
-
-    icons
-        .render_aligned(
-            "\u{0073}",
-            Point::new(160 + 60, 40 + 100 + 48),
-            VerticalPosition::Center,
-            HorizontalAlignment::Right,
-            FontColor::Transparent(Rgb565::CSS_WHITE),
-            target,
-        )
-        .map_err(|_| ())?;
-
-    Ok(())
-}
 
 pub fn draw_power_header<D>(target: &mut D) -> Result<(), ()>
 where
