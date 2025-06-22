@@ -197,8 +197,13 @@ pub fn format_f32<const N: usize>(value: f32, decimals: u32) -> String<N> {
     frac_part = frac_part * scale;
     let frac_part = frac_part as u32;
 
+    
     if is_negative {
         let _ = buf.write_char('-');
+    }
+
+    if int_part < 10 {
+        let _ = buf.write_char('0');
     }
 
     let _ = write!(buf, "{}", int_part);
@@ -210,94 +215,119 @@ pub fn format_f32<const N: usize>(value: f32, decimals: u32) -> String<N> {
     buf
 }
 
+static mut PREV_VOLTAGE: f32 = 0f32;
+static mut PREV_CURRENT: f32 = 0f32;
+static mut PREV_POWER: f32 = 0f32;
+
 pub fn draw_measurements<D>(target: &mut D, readout: Readout) -> Result<(), ()>
 where
     D: Display,
 {
-    let font: FontRenderer = FontRenderer::new::<fonts::u8g2_font_logisoso32_tn>();
+    let mut style = U8g2TextStyle::new(fonts::u8g2_font_logisoso32_tn, Rgb565::CSS_WHITE);
+    style.set_background_color(Some(Rgb565::BLACK));
 
-    // let mut style = U8g2TextStyle::new(fonts::u8g2_font_logisoso32_tn, Rgb565::CSS_WHITE);
-    // let pos = Point::new(122, 30);
-    // let string = format_f32::<8>(readout.voltage, 3);
-    // let text = string.as_str();
+    let align = TextStyleBuilder::new()
+        .alignment(Alignment::Right)
+        .baseline(Baseline::Top)
+        .build();
 
-    // let metrics = style.measure_string(text, pos, Baseline::Top);
-
-    // let rect =  metrics.bounding_box.translate(Point::new(-(metrics.bounding_box.size.width as i32), 0));
-
-    // let color_iter = {
-    //     move || -> Option<D::Color> {
-    //         Some(Rgb565::BLUE)
-    //     }
-    // };
-
-    // target.fill_contiguous(&rect, core::iter::from_fn(color_iter)).map_err(|_| ())?;
-
-    // let mut style = U8g2TextStyle::new(fonts::u8g2_font_7_Seg_33x19_mn, Rgb565::CSS_WHITE);
-    // style.set_background_color(Some(Rgb565::BLACK));
-
-    // let align = TextStyleBuilder::new()
-    //     .alignment(Alignment::Right)
-    //     .baseline(Baseline::Top)
-    //     .build();
-
-    // Text::with_text_style(
-    //     format_f32::<8>(readout.voltage, 3).as_str(),
-    //     Point::new(122, 30),
-    //     style.clone(),
-    //     align,
-    // )
-    // .draw(target)
-    // .map_err(|_| ())?;
-
-    // Now render the text on top
-    font.render_aligned(
+    Text::with_text_style(
         format_f32::<8>(readout.voltage, 3).as_str(),
         Point::new(122, 30),
-        VerticalPosition::Top,
-        HorizontalAlignment::Right,
-        FontColor::Transparent(Rgb565::CSS_WHITE),
-        target,
+        style.clone(),
+        align,
     )
+    .draw(target)
     .map_err(|_| ())?;
 
-    // Text::with_text_style(
-    //     format_f32::<8>(readout.current, 3).as_str(),
-    //     Point::new(122, 30 + 62),
-    //     style.clone(),
-    //     align,
-    // )
-    // .draw(target)
-    // .map_err(|_| ())?;
 
-    font.render_aligned(
+    Text::with_text_style(
         format_f32::<8>(readout.current, 3).as_str(),
         Point::new(122, 30 + 62),
-        VerticalPosition::Top,
-        HorizontalAlignment::Right,
-        FontColor::Transparent(Rgb565::CSS_WHITE),
-        target,
+        style.clone(),
+        align,
     )
+    .draw(target)
     .map_err(|_| ())?;
 
-    font.render_aligned(
+
+    Text::with_text_style(
         format_f32::<8>(readout.power, 3).as_str(),
         Point::new(122, 30 + 124),
-        VerticalPosition::Top,
-        HorizontalAlignment::Right,
-        FontColor::Transparent(Rgb565::CSS_WHITE),
-        target,
+        style,
+        align,
     )
+    .draw(target)
     .map_err(|_| ())?;
 
-    // Text::with_text_style(
+//     unsafe {
+// font.render_aligned(
+//         format_f32::<8>(PREV_VOLTAGE, 3).as_str(),
+//         Point::new(122, 30),
+//         VerticalPosition::Top,
+//         HorizontalAlignment::Right,
+//         FontColor::Transparent(Rgb565::CSS_BLACK),
+//         target,
+//     )
+//     .map_err(|_| ())?;
+
+//     font.render_aligned(
+//         format_f32::<8>(PREV_CURRENT, 3).as_str(),
+//         Point::new(122, 30 + 62),
+//         VerticalPosition::Top,
+//         HorizontalAlignment::Right,
+//         FontColor::Transparent(Rgb565::CSS_BLACK),
+//         target,
+//     )
+//     .map_err(|_| ())?;
+
+//     font.render_aligned(
+//         format_f32::<8>(PREV_POWER, 3).as_str(),
+//         Point::new(122, 30 + 124),
+//         VerticalPosition::Top,
+//         HorizontalAlignment::Right,
+//         FontColor::Transparent(Rgb565::CSS_BLACK),
+//         target,
+//     )
+//     .map_err(|_| ())?;
+//     }
+    
+
+    // font.render_aligned(
+    //     format_f32::<8>(readout.voltage, 3).as_str(),
+    //     Point::new(122, 30),
+    //     VerticalPosition::Top,
+    //     HorizontalAlignment::Right,
+    //     FontColor::Transparent(Rgb565::CSS_WHITE),
+    //     target,
+    // )
+    // .map_err(|_| ())?;
+
+    // font.render_aligned(
+    //     format_f32::<8>(readout.current, 3).as_str(),
+    //     Point::new(122, 30 + 62),
+    //     VerticalPosition::Top,
+    //     HorizontalAlignment::Right,
+    //     FontColor::Transparent(Rgb565::CSS_WHITE),
+    //     target,
+    // )
+    // .map_err(|_| ())?;
+
+    // font.render_aligned(
     //     format_f32::<8>(readout.power, 3).as_str(),
     //     Point::new(122, 30 + 124),
-    //     style,
-    //     align,
+    //     VerticalPosition::Top,
+    //     HorizontalAlignment::Right,
+    //     FontColor::Transparent(Rgb565::CSS_WHITE),
+    //     target,
     // )
-    // .draw(target)
     // .map_err(|_| ())?;
+
+    unsafe {
+        PREV_VOLTAGE = readout.voltage;
+        PREV_CURRENT = readout.current;
+        PREV_POWER = readout.power;
+    }
 
     Ok(())
 }

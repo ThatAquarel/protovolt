@@ -203,9 +203,9 @@ async fn main(spawner: Spawner) {
 
 #[embassy_executor::task]
 async fn poll_readout(channel: Sender<'static, ThreadModeRawMutex, HardwareEvent, 32>) {
-    let mut ticker = Ticker::every(Duration::from_hz(10)); // 100ms
-    let mut v: f32 = 0.0;
-    let mut c: f32 = 0.0;
+    let mut ticker = Ticker::every(Duration::from_hz(100)); // 100ms
+    let mut v: f32 = 10.0;
+    let mut c: f32 = 5.0;
     let mut p: f32 = 0.0;
 
     loop {
@@ -234,9 +234,9 @@ async fn poll_readout(channel: Sender<'static, ThreadModeRawMutex, HardwareEvent
             .await;
 
         // Increment values slightly
-        v += 0.5;
-        c += 0.1;
-        p += 1.0;
+        v += 0.001;
+        c += 0.005;
+        p += 0.002;
 
         // Loop back when max is reached
         if v > 20.0 {
