@@ -1,18 +1,16 @@
 use embedded_graphics::{
-    image::Image,
     pixelcolor::Rgb565,
     prelude::*,
     primitives::{
-        CornerRadii, PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, RoundedRectangle,
-        StrokeAlignment, StyledDrawable,
+        CornerRadii, PrimitiveStyleBuilder, Rectangle, RoundedRectangle,
+        StrokeAlignment,
     },
     text::{
         Alignment, Baseline, Text, TextStyleBuilder,
-        renderer::{CharacterStyle, TextRenderer},
+        renderer::CharacterStyle,
     },
 };
 
-use tinybmp::Bmp;
 use u8g2_fonts::{
     FontRenderer, U8g2TextStyle, fonts,
     types::{FontColor, HorizontalAlignment, VerticalPosition},

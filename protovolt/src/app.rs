@@ -1,4 +1,3 @@
-use cortex_m::register::control::read;
 use embassy_time::Duration;
 
 use defmt::*;

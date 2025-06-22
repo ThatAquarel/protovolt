@@ -1,4 +1,4 @@
-use core::cell::{Ref, RefCell};
+use core::cell::RefCell;
 
 use display_interface_spi::SPIInterface;
 // use embassy_embedded_hal::shared_bus::asynch::spi::SpiDevice;
@@ -7,15 +7,12 @@ use embassy_embedded_hal::shared_bus::blocking::spi::SpiDeviceWithConfig;
 use embassy_rp::Peripheral;
 use embassy_rp::gpio::Output;
 use embassy_rp::spi::{self, Instance, Spi};
-use embassy_rp::{
-    gpio::{AnyPin, Level},
-    spi::{ClkPin, MisoPin, MosiPin},
-};
+use embassy_rp::gpio::{AnyPin, Level};
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_time::Delay;
 use mipidsi::models::ST7789;
-use mipidsi::options::{Orientation, Rotation};
+use mipidsi::options::Orientation;
 use mipidsi::{Builder, Display};
 
 mod st7789 {

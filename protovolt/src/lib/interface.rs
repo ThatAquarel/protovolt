@@ -1,4 +1,3 @@
-use defmt::*;
 
 use crate::lib::{event::InterfaceEvent};
 use embassy_rp::gpio::{AnyPin, Input, Level, Output, Pull};

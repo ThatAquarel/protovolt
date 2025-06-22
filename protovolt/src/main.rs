@@ -18,7 +18,7 @@ use app::App;
 
 use embassy_executor::Spawner;
 use embassy_rp::spi::{self, Spi};
-use embassy_rp::{gpio::Pin, pac::Interrupt::PIO0_IRQ_0};
+use embassy_rp::gpio::Pin;
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
@@ -27,7 +27,6 @@ use embassy_time::{Duration, Ticker, Timer};
 
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
-use embedded_hal::spi::SpiBus;
 use lib::event::InterfaceEvent;
 use lib::interface::{ButtonsInterface, matrix};
 
@@ -35,7 +34,6 @@ use crate::lib::display::DisplayInterface;
 use crate::lib::event::{AppEvent, DisplayTask, HardwareEvent, HardwareTask, Readout};
 use crate::ui::boot;
 use crate::ui::controls;
-use embassy_rp::gpio::{Level, Output};
 
 use {defmt_rtt as _, panic_probe as _};
 
