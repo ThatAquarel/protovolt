@@ -196,28 +196,51 @@ pub fn format_f32<const N: usize>(value: f32, decimals: u32) -> String<N> {
     buf
 }
 
+use embedded_graphics_framebuf::FrameBuf;
+
 pub fn draw_measurements<D>(target: &mut D, readout: Readout) -> Result<(), ()>
 where
     D: Display,
 {
-    let mut style = U8g2TextStyle::new(fonts::u8g2_font_logisoso32_tn, Rgb565::CSS_WHITE);
-    style.set_background_color(Some(Rgb565::BLACK));
+    // let mut style = U8g2TextStyle::new(fonts::u8g2_font_logisoso32_tn, Rgb565::CSS_WHITE);
 
-    let align = TextStyleBuilder::new()
-        .alignment(Alignment::Right)
-        .baseline(Baseline::Top)
-        .build();
+    let font = FontRenderer::new::<fonts::u8g2_font_logisoso32_tn>();
 
+
+    // let align = TextStyleBuilder::new()
+    //     .alignment(Alignment::Left)
+    //     .baseline(Baseline::Top)
+    //     .build();
+    
     let readouts = [readout.voltage, readout.current, readout.power];
     for (i, value) in readouts.iter().enumerate() {
-        Text::with_text_style(
-            format_f32::<8>(*value, 3).as_str(),
-            Point::new(122, 30 + 62 * i as i32),
-            style.clone(),
-            align,
+    
+        let mut data = [Rgb565::BLACK; 108 * 32];
+        let mut fbuf = FrameBuf::new(&mut data, 108, 32);
+
+        // Text::with_text_style(
+        //     format_f32::<8>(*value, 3).as_str(),
+        //     Point::new(-2, -1),
+        //     style.clone(),
+        //     align,
+        // )
+        // .draw(&mut fbuf)
+        // .map_err(|_| ())?;
+
+        font.render_aligned(
+        format_f32::<8>(*value, 3).as_str(),
+            Point::new(108, -1),
+        VerticalPosition::Top,
+        HorizontalAlignment::Right,
+        FontColor::Transparent(Rgb565::CSS_WHITE),
+        &mut fbuf,
         )
-        .draw(target)
         .map_err(|_| ())?;
+
+        let top_left = Point::new(122 - 108, 30 + 62 * i as i32);
+        let area = Rectangle::new(top_left, fbuf.size());
+
+        target.fill_contiguous(&area, data).map_err(|_| ())?;
     }
 
     Ok(())
