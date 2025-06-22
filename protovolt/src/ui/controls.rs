@@ -229,7 +229,7 @@ where
 
         font.render_aligned(
         format_f32::<8>(*value, 3).as_str(),
-            Point::new(108, -1),
+            Point::new(108 + 1, -1),
         VerticalPosition::Top,
         HorizontalAlignment::Right,
         FontColor::Transparent(Rgb565::CSS_WHITE),

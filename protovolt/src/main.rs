@@ -64,16 +64,15 @@ async fn main(spawner: Spawner) {
     let mut target = display.target;
 
     // State Machine
-    let mut a = App::new();
+    let mut a = App::default();
 
     unwrap!(spawner.spawn(poll_interface(buttons, INTERFACE_CHANNEL.sender())));
-    // unwrap!(spawner.spawn(poll_readout(HARDWARE_CHANNEL.sender())));
 
     let hw_sender = HARDWARE_CHANNEL.sender();
 
     hw_sender.send(HardwareEvent::PowerOn).await;
 
-    let mut ticker = Ticker::every(Duration::from_hz(1000));
+    let mut ticker = Ticker::every(Duration::from_hz(100));
 
     loop {
         let mut next_app_task = None;
@@ -137,7 +136,7 @@ async fn main(spawner: Spawner) {
                         controls::draw_buttons(&mut target).unwrap();
 
                         let mut ch_a_section = target.translated(Point::new(0, 40));
-                        controls::draw_channel_background(&mut ch_a_section, Rgb565::CSS_TOMATO)
+                        controls::draw_channel_background(&mut ch_a_section, Rgb565::CSS_DIM_GRAY)
                             .unwrap();
                         controls::draw_header_text(&mut ch_a_section, "CHANNEL A").unwrap();
                         controls::draw_units(&mut ch_a_section).unwrap();
@@ -147,7 +146,7 @@ async fn main(spawner: Spawner) {
                         let mut ch_b_section = target.translated(Point::new(163, 40));
                         controls::draw_channel_background(
                             &mut ch_b_section,
-                            Rgb565::CSS_ROYAL_BLUE,
+                            Rgb565::CSS_DIM_GRAY,
                         )
                         .unwrap();
                         controls::draw_header_text(&mut ch_b_section, "CHANNEL B").unwrap();
@@ -163,6 +162,39 @@ async fn main(spawner: Spawner) {
 
                         controls::draw_measurements(&mut section, readout);
                     }
+                    DisplayTask::UpdateChannelFocus(focus_a, focus_b) => {
+                        let focuses = [focus_a, focus_b];
+
+                        for (i, focus) in focuses.iter().enumerate() {
+                            let mut section = target.translated(Point::new( 163 * i as i32, 40));
+                            
+                            let focus_color = match focus {
+                                lib::event::ChannelFocus::SelectedInactive => Rgb565::CSS_SILVER,
+                                lib::event::ChannelFocus::UnselectedInactive => Rgb565::CSS_DIM_GRAY,
+                                lib::event::ChannelFocus::SelectedActive => match i {
+                                    0 => { Rgb565::CSS_RED }
+                                    1 => { Rgb565::CSS_BLUE }
+                                    _ => { Rgb565::CSS_DIM_GRAY }
+                                },
+                                lib::event::ChannelFocus::UnselectedActive => match i {
+                                    0 => { Rgb565::CSS_DARK_RED }
+                                    1 => { Rgb565::CSS_DARK_BLUE }
+                                    // 0 => { Rgb565::CSS_FIRE_BRICK }
+                                    // 1 => { Rgb565::CSS_MEDIUM_BLUE }
+                                    _ => { Rgb565::CSS_DIM_GRAY }
+                                }
+                            };
+
+                            let text = match i {
+                                0 => "CHANNEL A",
+                                1 => "CHANNEL B",
+                                _ => "",
+                            };
+
+                            controls::draw_channel_background(&mut section, focus_color).unwrap();
+                            controls::draw_header_text(&mut section, text).unwrap();
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -172,36 +204,9 @@ async fn main(spawner: Spawner) {
     }
 }
 
-// #[embassy_executor::task]
-// async fn poll_readout(channel: Sender<'static, ThreadModeRawMutex, HardwareEvent, 32>) {
-//     let mut ticker = Ticker::every(Duration::from_hz(10));
-    
-//     loop {
-//         channel.send(HardwareEvent::ReadoutAcquired(
-//             lib::event::Channel::A,
-//             Readout {
-//                 voltage: 5.001,
-//                 current: 0.122,
-//                 power: 0.056,
-//             },
-//         )).await;
-
-//         channel.send(HardwareEvent::ReadoutAcquired(
-//             lib::event::Channel::B,
-//             Readout {
-//                 voltage: 12.123,
-//                 current: 0.879,
-//                 power: 0.548,
-//             },
-//         )).await;
-
-//         ticker.next().await;
-//     }
-// }
-
 #[embassy_executor::task]
 async fn poll_readout(channel: Sender<'static, ThreadModeRawMutex, HardwareEvent, 32>) {
-    let mut ticker = Ticker::every(Duration::from_hz(100)); // 100ms
+    let mut ticker = Ticker::every(Duration::from_hz(5)); // 100ms
     let mut v: f32 = 10.0;
     let mut c: f32 = 5.0;
     let mut p: f32 = 0.0;
@@ -261,6 +266,8 @@ async fn poll_interface(
 
     loop {
         if let Some(event) = buttons.poll() {
+
+            info!("pressed");
             channel.send(event).await;
         }
         ticker.next().await;

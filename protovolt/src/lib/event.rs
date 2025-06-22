@@ -28,8 +28,7 @@ pub enum InterfaceEvent {
     ButtonEnter,
     ButtonSwitch,
     ButtonSettings,
-    ButtonChannelA,
-    ButtonChannelB,
+    ButtonChannel(Channel),
 }
 
 pub enum AppEvent {
@@ -52,10 +51,18 @@ pub enum HardwareTask {
     DelayedHardwareEvent(Duration, HardwareEvent)
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Channel {
     A,
     B
+}
+
+#[derive(Clone, Copy)]
+pub enum ChannelFocus {
+    SelectedActive,
+    UnselectedActive,
+    SelectedInactive,
+    UnselectedInactive,
 }
 
 pub enum DisplayTask {
@@ -69,8 +76,12 @@ pub enum DisplayTask {
     // Main Readout
     SetupMain,
 
+    // Updates
     UpdateReadout(Channel, Readout),
     UpdateSetpoint(Channel),
+
+    // Channel
+    UpdateChannelFocus(ChannelFocus, ChannelFocus),
 
     // Settings
     SetupSettings
