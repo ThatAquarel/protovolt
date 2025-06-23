@@ -111,7 +111,7 @@ impl Navbar {
         let gap = 64;
         let w = 60;
 
-        let buttons = [icons_2x::CHECKMARK, icons_2x::SETTINGS, icons_2x::SWITCH];
+        let buttons = [icons_2x::CHECKMARK, icons_2x::SWITCH, icons_2x::SETTINGS];
 
         let selected_index = match button_state {
             Some(FunctionButton::Enter) => Some(0),
