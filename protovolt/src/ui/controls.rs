@@ -13,6 +13,7 @@ use u8g2_fonts::{
 };
 
 use crate::{
+    app::SetSelect,
     lib::event::{Limits, Readout},
     ui::{Display, Fonts, Layout, color_scheme, fmt::format_f32, labels},
 };
@@ -174,12 +175,19 @@ impl ControlsScreen {
         &mut self,
         target: &mut D,
         fonts: &Fonts,
+        set_select: Option<SetSelect>,
         limits: Limits,
     ) -> Result<(), ()>
     where
         D: Display,
     {
         let font = &fonts.readout_small;
+
+        let select_index = match set_select {
+            Some(SetSelect::Voltage) => Some(0),
+            Some(SetSelect::Current) => Some(1),
+            _ => None,
+        };
 
         let values = [limits.voltage, limits.current];
         for (i, value) in values.iter().enumerate() {
@@ -190,12 +198,18 @@ impl ControlsScreen {
                 ControlsScreen::SUBMEAS_HEIGHT,
             );
 
+            let color = if select_index == Some(i) {
+                color_scheme::SELECTED
+            } else {
+                color_scheme::UNSELECTED
+            };
+
             font.render_aligned(
                 format_f32::<5>(*value, 2).as_str(),
                 Point::new(ControlsScreen::SUBMEAS_WIDTH as i32, -1),
                 VerticalPosition::Top,
                 HorizontalAlignment::Right,
-                FontColor::Transparent(color_scheme::FONT_SMALL),
+                FontColor::Transparent(color),
                 &mut fbuf,
             )
             .map_err(|_| ())?;
@@ -220,6 +234,7 @@ impl ControlsScreen {
         &mut self,
         target: &mut D,
         fonts: &Fonts,
+        set_select: Option<SetSelect>,
         top_tag: &'static str,
         bottom_tag: &'static str,
     ) -> Result<(), ()>
@@ -229,6 +244,12 @@ impl ControlsScreen {
         let mode_font = &fonts.info_small;
         let tags = [top_tag, bottom_tag];
 
+        let select_index = match set_select {
+            Some(SetSelect::Voltage) => Some(0),
+            Some(SetSelect::Current) => Some(1),
+            _ => None,
+        };
+
         for (i, tag) in tags.iter().enumerate() {
             let mut fbuf_data = [color_scheme::BACKGROUND; ControlsScreen::TAG_FB_SIZE];
             let mut fbuf = FrameBuf::new(
@@ -237,23 +258,30 @@ impl ControlsScreen {
                 ControlsScreen::TAG_HEIGHT,
             );
 
-            let rect = mode_font
+            let color = if select_index == Some(i) {
+                color_scheme::SELECTED
+            } else {
+                color_scheme::UNSELECTED
+            };
+
+            mode_font
                 .render_aligned(
                     *tag,
                     Point::new(ControlsScreen::TAG_WIDTH as i32 / 2, -1),
                     VerticalPosition::Top,
                     HorizontalAlignment::Center,
-                    FontColor::Transparent(color_scheme::FONT_SMALL),
+                    FontColor::Transparent(color),
                     &mut fbuf,
                 )
                 .map_err(|_| ())?;
 
-            if let Some(rect) = rect {
-                let top_left = Point::new(140 - ControlsScreen::TAG_WIDTH as i32 / 2, 30 + 36 + 62 * i as i32);
-                let area = Rectangle::new(top_left, fbuf.size());
+            let top_left = Point::new(
+                140 - ControlsScreen::TAG_WIDTH as i32 / 2,
+                30 + 36 + 62 * i as i32,
+            );
+            let area = Rectangle::new(top_left, fbuf.size());
 
-                target.fill_contiguous(&area, fbuf_data).map_err(|_| ())?;
-            }
+            target.fill_contiguous(&area, fbuf_data).map_err(|_| ())?;
         }
 
         Ok(())

@@ -1,6 +1,7 @@
 use embassy_time::Duration;
 
 use defmt::*;
+use u8g2_fonts::fonts::u8g2_font_streamline_computers_devices_electronics_t;
 
 use crate::lib::event::{
     AppEvent, AppTask, AppTaskBuilder, Change, Channel, ChannelFocus, DisplayTask, FunctionButton,
@@ -21,7 +22,7 @@ pub struct App {
     pub hardware_state: HardwareState,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 pub enum SetSelect {
     #[default]
     Voltage,
@@ -56,17 +57,18 @@ impl Default for ChannelState {
     }
 }
 
-// pub enum LimitSetting {
-//     Voltage,
-//     Current,
+// #[derive(Default)]
+// pub enum ArrowsFunction {
+//     #[default]
+//     Navigation,
+//     SetpointEdit,
 // }
-
-// pub enum
 
 struct InterfaceState {
     pub screen: Screen,
     pub selected_channel: Option<Channel>,
-    // pub
+
+    pub 
 }
 
 impl Default for InterfaceState {
@@ -163,8 +165,8 @@ impl App {
                     .hardware(HardwareTask::EnableReadoutLoop)
                     .display(DisplayTask::SetupMain(
                         power_type,
-                        *ch_a_limit,
-                        *ch_b_limit,
+                        ch_a_limit,
+                        ch_b_limit,
                     ))
                     .build()
             }
@@ -197,14 +199,15 @@ impl App {
                         SetState::Set => SetState::Limits,
                         SetState::Limits => SetState::Set,
                     };
-                    let state = self.set_state.clone();
                     let (ch_a_set, ch_b_set) = self.get_current_set();
+                    let (ch_a_select, ch_b_select) = self.get_current_select_set();
 
                     AppTaskBuilder::new()
                         .display(DisplayTask::UpdateButton(Some(FunctionButton::Switch)))
-                        .display(DisplayTask::UpdateSetState(state))
-                        .display(DisplayTask::UpdateSetpoint(Channel::A, *ch_a_set))
-                        .display(DisplayTask::UpdateSetpoint(Channel::B, *ch_b_set))
+                        .display(DisplayTask::UpdateSetState(Channel::A, self.set_state, ch_a_select))
+                        .display(DisplayTask::UpdateSetState(Channel::B, self.set_state, ch_b_select))
+                        .display(DisplayTask::UpdateSetpoint(Channel::A, ch_a_set, ch_a_select))
+                        .display(DisplayTask::UpdateSetpoint(Channel::B, ch_b_set, ch_b_select))
                         .build()
                 }
                 Change::Released => AppTaskBuilder::new()
@@ -228,7 +231,7 @@ impl App {
                     Channel::A => (&mut self.ch_a, &self.ch_b),
                     Channel::B => (&mut self.ch_b, &self.ch_a),
                 };
-
+                // mutate channel box selection
                 let selected_channel = &mut self.interface_state.selected_channel;
 
                 if selected_channel.as_ref() == Some(&event_channel) {
@@ -251,18 +254,38 @@ impl App {
                     Channel::A => (current_focus, other_focus),
                     Channel::B => (other_focus, current_focus),
                 };
+                
+                let (ch_a_set, ch_b_set) = self.get_current_set();
+                let (ch_a_select, ch_b_select) = self.get_current_select_set();
 
                 AppTaskBuilder::new()
                     .display(DisplayTask::UpdateChannelFocus(focus_a, focus_b))
+                    .display(DisplayTask::UpdateSetState(Channel::A, self.set_state, ch_a_select))
+                    .display(DisplayTask::UpdateSetState(Channel::B, self.set_state, ch_b_select))
+                    .display(DisplayTask::UpdateSetpoint(Channel::A, ch_a_set, ch_a_select))
+                    .display(DisplayTask::UpdateSetpoint(Channel::B, ch_b_set, ch_b_select))
                     .build()
             }
         }
     }
 
-    pub fn get_current_set(&mut self) -> (&mut Limits, &mut Limits) {
+    pub fn get_current_set_mut(&mut self) -> (&mut Limits, &mut Limits) {
         match self.set_state {
             SetState::Set => (&mut self.ch_a.set, &mut self.ch_b.set),
             SetState::Limits => (&mut self.ch_a.limits, &mut self.ch_b.limits),
+        }
+    }
+
+    pub fn get_current_set(&mut self) -> (Limits, Limits) {
+        let (a, b) = self.get_current_set_mut();
+        (*a, *b)
+    }
+
+    pub fn get_current_select_set(&mut self) -> (Option<SetSelect>, Option<SetSelect>) {
+        match self.interface_state.selected_channel {
+            Some(Channel::A) => (Some(self.ch_a.set_select), None),
+            Some(Channel::B) => (None, Some(self.ch_b.set_select)),
+            _ => (None, None),
         }
     }
 }

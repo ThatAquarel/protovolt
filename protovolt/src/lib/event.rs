@@ -3,6 +3,8 @@ use core::{array::IntoIter, iter::FilterMap};
 use embassy_rp::pio::State;
 use embassy_time::Duration;
 
+use crate::app::SetSelect;
+
 #[derive(Debug)]
 pub enum HardwareEvent {
     PowerOn,
@@ -124,10 +126,9 @@ pub enum DisplayTask {
 
     // Updates
     UpdateReadout(Channel, Readout),
-    UpdateSetpoint(Channel, Limits),
+    UpdateSetpoint(Channel, Limits, Option<SetSelect>),
     UpdateChannelFocus(ChannelFocus, ChannelFocus),
-
-    UpdateSetState(SetState),
+    UpdateSetState(Channel, SetState, Option<SetSelect>),
 
     // Navbar
     UpdateButton(Option<FunctionButton>),
@@ -146,7 +147,7 @@ pub enum Task {
     Display(DisplayTask),
 }
 
-const APP_TASK_SIZE_LIMIT: usize = 4;
+const APP_TASK_SIZE_LIMIT: usize = 5;
 
 pub struct AppTask {
     pub tasks: [Option<Task>; APP_TASK_SIZE_LIMIT],

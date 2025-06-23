@@ -17,9 +17,12 @@ use navbar::Navbar;
 use embedded_graphics::draw_target::DrawTargetExt;
 use u8g2_fonts::{FontRenderer, fonts};
 
-use crate::lib::{
-    display::st7789,
-    event::{Channel, ChannelFocus, FunctionButton, Limits, PowerType, Readout, SetState},
+use crate::{
+    app::SetSelect,
+    lib::{
+        display::st7789,
+        event::{Channel, ChannelFocus, FunctionButton, Limits, PowerType, Readout, SetState},
+    },
 };
 
 pub trait Display: DrawTarget<Color = Rgb565> {}
@@ -125,16 +128,22 @@ where
             .draw_measurements(&mut target, &self.fonts, readout)
     }
 
-    pub fn controls_submeasurement(&mut self, channel: Channel, limits: Limits) -> Result<(), ()> {
+    pub fn controls_submeasurement(
+        &mut self,
+        channel: Channel,
+        set_select: Option<SetSelect>,
+        limits: Limits,
+    ) -> Result<(), ()> {
         let mut target = self.layout.channel_section(&mut *self.target, channel);
         self.controls
-            .draw_submeasurements(&mut target, &self.fonts, limits)
+            .draw_submeasurements(&mut target, &self.fonts, set_select, limits)
     }
 
     pub fn controls_submeasurement_tag(
         &mut self,
         channel: Channel,
         set_state: SetState,
+        set_select: Option<SetSelect>,
     ) -> Result<(), ()> {
         let mut target = self.layout.channel_section(&mut *self.target, channel);
 
@@ -143,8 +152,13 @@ where
             SetState::Limits => (labels::OVP, labels::OCP),
         };
 
-        self.controls
-            .draw_submeasurements_tag(&mut target, &self.fonts, top_tag, bottom_tag)
+        self.controls.draw_submeasurements_tag(
+            &mut target,
+            &self.fonts,
+            set_select,
+            top_tag,
+            bottom_tag,
+        )
     }
 
     pub fn nav_power_info(&mut self, power_type: PowerType) -> Result<(), ()> {

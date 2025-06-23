@@ -112,15 +112,15 @@ pub async fn handle_display_task<D>(
                 ui.controls_channel_box(*channel, ChannelFocus::UnselectedInactive);
                 ui.controls_channel_units(*channel);
 
-                ui.controls_submeasurement(*channel, limits);
-                ui.controls_submeasurement_tag(*channel, SetState::Set);
+                ui.controls_submeasurement(*channel, None, limits);
+                ui.controls_submeasurement_tag(*channel, SetState::Set, None);
             }
         }
         DisplayTask::UpdateReadout(channel, readout) => {
             ui.controls_measurement(channel, readout);
         }
-        DisplayTask::UpdateSetpoint(channel, limits) => {
-            ui.controls_submeasurement(channel, limits);
+        DisplayTask::UpdateSetpoint(channel,  limits, set_select) => {
+            ui.controls_submeasurement(channel, set_select, limits);
         }
         DisplayTask::UpdateChannelFocus(focus_a, focus_b) => {
             let focuses = [focus_a, focus_b];
@@ -135,11 +135,8 @@ pub async fn handle_display_task<D>(
         DisplayTask::UpdateButton(function_button_state) => {
             ui.nav_buttons(function_button_state);
         }
-        DisplayTask::UpdateSetState(set_state) => {
-            let channels = [Channel::A, Channel::B];
-            for channel in channels.iter() {
-                ui.controls_submeasurement_tag(*channel, set_state);
-            }
+        DisplayTask::UpdateSetState(channel, set_state, set_select) => {
+            ui.controls_submeasurement_tag(channel, set_state, set_select);
         }
         // DisplayTask::
         _ => {}
