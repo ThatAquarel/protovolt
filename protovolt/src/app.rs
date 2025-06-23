@@ -15,7 +15,6 @@ pub struct App {
 
     pub power_type: PowerType,
 
-    pub set_modify: bool,
     pub set_state: SetState,
 
     pub interface_state: InterfaceState,
@@ -57,30 +56,24 @@ impl Default for ChannelState {
     }
 }
 
-// #[derive(Default)]
-// pub enum ArrowsFunction {
-//     #[default]
-//     Navigation,
-//     SetpointEdit,
-// }
+#[derive(Default)]
+pub enum ArrowsFunction {
+    #[default]
+    Navigation,
+    SetpointEdit,
+}
 
+#[derive(Default)]
 struct InterfaceState {
     pub screen: Screen,
     pub selected_channel: Option<Channel>,
 
-    pub 
+    pub arrows_function: ArrowsFunction,
 }
 
-impl Default for InterfaceState {
-    fn default() -> Self {
-        Self {
-            screen: Screen::Boot,
-            selected_channel: None,
-        }
-    }
-}
-
+#[derive(Default)]
 enum HardwareState {
+    #[default]
     PowerOn,
 
     WaitingForPowerDelivery,
@@ -93,13 +86,9 @@ enum HardwareState {
     Error,
 }
 
-impl Default for HardwareState {
-    fn default() -> Self {
-        Self::PowerOn
-    }
-}
-
+#[derive(Default)]
 enum Screen {
+    #[default]
     Boot,
     Main,
     Settings,
@@ -163,11 +152,7 @@ impl App {
 
                 AppTaskBuilder::new()
                     .hardware(HardwareTask::EnableReadoutLoop)
-                    .display(DisplayTask::SetupMain(
-                        power_type,
-                        ch_a_limit,
-                        ch_b_limit,
-                    ))
+                    .display(DisplayTask::SetupMain(power_type, ch_a_limit, ch_b_limit))
                     .build()
             }
             (HardwareState::Standby, HardwareEvent::ReadoutAcquired(channel, readout)) => {
@@ -204,10 +189,26 @@ impl App {
 
                     AppTaskBuilder::new()
                         .display(DisplayTask::UpdateButton(Some(FunctionButton::Switch)))
-                        .display(DisplayTask::UpdateSetState(Channel::A, self.set_state, ch_a_select))
-                        .display(DisplayTask::UpdateSetState(Channel::B, self.set_state, ch_b_select))
-                        .display(DisplayTask::UpdateSetpoint(Channel::A, ch_a_set, ch_a_select))
-                        .display(DisplayTask::UpdateSetpoint(Channel::B, ch_b_set, ch_b_select))
+                        .display(DisplayTask::UpdateSetState(
+                            Channel::A,
+                            self.set_state,
+                            ch_a_select,
+                        ))
+                        .display(DisplayTask::UpdateSetState(
+                            Channel::B,
+                            self.set_state,
+                            ch_b_select,
+                        ))
+                        .display(DisplayTask::UpdateSetpoint(
+                            Channel::A,
+                            ch_a_set,
+                            ch_a_select,
+                        ))
+                        .display(DisplayTask::UpdateSetpoint(
+                            Channel::B,
+                            ch_b_set,
+                            ch_b_select,
+                        ))
                         .build()
                 }
                 Change::Released => AppTaskBuilder::new()
@@ -222,9 +223,87 @@ impl App {
                     .display(DisplayTask::UpdateButton(None))
                     .build(),
             },
+            InterfaceEvent::ButtonUp => match self.interface_state.arrows_function {
+                ArrowsFunction::Navigation => {
+                    match self.interface_state.selected_channel {
+                        Some(Channel::A) => {
+                            self.ch_a.set_select = SetSelect::Voltage;
+                        }
+                        Some(Channel::B) => {
+                            self.ch_b.set_select = SetSelect::Voltage;
+                        }
+                        _ => {}
+                    };
+
+                    let (ch_a_set, ch_b_set) = self.get_current_set();
+                    let (ch_a_select, ch_b_select) = self.get_current_select_set();
+
+                    AppTaskBuilder::new()
+                        .display(DisplayTask::UpdateSetState(
+                            Channel::A,
+                            self.set_state,
+                            ch_a_select,
+                        ))
+                        .display(DisplayTask::UpdateSetState(
+                            Channel::B,
+                            self.set_state,
+                            ch_b_select,
+                        ))
+                        .display(DisplayTask::UpdateSetpoint(
+                            Channel::A,
+                            ch_a_set,
+                            ch_a_select,
+                        ))
+                        .display(DisplayTask::UpdateSetpoint(
+                            Channel::B,
+                            ch_b_set,
+                            ch_b_select,
+                        ))
+                        .build()
+                }
+                _ => None,
+            },
+            InterfaceEvent::ButtonDown => match self.interface_state.arrows_function {
+                ArrowsFunction::Navigation => {
+                    match self.interface_state.selected_channel {
+                        Some(Channel::A) => {
+                            self.ch_a.set_select = SetSelect::Current;
+                        }
+                        Some(Channel::B) => {
+                            self.ch_b.set_select = SetSelect::Current;
+                        }
+                        _ => {}
+                    };
+
+                    let (ch_a_set, ch_b_set) = self.get_current_set();
+                    let (ch_a_select, ch_b_select) = self.get_current_select_set();
+
+                    AppTaskBuilder::new()
+                        .display(DisplayTask::UpdateSetState(
+                            Channel::A,
+                            self.set_state,
+                            ch_a_select,
+                        ))
+                        .display(DisplayTask::UpdateSetState(
+                            Channel::B,
+                            self.set_state,
+                            ch_b_select,
+                        ))
+                        .display(DisplayTask::UpdateSetpoint(
+                            Channel::A,
+                            ch_a_set,
+                            ch_a_select,
+                        ))
+                        .display(DisplayTask::UpdateSetpoint(
+                            Channel::B,
+                            ch_b_set,
+                            ch_b_select,
+                        ))
+                        .build()
+                }
+                _ => None,
+            },
             InterfaceEvent::ButtonRight => None,
-            InterfaceEvent::ButtonUp => None,
-            InterfaceEvent::ButtonDown => None,
             InterfaceEvent::ButtonLeft => None,
             InterfaceEvent::ButtonChannel(event_channel) => {
                 let (current_state, other_state) = match event_channel {
@@ -254,16 +333,32 @@ impl App {
                     Channel::A => (current_focus, other_focus),
                     Channel::B => (other_focus, current_focus),
                 };
-                
+
                 let (ch_a_set, ch_b_set) = self.get_current_set();
                 let (ch_a_select, ch_b_select) = self.get_current_select_set();
 
                 AppTaskBuilder::new()
                     .display(DisplayTask::UpdateChannelFocus(focus_a, focus_b))
-                    .display(DisplayTask::UpdateSetState(Channel::A, self.set_state, ch_a_select))
-                    .display(DisplayTask::UpdateSetState(Channel::B, self.set_state, ch_b_select))
-                    .display(DisplayTask::UpdateSetpoint(Channel::A, ch_a_set, ch_a_select))
-                    .display(DisplayTask::UpdateSetpoint(Channel::B, ch_b_set, ch_b_select))
+                    .display(DisplayTask::UpdateSetState(
+                        Channel::A,
+                        self.set_state,
+                        ch_a_select,
+                    ))
+                    .display(DisplayTask::UpdateSetState(
+                        Channel::B,
+                        self.set_state,
+                        ch_b_select,
+                    ))
+                    .display(DisplayTask::UpdateSetpoint(
+                        Channel::A,
+                        ch_a_set,
+                        ch_a_select,
+                    ))
+                    .display(DisplayTask::UpdateSetpoint(
+                        Channel::B,
+                        ch_b_set,
+                        ch_b_select,
+                    ))
                     .build()
             }
         }

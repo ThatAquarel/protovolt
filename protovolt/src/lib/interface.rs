@@ -92,6 +92,14 @@ impl ButtonsInterface<'_> {
                     0 => Some(InterfaceEvent::ButtonSettings(change)),
                     1 => Some(InterfaceEvent::ButtonSwitch(change)),
                     2 => Some(InterfaceEvent::ButtonEnter(change)),
+                    4 => match change {
+                        Change::Pressed => Some(InterfaceEvent::ButtonUp),
+                        Change::Released => None,
+                    },
+                    5 => match change {
+                        Change::Pressed => Some(InterfaceEvent::ButtonDown),
+                        Change::Released => None,
+                    },
                     7 => match change {
                         Change::Pressed => Some(InterfaceEvent::ButtonChannel(Channel::B)),
                         Change::Released => None,
