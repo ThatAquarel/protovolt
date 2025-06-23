@@ -156,14 +156,15 @@ impl App {
                 self.hardware_state = HardwareState::Standby;
                 self.interface_state.screen = Screen::Main;
 
+                let power_type = self.power_type;
                 let (ch_a_limit, ch_b_limit) = self.get_current_set();
 
                 AppTaskBuilder::new()
                     .hardware(HardwareTask::EnableReadoutLoop)
                     .display(DisplayTask::SetupMain(
-                        self.power_type,
-                        ch_a_limit,
-                        ch_b_limit,
+                        power_type,
+                        *ch_a_limit,
+                        *ch_b_limit,
                     ))
                     .build()
             }
@@ -196,9 +197,14 @@ impl App {
                         SetState::Set => SetState::Limits,
                         SetState::Limits => SetState::Set,
                     };
+                    let state = self.set_state.clone();
+                    let (ch_a_set, ch_b_set) = self.get_current_set();
 
                     AppTaskBuilder::new()
                         .display(DisplayTask::UpdateButton(Some(FunctionButton::Switch)))
+                        .display(DisplayTask::UpdateSetState(state))
+                        .display(DisplayTask::UpdateSetpoint(Channel::A, *ch_a_set))
+                        .display(DisplayTask::UpdateSetpoint(Channel::B, *ch_b_set))
                         .build()
                 }
                 Change::Released => AppTaskBuilder::new()
@@ -253,10 +259,10 @@ impl App {
         }
     }
 
-    pub fn get_current_set(&mut self) -> (Limits, Limits) {
+    pub fn get_current_set(&mut self) -> (&mut Limits, &mut Limits) {
         match self.set_state {
-            SetState::Set => (self.ch_a.set, self.ch_b.set),
-            SetState::Limits => (self.ch_a.limits, self.ch_b.limits),
+            SetState::Set => (&mut self.ch_a.set, &mut self.ch_b.set),
+            SetState::Limits => (&mut self.ch_a.limits, &mut self.ch_b.limits),
         }
     }
 }

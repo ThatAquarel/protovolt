@@ -124,7 +124,7 @@ pub enum DisplayTask {
 
     // Updates
     UpdateReadout(Channel, Readout),
-    UpdateSetpoint(Channel),
+    UpdateSetpoint(Channel, Limits),
     UpdateChannelFocus(ChannelFocus, ChannelFocus),
 
     UpdateSetState(SetState),

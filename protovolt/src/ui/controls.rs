@@ -14,9 +14,8 @@ use u8g2_fonts::{
 
 use crate::{
     lib::event::{Limits, Readout},
-    ui::{color_scheme, fmt::format_f32, labels, Display, Fonts, Layout},
+    ui::{Display, Fonts, Layout, color_scheme, fmt::format_f32, labels},
 };
-
 
 use embedded_graphics_framebuf::{FrameBuf, backends::FrameBufferBackend};
 
@@ -161,9 +160,7 @@ impl ControlsScreen {
             let top_left = Point::new(122 - ControlsScreen::MEAS_WIDTH as i32, 30 + 62 * i as i32);
             let area = Rectangle::new(top_left, fbuf.size());
 
-            target
-                .fill_contiguous(&area, fbuf_data)
-                .map_err(|_| ())?;
+            target.fill_contiguous(&area, fbuf_data).map_err(|_| ())?;
         }
 
         Ok(())
@@ -173,7 +170,12 @@ impl ControlsScreen {
     const SUBMEAS_HEIGHT: usize = ControlsScreen::MEAS_HEIGHT / 2;
     const SUBMEAS_FB_SIZE: usize = ControlsScreen::SUBMEAS_WIDTH * ControlsScreen::SUBMEAS_HEIGHT;
 
-    pub fn draw_submeasurements<D>(&mut self, target: &mut D, fonts: &Fonts, limits: Limits) -> Result<(), ()>
+    pub fn draw_submeasurements<D>(
+        &mut self,
+        target: &mut D,
+        fonts: &Fonts,
+        limits: Limits,
+    ) -> Result<(), ()>
     where
         D: Display,
     {
@@ -198,16 +200,21 @@ impl ControlsScreen {
             )
             .map_err(|_| ())?;
 
-            let top_left = Point::new(122 - ControlsScreen::SUBMEAS_WIDTH as i32, 30 + 36 + 62 * i as i32);
+            let top_left = Point::new(
+                122 - ControlsScreen::SUBMEAS_WIDTH as i32,
+                30 + 36 + 62 * i as i32,
+            );
             let area = Rectangle::new(top_left, fbuf.size());
 
-            target
-                .fill_contiguous(&area, fbuf_data)
-                .map_err(|_| ())?;
+            target.fill_contiguous(&area, fbuf_data).map_err(|_| ())?;
         }
 
         Ok(())
     }
+
+    const TAG_WIDTH: usize = 22;
+    const TAG_HEIGHT: usize = 8;
+    const TAG_FB_SIZE: usize = ControlsScreen::TAG_WIDTH * ControlsScreen::TAG_HEIGHT;
 
     pub fn draw_submeasurements_tag<D>(
         &mut self,
@@ -223,16 +230,30 @@ impl ControlsScreen {
         let tags = [top_tag, bottom_tag];
 
         for (i, tag) in tags.iter().enumerate() {
-            mode_font
+            let mut fbuf_data = [color_scheme::BACKGROUND; ControlsScreen::TAG_FB_SIZE];
+            let mut fbuf = FrameBuf::new(
+                &mut fbuf_data,
+                ControlsScreen::TAG_WIDTH,
+                ControlsScreen::TAG_HEIGHT,
+            );
+
+            let rect = mode_font
                 .render_aligned(
                     *tag,
-                    Point::new(140, 30 + 36 + 62 * i as i32),
+                    Point::new(ControlsScreen::TAG_WIDTH as i32 / 2, -1),
                     VerticalPosition::Top,
                     HorizontalAlignment::Center,
                     FontColor::Transparent(color_scheme::FONT_SMALL),
-                    target,
+                    &mut fbuf,
                 )
                 .map_err(|_| ())?;
+
+            if let Some(rect) = rect {
+                let top_left = Point::new(140 - ControlsScreen::TAG_WIDTH as i32 / 2, 30 + 36 + 62 * i as i32);
+                let area = Rectangle::new(top_left, fbuf.size());
+
+                target.fill_contiguous(&area, fbuf_data).map_err(|_| ())?;
+            }
         }
 
         Ok(())

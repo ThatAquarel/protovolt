@@ -119,6 +119,9 @@ pub async fn handle_display_task<D>(
         DisplayTask::UpdateReadout(channel, readout) => {
             ui.controls_measurement(channel, readout);
         }
+        DisplayTask::UpdateSetpoint(channel, limits) => {
+            ui.controls_submeasurement(channel, limits);
+        }
         DisplayTask::UpdateChannelFocus(focus_a, focus_b) => {
             let focuses = [focus_a, focus_b];
             for (i, focus) in focuses.iter().enumerate() {
