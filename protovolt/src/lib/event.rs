@@ -1,3 +1,5 @@
+use core::{array::IntoIter, iter::FilterMap};
+
 use embassy_rp::pio::State;
 use embassy_time::Duration;
 
@@ -11,7 +13,7 @@ pub enum HardwareEvent {
 
     StartMainInterface,
 
-    ReadoutAcquired(Channel, Readout)
+    ReadoutAcquired(Channel, Readout),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -24,7 +26,7 @@ pub struct Readout {
 #[derive(Clone, Copy, Debug)]
 pub struct Limits {
     pub voltage: f32,
-    pub current: f32
+    pub current: f32,
 }
 
 impl Default for Limits {
@@ -50,7 +52,7 @@ impl Default for PowerType {
 
 pub enum Change {
     Pressed,
-    Released
+    Released,
 }
 
 pub enum InterfaceEvent {
@@ -66,9 +68,8 @@ pub enum InterfaceEvent {
 
 pub enum AppEvent {
     Hardware(HardwareEvent),
-    Interface(InterfaceEvent)
+    Interface(InterfaceEvent),
 }
-
 
 pub enum HardwareTask {
     // Initialization sequence + self-checks
@@ -76,10 +77,8 @@ pub enum HardwareTask {
     EnableSense,
     EnableConverter,
 
-
     // Idle
     EnableReadoutLoop,
-
 
     DelayedInterfaceEvent(Duration, InterfaceEvent),
     DelayedHardwareEvent(Duration, HardwareEvent),
@@ -88,14 +87,14 @@ pub enum HardwareTask {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Channel {
     A,
-    B
+    B,
 }
 
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub enum SetState {
     #[default]
-    SetLimits,
-    SetProtection,
+    Set,
+    Limits,
 }
 
 #[derive(Clone, Copy)]
@@ -109,7 +108,7 @@ pub enum ChannelFocus {
 pub enum FunctionButton {
     Enter,
     Switch,
-    Settings
+    Settings,
 }
 
 pub enum DisplayTask {
@@ -128,14 +127,91 @@ pub enum DisplayTask {
     UpdateSetpoint(Channel),
     UpdateChannelFocus(ChannelFocus, ChannelFocus),
 
+    UpdateSetState(SetState),
+
     // Navbar
     UpdateButton(Option<FunctionButton>),
 
     // Settings
-    SetupSettings
+    SetupSettings,
 }
 
+// pub struct AppTask {
+//     pub hardware: Option<HardwareTask>,
+//     pub display: Option<DisplayTask>,
+// }
+
+pub enum Task {
+    Hardware(HardwareTask),
+    Display(DisplayTask),
+}
+
+const APP_TASK_SIZE_LIMIT: usize = 4;
+
 pub struct AppTask {
-    pub hardware: Option<HardwareTask>,
-    pub display: Option<DisplayTask>,
+    pub tasks: [Option<Task>; APP_TASK_SIZE_LIMIT],
+    pub count: usize,
+}
+
+impl IntoIterator for AppTask {
+    type Item = Task;
+    type IntoIter = FilterMap<
+        IntoIter<Option<Task>, APP_TASK_SIZE_LIMIT>,
+        fn(Option<Task>) -> Option<Task>,
+    >;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.tasks.into_iter().filter_map(|opt| opt)
+    }
+}
+
+pub struct AppTaskBuilder {
+    inner: AppTask,
+}
+
+impl AppTaskBuilder {
+    pub fn new() -> Self {
+        Self {
+            inner: AppTask {
+                tasks: [const { None }; APP_TASK_SIZE_LIMIT],
+                count: 0,
+            },
+        }
+    }
+
+    pub fn hardware(mut self, task: HardwareTask) -> Self {
+        if self.inner.count < self.inner.tasks.len() {
+            self.inner.tasks[self.inner.count] = Some(Task::Hardware(task));
+            self.inner.count += 1;
+        }
+
+        self
+    }
+
+    pub fn display(mut self, task: DisplayTask) -> Self {
+        if self.inner.count < self.inner.tasks.len() {
+            self.inner.tasks[self.inner.count] = Some(Task::Display(task));
+            self.inner.count += 1;
+        }
+
+        self
+    }
+
+    pub fn build(self) -> Option<AppTask> {
+        Some(self.inner)
+    }
+
+    pub fn hardware_task(task: HardwareTask) -> Option<AppTask> {
+        let mut tasks = [const {None}; APP_TASK_SIZE_LIMIT];
+        tasks[0] = Some(Task::Hardware(task));
+
+        Some(AppTask { tasks: tasks, count: 1 })
+    }
+
+    pub fn display_task(task: DisplayTask) -> Option<AppTask> {
+        let mut tasks = [const {None}; APP_TASK_SIZE_LIMIT];
+        tasks[0] = Some(Task::Display(task));
+
+        Some(AppTask { tasks: tasks, count: 1 })
+    }
 }

@@ -103,7 +103,6 @@ pub async fn handle_display_task<D>(
             ui.nav_buttons(None);
 
             let channels = [Channel::A, Channel::B];
-
             for channel in channels.iter() {
                 let limits = match channel {
                     Channel::A => ch_a_limits,
@@ -114,7 +113,7 @@ pub async fn handle_display_task<D>(
                 ui.controls_channel_units(*channel);
 
                 ui.controls_submeasurement(*channel, limits);
-                ui.controls_submeasurement_tag(*channel, SetState::SetLimits);
+                ui.controls_submeasurement_tag(*channel, SetState::Set);
             }
         }
         DisplayTask::UpdateReadout(channel, readout) => {
@@ -132,6 +131,12 @@ pub async fn handle_display_task<D>(
         }
         DisplayTask::UpdateButton(function_button_state) => {
             ui.nav_buttons(function_button_state);
+        }
+        DisplayTask::UpdateSetState(set_state) => {
+            let channels = [Channel::A, Channel::B];
+            for channel in channels.iter() {
+                ui.controls_submeasurement_tag(*channel, set_state);
+            }
         }
         // DisplayTask::
         _ => {}

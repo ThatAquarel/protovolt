@@ -6,8 +6,8 @@
 #![no_main]
 
 mod app;
-mod ui;
 mod task;
+mod ui;
 
 mod lib;
 
@@ -32,7 +32,9 @@ use lib::event::InterfaceEvent;
 use lib::interface::{ButtonsInterface, matrix};
 
 use crate::lib::display::DisplayInterface;
-use crate::lib::event::{AppEvent, DisplayTask, HardwareEvent, HardwareTask, Limits, Readout};
+use crate::lib::event::{
+    AppEvent, DisplayTask, HardwareEvent, HardwareTask, Limits, Readout, Task,
+};
 use crate::task::{handle_display_task, handle_hardware_task};
 use crate::ui::color_scheme::CH_B_SELECTED;
 use crate::ui::{Ui, boot};
@@ -79,19 +81,22 @@ async fn main(spawner: Spawner) {
     let mut ticker = Ticker::every(Duration::from_hz(100));
     loop {
         let mut next_app_task = None;
-
         if let Ok(hw_event) = HARDWARE_CHANNEL.try_receive() {
             next_app_task = a.handle_event(AppEvent::Hardware(hw_event));
         } else if let Ok(ui_event) = INTERFACE_CHANNEL.try_receive() {
             next_app_task = a.handle_event(AppEvent::Interface(ui_event));
         }
 
-        if let Some(task) = next_app_task {
-            if let Some(hardware_task) = task.hardware {
-                handle_hardware_task(hardware_task, spawner, &hw_sender, &int_sender).await;
-            }
-            if let Some(display_task) = task.display {
-                handle_display_task(display_task, &mut ui, &hw_sender, &int_sender).await
+        if let Some(app_task) = next_app_task {
+            for task in app_task {
+                match task {
+                    Task::Hardware(hw_task) => {
+                        handle_hardware_task(hw_task, spawner, &hw_sender, &int_sender).await;
+                    }
+                    Task::Display(disp_task) => {
+                        handle_display_task(disp_task, &mut ui, &hw_sender, &int_sender).await
+                    }
+                }
             }
         }
 

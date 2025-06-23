@@ -139,8 +139,8 @@ where
         let mut target = self.layout.channel_section(&mut *self.target, channel);
 
         let (top_tag, bottom_tag) = match set_state {
-            SetState::SetLimits => (labels::SET, labels::SET),
-            SetState::SetProtection => (labels::OVP, labels::OCP),
+            SetState::Set => (labels::SET, labels::SET),
+            SetState::Limits => (labels::OVP, labels::OCP),
         };
 
         self.controls

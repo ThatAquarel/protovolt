@@ -3,8 +3,8 @@ use embassy_time::Duration;
 use defmt::*;
 
 use crate::lib::event::{
-    AppEvent, AppTask, Change, Channel, ChannelFocus, DisplayTask, FunctionButton, HardwareEvent,
-    HardwareTask, InterfaceEvent, Limits, PowerType, Readout, SetState,
+    AppEvent, AppTask, AppTaskBuilder, Change, Channel, ChannelFocus, DisplayTask, FunctionButton,
+    HardwareEvent, HardwareTask, InterfaceEvent, Limits, PowerType, Readout, SetState,
 };
 
 #[derive(Default)]
@@ -14,14 +14,25 @@ pub struct App {
 
     pub power_type: PowerType,
 
+    pub set_modify: bool,
     pub set_state: SetState,
 
     pub interface_state: InterfaceState,
     pub hardware_state: HardwareState,
 }
 
+#[derive(Default)]
+pub enum SetSelect {
+    #[default]
+    Voltage,
+    Current,
+}
+
 struct ChannelState {
     pub enable: bool,
+
+    pub set: Limits,
+    pub set_select: SetSelect,
     pub limits: Limits,
 
     pub readout: Option<Readout>,
@@ -31,9 +42,14 @@ impl Default for ChannelState {
     fn default() -> Self {
         Self {
             enable: false,
-            limits: Limits {
+            set: Limits {
                 voltage: 5.000,
                 current: 1.000,
+            },
+            set_select: Default::default(),
+            limits: Limits {
+                voltage: 20.000,
+                current: 5.000,
             },
             readout: None,
         }
@@ -100,10 +116,10 @@ impl App {
             (HardwareState::PowerOn, HardwareEvent::PowerOn) => {
                 self.hardware_state = HardwareState::WaitingForPowerDelivery;
 
-                Some(AppTask {
-                    hardware: Some(HardwareTask::EnablePowerDelivery),
-                    display: Some(DisplayTask::SetupSplash),
-                })
+                AppTaskBuilder::new()
+                    .hardware(HardwareTask::EnablePowerDelivery)
+                    .display(DisplayTask::SetupSplash)
+                    .build()
             }
             (
                 HardwareState::WaitingForPowerDelivery,
@@ -112,42 +128,44 @@ impl App {
                 self.hardware_state = HardwareState::WaitingForSense;
                 self.power_type = power_type;
 
-                Some(AppTask {
-                    hardware: Some(HardwareTask::EnableSense),
-                    display: Some(DisplayTask::ConfirmPowerDelivery(power_type)),
-                })
+                AppTaskBuilder::new()
+                    .hardware(HardwareTask::EnableSense)
+                    .display(DisplayTask::ConfirmPowerDelivery(power_type))
+                    .build()
             }
             (HardwareState::WaitingForSense, HardwareEvent::SenseReady(result)) => {
                 self.hardware_state = HardwareState::WaitingForConverter;
 
-                Some(AppTask {
-                    hardware: Some(HardwareTask::EnableConverter),
-                    display: Some(DisplayTask::ConfirmSense(result)),
-                })
+                AppTaskBuilder::new()
+                    .hardware(HardwareTask::EnableConverter)
+                    .display(DisplayTask::ConfirmSense(result))
+                    .build()
             }
             (HardwareState::WaitingForConverter, HardwareEvent::ConverterReady(result)) => {
                 self.hardware_state = HardwareState::WaitingMainUi;
 
-                Some(AppTask {
-                    hardware: Some(HardwareTask::DelayedHardwareEvent(
+                AppTaskBuilder::new()
+                    .hardware(HardwareTask::DelayedHardwareEvent(
                         Duration::from_millis(500),
                         HardwareEvent::StartMainInterface,
-                    )),
-                    display: Some(DisplayTask::ConfirmConverter(result)),
-                })
+                    ))
+                    .display(DisplayTask::ConfirmConverter(result))
+                    .build()
             }
             (HardwareState::WaitingMainUi, HardwareEvent::StartMainInterface) => {
                 self.hardware_state = HardwareState::Standby;
                 self.interface_state.screen = Screen::Main;
 
-                Some(AppTask {
-                    hardware: Some(HardwareTask::EnableReadoutLoop),
-                    display: Some(DisplayTask::SetupMain(
+                let (ch_a_limit, ch_b_limit) = self.get_current_set();
+
+                AppTaskBuilder::new()
+                    .hardware(HardwareTask::EnableReadoutLoop)
+                    .display(DisplayTask::SetupMain(
                         self.power_type,
-                        self.ch_a.limits,
-                        self.ch_b.limits,
-                    )),
-                })
+                        ch_a_limit,
+                        ch_b_limit,
+                    ))
+                    .build()
             }
             (HardwareState::Standby, HardwareEvent::ReadoutAcquired(channel, readout)) => {
                 let current_readout = match channel {
@@ -156,10 +174,7 @@ impl App {
                 };
                 *current_readout = Some(readout);
 
-                Some(AppTask {
-                    hardware: None,
-                    display: Some(DisplayTask::UpdateReadout(channel, readout)),
-                })
+                AppTaskBuilder::display_task(DisplayTask::UpdateReadout(channel, readout))
             }
             _ => None,
         }
@@ -168,34 +183,35 @@ impl App {
     fn handle_interface_event(&mut self, event: InterfaceEvent) -> Option<AppTask> {
         match event {
             InterfaceEvent::ButtonSettings(change) => match change {
-                Change::Pressed => Some(AppTask {
-                    hardware: None,
-                    display: Some(DisplayTask::UpdateButton(Some(FunctionButton::Settings))),
-                }),
-                Change::Released => Some(AppTask {
-                    hardware: None,
-                    display: Some(DisplayTask::UpdateButton(None)),
-                }),
+                Change::Pressed => AppTaskBuilder::new()
+                    .display(DisplayTask::UpdateButton(Some(FunctionButton::Settings)))
+                    .build(),
+                Change::Released => AppTaskBuilder::new()
+                    .display(DisplayTask::UpdateButton(None))
+                    .build(),
             },
             InterfaceEvent::ButtonSwitch(change) => match change {
-                Change::Pressed => Some(AppTask {
-                    hardware: None,
-                    display: Some(DisplayTask::UpdateButton(Some(FunctionButton::Switch))),
-                }),
-                Change::Released => Some(AppTask {
-                    hardware: None,
-                    display: Some(DisplayTask::UpdateButton(None)),
-                }),
+                Change::Pressed => {
+                    self.set_state = match self.set_state {
+                        SetState::Set => SetState::Limits,
+                        SetState::Limits => SetState::Set,
+                    };
+
+                    AppTaskBuilder::new()
+                        .display(DisplayTask::UpdateButton(Some(FunctionButton::Switch)))
+                        .build()
+                }
+                Change::Released => AppTaskBuilder::new()
+                    .display(DisplayTask::UpdateButton(None))
+                    .build(),
             },
             InterfaceEvent::ButtonEnter(change) => match change {
-                Change::Pressed => Some(AppTask {
-                    hardware: None,
-                    display: Some(DisplayTask::UpdateButton(Some(FunctionButton::Enter))),
-                }),
-                Change::Released => Some(AppTask {
-                    hardware: None,
-                    display: Some(DisplayTask::UpdateButton(None)),
-                }),
+                Change::Pressed => AppTaskBuilder::new()
+                    .display(DisplayTask::UpdateButton(Some(FunctionButton::Enter)))
+                    .build(),
+                Change::Released => AppTaskBuilder::new()
+                    .display(DisplayTask::UpdateButton(None))
+                    .build(),
             },
             InterfaceEvent::ButtonRight => None,
             InterfaceEvent::ButtonUp => None,
@@ -230,11 +246,17 @@ impl App {
                     Channel::B => (other_focus, current_focus),
                 };
 
-                Some(AppTask {
-                    hardware: None,
-                    display: Some(DisplayTask::UpdateChannelFocus(focus_a, focus_b)),
-                })
+                AppTaskBuilder::new()
+                    .display(DisplayTask::UpdateChannelFocus(focus_a, focus_b))
+                    .build()
             }
+        }
+    }
+
+    pub fn get_current_set(&mut self) -> (Limits, Limits) {
+        match self.set_state {
+            SetState::Set => (self.ch_a.set, self.ch_b.set),
+            SetState::Limits => (self.ch_a.limits, self.ch_b.limits),
         }
     }
 }
