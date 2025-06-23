@@ -91,6 +91,12 @@ pub enum ChannelFocus {
     UnselectedInactive,
 }
 
+pub enum FunctionButton {
+    Enter,
+    Switch,
+    Settings
+}
+
 pub enum DisplayTask {
     // Splash Screen
     SetupSplash,
@@ -105,9 +111,10 @@ pub enum DisplayTask {
     // Updates
     UpdateReadout(Channel, Readout),
     UpdateSetpoint(Channel),
-
-    // Channel
     UpdateChannelFocus(ChannelFocus, ChannelFocus),
+
+    // Navbar
+    UpdateButton(Option<FunctionButton>),
 
     // Settings
     SetupSettings

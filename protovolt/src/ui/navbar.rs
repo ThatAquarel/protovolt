@@ -13,12 +13,12 @@ use u8g2_fonts::{
 };
 
 use crate::{
-    lib::event::{Limits, PowerType, Readout},
+    lib::event::{FunctionButton, Limits, PowerType, Readout},
     ui::{
         Display, Fonts, Layout,
-        color_scheme::{self, FONT_SMALL},
+        color_scheme::{self, FONT_SMALL, SELECTED},
         fmt::format_f32,
-        icons_4x, labels,
+        icons_2x, icons_4x, labels,
     },
 };
 
@@ -51,7 +51,7 @@ impl Navbar {
                 Point::new(0, 16),
                 VerticalPosition::Center,
                 HorizontalAlignment::Left,
-                FontColor::Transparent(Rgb565::CSS_DARK_GRAY),
+                FontColor::Transparent(color_scheme::UNSELECTED),
                 target,
             )
             .map_err(|_| ())?;
@@ -84,10 +84,72 @@ impl Navbar {
                 Point::new(36, 6 + 10 * i as i32),
                 VerticalPosition::Center,
                 HorizontalAlignment::Left,
-                FontColor::Transparent(FONT_SMALL),
+                FontColor::Transparent(color_scheme::FONT_SMALL),
                 target,
             )
             .map_err(|_| ())?;
+        }
+
+        Ok(())
+    }
+
+    pub fn draw_button<D>(
+        &mut self,
+        target: &mut D,
+        fonts: &Fonts,
+        button_state: Option<FunctionButton>,
+    ) -> Result<(), ()>
+    where
+        D: DrawTarget<Color = Rgb565>,
+    {
+        let icons = &fonts.icons_2x;
+
+        let mut box_style = PrimitiveStyleBuilder::new()
+            .stroke_width(2)
+            .stroke_alignment(StrokeAlignment::Inside);
+
+        let gap = 64;
+        let w = 60;
+
+        let buttons = [icons_2x::CHECKMARK, icons_2x::SETTINGS, icons_2x::SWITCH];
+
+        let selected_index = match button_state {
+            Some(FunctionButton::Enter) => Some(0),
+            Some(FunctionButton::Switch) => Some(1),
+            Some(FunctionButton::Settings) => Some(2),
+            _ => None,
+        };
+
+        for (i, &icon) in buttons.iter().enumerate() {
+            let center = 354 - (3 - i as i32) * gap;
+            let left = center - w / 2;
+
+            let color = if selected_index == Some(i) {
+                color_scheme::SELECTED
+            } else {
+                color_scheme::UNSELECTED
+            };
+
+            let current_style = box_style.stroke_color(color).build();
+
+            RoundedRectangle::new(
+                Rectangle::new(Point::new(left, 0), Size::new(w as u32, 30)),
+                CornerRadii::new(Size::new(10, 10)),
+            )
+            .into_styled(current_style)
+            .draw(target)
+            .map_err(|_| ())?;
+
+            icons
+                .render_aligned(
+                    icon,
+                    Point::new(center, 15),
+                    VerticalPosition::Center,
+                    HorizontalAlignment::Center,
+                    FontColor::Transparent(color),
+                    target,
+                )
+                .map_err(|_| ())?;
         }
 
         Ok(())

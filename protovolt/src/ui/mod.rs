@@ -19,7 +19,7 @@ use u8g2_fonts::{FontRenderer, fonts};
 
 use crate::lib::{
     display::st7789,
-    event::{Channel, Limits, PowerType, Readout, SetState},
+    event::{Channel, FunctionButton, Limits, PowerType, Readout, SetState},
 };
 
 pub trait Display: DrawTarget<Color = Rgb565> {}
@@ -34,10 +34,10 @@ where
     pub fonts: Fonts,
     pub layout: Layout,
 
-    pub boot: BootScreen<'a>,
-    pub controls: ControlsScreen,
+    boot: BootScreen<'a>,
+    controls: ControlsScreen,
 
-    pub navbar: Navbar,
+    navbar: Navbar,
 }
 
 impl<'a, D> Ui<'a, D>
@@ -133,6 +133,10 @@ where
     pub fn nav_power_info(&mut self, power_type: PowerType) -> Result<(), ()> {
         self.navbar.draw_power_info(&mut *self.target, &self.fonts, power_type)
     }
+
+    pub fn nav_buttons(&mut self, button_state: Option<FunctionButton>) -> Result <(), ()> {
+        self.navbar.draw_button(&mut *self.target, &self.fonts, button_state)
+    }
 }
 
 pub struct Fonts {
@@ -158,9 +162,13 @@ impl Default for Fonts {
     }
 }
 
+//https://github.com/olikraus/u8g2/wiki/fntgrpiconic
 pub mod icons_2x {
     pub const CHECKMARK: &str = "\u{0073}";
     pub const CROSS: &str = "\u{011B}";
+
+    pub const SETTINGS: &str = "\u{0081}";
+    pub const SWITCH: &str = "\u{00CC}";
 }
 
 pub mod icons_4x {

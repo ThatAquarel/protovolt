@@ -237,49 +237,4 @@ impl ControlsScreen {
 
         Ok(())
     }
-
-    pub fn draw_buttons<D>(target: &mut D) -> Result<(), ()>
-    where
-        D: DrawTarget<Color = Rgb565>,
-    {
-        let font = FontRenderer::new::<fonts::u8g2_font_open_iconic_all_2x_t>();
-        let box_style = PrimitiveStyleBuilder::new()
-            // .fill_color(Rgb565::CSS_WHITE)
-            .stroke_color(Rgb565::CSS_WHITE)
-            .stroke_width(2)
-            .stroke_alignment(StrokeAlignment::Inside)
-            .build();
-
-        //https://github.com/olikraus/u8g2/wiki/fntgrpiconic
-
-        let gap = 64;
-        let w = 60;
-
-        let icons = ['\u{0078}', '\u{0081}', '\u{00CC}'];
-
-        for (i, &icon) in icons.iter().enumerate() {
-            let center = 354 - (3 - i as i32) * gap;
-            let left = center - w / 2;
-
-            RoundedRectangle::new(
-                Rectangle::new(Point::new(left, 0), Size::new(w as u32, 30)),
-                CornerRadii::new(Size::new(10, 10)),
-            )
-            .into_styled(box_style)
-            .draw(target)
-            .map_err(|_| ())?;
-
-            font.render_aligned(
-                icon,
-                Point::new(center, 15),
-                VerticalPosition::Center,
-                HorizontalAlignment::Center,
-                FontColor::Transparent(Rgb565::CSS_WHITE),
-                target,
-            )
-            .map_err(|_| ())?;
-        }
-
-        Ok(())
-    }
 }

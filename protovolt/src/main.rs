@@ -140,6 +140,7 @@ async fn main(spawner: Spawner) {
                             ui.controls_submeasurement_tag(*channel, lib::event::SetState::SetLimits);
 
                             ui.nav_power_info(lib::event::PowerType::PowerDelivery(Limits { voltage: 20.1, current: 4.56}));
+                            ui.nav_buttons(Some(lib::event::FunctionButton::Enter));
                         }
                     }
                     DisplayTask::UpdateReadout(channel, readout) => {
