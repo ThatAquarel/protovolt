@@ -59,8 +59,8 @@ impl Navbar {
         let font = &fonts.info_small;
 
         let usb_type = match power_type {
-            PowerType::PowerDelivery(_) => "USB-C PD",
-            PowerType::Standard(_) => "USB 2.0",
+            PowerType::PowerDelivery(_) => labels::PD,
+            PowerType::Standard(_) => labels::STD,
         };
         let (voltage_fmt, current_fmt) = match power_type {
             PowerType::PowerDelivery(limits) | PowerType::Standard(limits) => {
@@ -68,8 +68,10 @@ impl Navbar {
                     format_f32::<8>(limits.voltage, 2),
                     format_f32::<8>(limits.current, 2),
                 );
-                voltage_fmt.write_str(" V");
-                current_fmt.write_str(" A");
+                voltage_fmt.write_char(' ');
+                voltage_fmt.write_str(labels::VOLT);
+                current_fmt.write_char(' ');
+                current_fmt.write_str(labels::AMPERE);
 
                 (voltage_fmt, current_fmt)
             }

@@ -263,6 +263,18 @@ pub mod color_scheme {
 }
 
 pub mod labels {
+    // Boot
+    pub const INPUT: &'static str = "INPUT";
+    pub const PD: &'static str = "USB-C PD";
+    pub const STD: &'static str = "USB 2.0";
+
+    pub const SENSE: &'static str = "SENSE";
+    pub const CONVERTER: &'static str = "CONVERTER";
+
+    pub const PASS: &'static str = "PASS";
+    pub const FAIL: &'static str = "FAIL";
+
+    // Controls
     pub const CHANNEL_A: &'static str = "CHANNEL A";
     pub const CHANNEL_B: &'static str = "CHANNEL B";
 

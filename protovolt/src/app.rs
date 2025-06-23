@@ -4,13 +4,17 @@ use defmt::*;
 
 use crate::lib::event::{
     AppEvent, AppTask, Change, Channel, ChannelFocus, DisplayTask, FunctionButton, HardwareEvent,
-    HardwareTask, InterfaceEvent, Limits, Readout,
+    HardwareTask, InterfaceEvent, Limits, PowerType, Readout, SetState,
 };
 
 #[derive(Default)]
 pub struct App {
     pub ch_a: ChannelState,
     pub ch_b: ChannelState,
+
+    pub power_type: PowerType,
+
+    pub set_state: SetState,
 
     pub interface_state: InterfaceState,
     pub hardware_state: HardwareState,
@@ -36,9 +40,17 @@ impl Default for ChannelState {
     }
 }
 
+// pub enum LimitSetting {
+//     Voltage,
+//     Current,
+// }
+
+// pub enum
+
 struct InterfaceState {
     pub screen: Screen,
     pub selected_channel: Option<Channel>,
+    // pub
 }
 
 impl Default for InterfaceState {
@@ -93,23 +105,27 @@ impl App {
                     display: Some(DisplayTask::SetupSplash),
                 })
             }
-            (HardwareState::WaitingForPowerDelivery, HardwareEvent::PowerDeliveryReady) => {
+            (
+                HardwareState::WaitingForPowerDelivery,
+                HardwareEvent::PowerDeliveryReady(power_type),
+            ) => {
                 self.hardware_state = HardwareState::WaitingForSense;
+                self.power_type = power_type;
 
                 Some(AppTask {
                     hardware: Some(HardwareTask::EnableSense),
-                    display: Some(DisplayTask::ConfirmPowerDelivery),
+                    display: Some(DisplayTask::ConfirmPowerDelivery(power_type)),
                 })
             }
-            (HardwareState::WaitingForSense, HardwareEvent::SenseReady) => {
+            (HardwareState::WaitingForSense, HardwareEvent::SenseReady(result)) => {
                 self.hardware_state = HardwareState::WaitingForConverter;
 
                 Some(AppTask {
                     hardware: Some(HardwareTask::EnableConverter),
-                    display: Some(DisplayTask::ConfirmSense),
+                    display: Some(DisplayTask::ConfirmSense(result)),
                 })
             }
-            (HardwareState::WaitingForConverter, HardwareEvent::ConverterReady) => {
+            (HardwareState::WaitingForConverter, HardwareEvent::ConverterReady(result)) => {
                 self.hardware_state = HardwareState::WaitingMainUi;
 
                 Some(AppTask {
@@ -117,18 +133,20 @@ impl App {
                         Duration::from_millis(500),
                         HardwareEvent::StartMainInterface,
                     )),
-                    display: Some(DisplayTask::ConfirmConverter),
+                    display: Some(DisplayTask::ConfirmConverter(result)),
                 })
             }
             (HardwareState::WaitingMainUi, HardwareEvent::StartMainInterface) => {
                 self.hardware_state = HardwareState::Standby;
                 self.interface_state.screen = Screen::Main;
 
-                info!("call readout loop");
-
                 Some(AppTask {
                     hardware: Some(HardwareTask::EnableReadoutLoop),
-                    display: Some(DisplayTask::SetupMain),
+                    display: Some(DisplayTask::SetupMain(
+                        self.power_type,
+                        self.ch_a.limits,
+                        self.ch_b.limits,
+                    )),
                 })
             }
             (HardwareState::Standby, HardwareEvent::ReadoutAcquired(channel, readout)) => {

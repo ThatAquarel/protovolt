@@ -5,9 +5,9 @@ use embassy_time::Duration;
 pub enum HardwareEvent {
     PowerOn,
 
-    PowerDeliveryReady,
-    SenseReady,
-    ConverterReady,
+    PowerDeliveryReady(PowerType),
+    SenseReady(Result<(), ()>),
+    ConverterReady(Result<(), ()>),
 
     StartMainInterface,
 
@@ -40,6 +40,12 @@ impl Default for Limits {
 pub enum PowerType {
     PowerDelivery(Limits),
     Standard(Limits),
+}
+
+impl Default for PowerType {
+    fn default() -> Self {
+        PowerType::Standard(Default::default())
+    }
 }
 
 pub enum Change {
@@ -85,7 +91,9 @@ pub enum Channel {
     B
 }
 
+#[derive(Default)]
 pub enum SetState {
+    #[default]
     SetLimits,
     SetProtection,
 }
@@ -108,12 +116,12 @@ pub enum DisplayTask {
     // Splash Screen
     SetupSplash,
 
-    ConfirmPowerDelivery,
-    ConfirmSense,
-    ConfirmConverter,
+    ConfirmPowerDelivery(PowerType),
+    ConfirmSense(Result<(), ()>),
+    ConfirmConverter(Result<(), ()>),
 
     // Main Readout
-    SetupMain,
+    SetupMain(PowerType, Limits, Limits),
 
     // Updates
     UpdateReadout(Channel, Readout),
