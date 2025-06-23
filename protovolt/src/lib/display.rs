@@ -15,7 +15,7 @@ use mipidsi::models::ST7789;
 use mipidsi::options::Orientation;
 use mipidsi::{Builder, Display};
 
-mod st7789 {
+pub mod st7789 {
     use embassy_rp::spi;
     use mipidsi::options::{ColorInversion, Rotation};
 

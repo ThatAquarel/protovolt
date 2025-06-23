@@ -17,8 +17,8 @@ use defmt::*;
 use app::App;
 
 use embassy_executor::Spawner;
-use embassy_rp::spi::{self, Spi};
 use embassy_rp::gpio::Pin;
+use embassy_rp::spi::{self, Spi};
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
@@ -32,8 +32,9 @@ use lib::interface::{ButtonsInterface, matrix};
 
 use crate::lib::display::DisplayInterface;
 use crate::lib::event::{AppEvent, DisplayTask, HardwareEvent, HardwareTask, Readout};
-use crate::ui::boot;
-use crate::ui::controls;
+use crate::ui::color_scheme::CH_B_SELECTED;
+use crate::ui::{color_scheme, controls};
+use crate::ui::{Ui, boot};
 
 use {defmt_rtt as _, panic_probe as _};
 
@@ -55,25 +56,24 @@ async fn main(spawner: Spawner) {
 
     let spi_bus: Mutex<NoopRawMutex, _> = Mutex::new(RefCell::new(spi));
 
-    let display = DisplayInterface::new(
+    let mut display = DisplayInterface::new(
         &spi_bus,
         p.PIN_17.degrade(),
         p.PIN_21.degrade(),
         p.PIN_28.degrade(),
     );
-    let mut target = display.target;
+    // let mut target = display.target;
 
     // State Machine
     let mut a = App::default();
+    let mut ui = Ui::new(&mut display.target);
 
     unwrap!(spawner.spawn(poll_interface(buttons, INTERFACE_CHANNEL.sender())));
 
     let hw_sender = HARDWARE_CHANNEL.sender();
-
     hw_sender.send(HardwareEvent::PowerOn).await;
 
     let mut ticker = Ticker::every(Duration::from_hz(100));
-
     loop {
         let mut next_app_task = None;
 
@@ -89,9 +89,7 @@ async fn main(spawner: Spawner) {
                     HardwareTask::EnablePowerDelivery => {
                         Timer::after_millis(10).await;
 
-                        hw_sender
-                            .send(HardwareEvent::PowerDeliveryReady)
-                            .await;
+                        hw_sender.send(HardwareEvent::PowerDeliveryReady).await;
                     }
                     HardwareTask::EnableSense => {
                         Timer::after_millis(10).await;
@@ -117,82 +115,58 @@ async fn main(spawner: Spawner) {
             if let Some(display_task) = task.display {
                 match display_task {
                     DisplayTask::SetupSplash => {
-                        controls::clear(&mut target);
-                        // draw_channel_background(&mut target, Rgb565::RED);
-                        boot::draw_splash_screen(&mut target);
+                        // ui.clear();
+                        // ui.boot_splash_screen();
                     }
                     DisplayTask::ConfirmPowerDelivery => {
-                        boot::draw_splash_text(&mut target, 0, "INPUT", "PD 20V 5A", true);
+                        // ui.boot_splash_text(0, "INPUT", "PD 20V 5A", true);
                     }
                     DisplayTask::ConfirmSense => {
-                        boot::draw_splash_text(&mut target, 1, "SENSE", "CH A ERR", false);
+                        // ui.boot_splash_text(1, "SENSE", "CH A ERR", false);
                     }
                     DisplayTask::ConfirmConverter => {
-                        boot::draw_splash_text(&mut target, 2, "CONVERTER", "CH A, CH B", true);
+                        // ui.boot_splash_text(2, "CONVERTER", "CH A, CH B", true);
                     }
                     DisplayTask::SetupMain => {
-                        controls::clear(&mut target);
-                        controls::draw_power_header(&mut target).unwrap();
-                        controls::draw_buttons(&mut target).unwrap();
+                        // ui.clear();
 
-                        let mut ch_a_section = target.translated(Point::new(0, 40));
-                        controls::draw_channel_background(&mut ch_a_section, Rgb565::CSS_DIM_GRAY)
-                            .unwrap();
-                        controls::draw_header_text(&mut ch_a_section, "CHANNEL A").unwrap();
-                        controls::draw_units(&mut ch_a_section).unwrap();
-                        controls::draw_submeasurement(&mut ch_a_section).unwrap();
-                        // controls::draw_measurements(&mut ch_a_section).unwrap();
+                        let channels = [lib::event::Channel::A, lib::event::Channel::B];
 
-                        let mut ch_b_section = target.translated(Point::new(163, 40));
-                        controls::draw_channel_background(
-                            &mut ch_b_section,
-                            Rgb565::CSS_DIM_GRAY,
-                        )
-                        .unwrap();
-                        controls::draw_header_text(&mut ch_b_section, "CHANNEL B").unwrap();
-                        controls::draw_units(&mut ch_b_section).unwrap();
-                        controls::draw_submeasurement(&mut ch_b_section).unwrap();
-                        // controls::draw_measurements(&mut ch_b_section).unwrap();
+                        for channel in channels.iter() {
+                            // ui.controls_channel_box(color_scheme::UNSELECTED, *channel);
+                            // ui.controls_channel_units(*channel);
+                        }
                     }
                     DisplayTask::UpdateReadout(channel, readout) => {
-                        let mut section = match channel {
-                            lib::event::Channel::A => target.translated(Point::new(0, 40)),
-                            lib::event::Channel::B => target.translated(Point::new(163, 40)),
-                        };
-
-                        controls::draw_measurements(&mut section, readout);
+                        // ui.controls_measurement(channel, readout);
                     }
                     DisplayTask::UpdateChannelFocus(focus_a, focus_b) => {
                         let focuses = [focus_a, focus_b];
 
                         for (i, focus) in focuses.iter().enumerate() {
-                            let mut section = target.translated(Point::new( 163 * i as i32, 40));
-                            
+                            // let mut section = target.translated(Point::new(163 * i as i32, 40));
+
                             let focus_color = match focus {
-                                lib::event::ChannelFocus::SelectedInactive => Rgb565::CSS_SILVER,
-                                lib::event::ChannelFocus::UnselectedInactive => Rgb565::CSS_DIM_GRAY,
+                                lib::event::ChannelFocus::SelectedInactive => color_scheme::SELECTED,
+                                lib::event::ChannelFocus::UnselectedInactive => color_scheme::UNSELECTED,
                                 lib::event::ChannelFocus::SelectedActive => match i {
-                                    0 => { Rgb565::CSS_RED }
-                                    1 => { Rgb565::CSS_BLUE }
-                                    _ => { Rgb565::CSS_DIM_GRAY }
+                                    0 => color_scheme::CH_A_SELECTED,
+                                    1 => color_scheme::CH_B_SELECTED,
+                                    _ => color_scheme::SELECTED,
                                 },
                                 lib::event::ChannelFocus::UnselectedActive => match i {
-                                    0 => { Rgb565::CSS_DARK_RED }
-                                    1 => { Rgb565::CSS_DARK_BLUE }
-                                    // 0 => { Rgb565::CSS_FIRE_BRICK }
-                                    // 1 => { Rgb565::CSS_MEDIUM_BLUE }
-                                    _ => { Rgb565::CSS_DIM_GRAY }
-                                }
+                                    0 => color_scheme::CH_A_UNSELECTED,
+                                    1 => color_scheme::CH_B_UNSELECTED,
+                                    _ => color_scheme::UNSELECTED,
+                                },
                             };
 
-                            let text = match i {
-                                0 => "CHANNEL A",
-                                1 => "CHANNEL B",
-                                _ => "",
+                            let channel = match i {
+                                0 => lib::event::Channel::A,
+                                _ => lib::event::Channel::B,
                             };
 
-                            controls::draw_channel_background(&mut section, focus_color).unwrap();
-                            controls::draw_header_text(&mut section, text).unwrap();
+                            // ui.controls_channel_box(focus_color, channel);
                         }
                     }
                     _ => {}
@@ -256,7 +230,6 @@ async fn poll_readout(channel: Sender<'static, ThreadModeRawMutex, HardwareEvent
     }
 }
 
-
 #[embassy_executor::task]
 async fn poll_interface(
     mut buttons: ButtonsInterface<'static>,
@@ -266,7 +239,6 @@ async fn poll_interface(
 
     loop {
         if let Some(event) = buttons.poll() {
-
             info!("pressed");
             channel.send(event).await;
         }
