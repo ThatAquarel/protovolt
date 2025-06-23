@@ -3,8 +3,8 @@ use embassy_time::Duration;
 use defmt::*;
 
 use crate::lib::event::{
-    AppEvent, AppTask, Channel, ChannelFocus, DisplayTask, HardwareEvent, HardwareTask,
-    InterfaceEvent, Readout,
+    AppEvent, AppTask, Change, Channel, ChannelFocus, DisplayTask, FunctionButton, HardwareEvent,
+    HardwareTask, InterfaceEvent, Readout,
 };
 
 #[derive(Default)]
@@ -148,9 +148,36 @@ impl App {
 
     fn handle_interface_event(&mut self, event: InterfaceEvent) -> Option<AppTask> {
         match event {
-            InterfaceEvent::ButtonSettings => None,
-            InterfaceEvent::ButtonSwitch => None,
-            InterfaceEvent::ButtonEnter => None,
+            InterfaceEvent::ButtonSettings(change) => match change {
+                Change::Pressed => Some(AppTask {
+                    hardware: None,
+                    display: Some(DisplayTask::UpdateButton(Some(FunctionButton::Settings))),
+                }),
+                Change::Released => Some(AppTask {
+                    hardware: None,
+                    display: Some(DisplayTask::UpdateButton(None)),
+                }),
+            },
+            InterfaceEvent::ButtonSwitch(change) => match change {
+                Change::Pressed => Some(AppTask {
+                    hardware: None,
+                    display: Some(DisplayTask::UpdateButton(Some(FunctionButton::Switch))),
+                }),
+                Change::Released => Some(AppTask {
+                    hardware: None,
+                    display: Some(DisplayTask::UpdateButton(None)),
+                }),
+            },
+            InterfaceEvent::ButtonEnter(change) => match change {
+                Change::Pressed => Some(AppTask {
+                    hardware: None,
+                    display: Some(DisplayTask::UpdateButton(Some(FunctionButton::Enter))),
+                }),
+                Change::Released => Some(AppTask {
+                    hardware: None,
+                    display: Some(DisplayTask::UpdateButton(None)),
+                }),
+            },
             InterfaceEvent::ButtonRight => None,
             InterfaceEvent::ButtonUp => None,
             InterfaceEvent::ButtonDown => None,
@@ -167,7 +194,6 @@ impl App {
                     current_state.enable = !current_state.enable;
                 };
                 *selected_channel = Some(event_channel);
-
 
                 let other_focus = if other_state.enable {
                     ChannelFocus::UnselectedActive

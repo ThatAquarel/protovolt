@@ -1,7 +1,5 @@
-
-use crate::lib::event::{Channel, InterfaceEvent};
+use crate::lib::event::{Change, Channel, InterfaceEvent};
 use embassy_rp::gpio::{AnyPin, Input, Level, Output, Pull};
-
 
 pub mod matrix {
     pub const N_ROWS: usize = 3;
@@ -48,7 +46,7 @@ impl ButtonsInterface<'_> {
                 } else {
                     *debounce = 0;
                 }
-                
+
                 self.current_state[k] = false;
 
                 if *debounce < matrix::DEBOUNCE_THRESHOLD {
@@ -65,20 +63,45 @@ impl ButtonsInterface<'_> {
 
         // info!("states {:?}", self.current_state);
         for (i, state) in self.current_state.iter().enumerate() {
-            if *state == true && self.prev_state[i] == false {
-                // info!("pressed {} time {}", i, self.debounce[i]);
+            // if *state == true && self.prev_state[i] == false {
+            //     // info!("pressed {} time {}", i, self.debounce[i]);
+            //     button_event = match i {
+            //         0 => Some(InterfaceEvent::ButtonSettings),
+            //         1 => Some(InterfaceEvent::ButtonSwitch),
+            //         2 => Some(InterfaceEvent::ButtonEnter),
+            //         3 => Some(InterfaceEvent::ButtonRight),
+            //         4 => Some(InterfaceEvent::ButtonUp),
+            //         5 => Some(InterfaceEvent::ButtonDown),
+            //         6 => Some(InterfaceEvent::ButtonLeft),
+            //         7 => Some(InterfaceEvent::ButtonChannel(Channel::B)),
+            //         8 => Some(InterfaceEvent::ButtonChannel(Channel::A)),
+            //         _ => None
+            //     };
+            // }
+
+            let change = if *state == true && self.prev_state[i] == false {
+                Some(Change::Pressed)
+            } else if *state == false && self.prev_state[i] == true {
+                Some(Change::Released)
+            } else {
+                None
+            };
+
+            if let Some(change) = change {
                 button_event = match i {
-                    0 => Some(InterfaceEvent::ButtonSettings),
-                    1 => Some(InterfaceEvent::ButtonSwitch),
-                    2 => Some(InterfaceEvent::ButtonEnter),
-                    3 => Some(InterfaceEvent::ButtonRight),
-                    4 => Some(InterfaceEvent::ButtonUp),
-                    5 => Some(InterfaceEvent::ButtonDown),
-                    6 => Some(InterfaceEvent::ButtonLeft),
-                    7 => Some(InterfaceEvent::ButtonChannel(Channel::B)),
-                    8 => Some(InterfaceEvent::ButtonChannel(Channel::A)),
-                    _ => None
-                };
+                    0 => Some(InterfaceEvent::ButtonSettings(change)),
+                    1 => Some(InterfaceEvent::ButtonSwitch(change)),
+                    2 => Some(InterfaceEvent::ButtonEnter(change)),
+                    7 => match change {
+                        Change::Pressed => Some(InterfaceEvent::ButtonChannel(Channel::B)),
+                        Change::Released => None,
+                    },
+                    8 => match change {
+                        Change::Pressed => Some(InterfaceEvent::ButtonChannel(Channel::A)),
+                        Change::Released => None,
+                    },
+                    _ => None,
+                }
             }
         }
 

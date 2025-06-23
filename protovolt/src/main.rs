@@ -140,7 +140,7 @@ async fn main(spawner: Spawner) {
                             ui.controls_submeasurement_tag(*channel, lib::event::SetState::SetLimits);
 
                             ui.nav_power_info(lib::event::PowerType::PowerDelivery(Limits { voltage: 20.1, current: 4.56}));
-                            ui.nav_buttons(Some(lib::event::FunctionButton::Enter));
+                            ui.nav_buttons(None);
                         }
                     }
                     DisplayTask::UpdateReadout(channel, readout) => {
@@ -176,6 +176,9 @@ async fn main(spawner: Spawner) {
 
                             ui.controls_channel_box(focus_color, channel);
                         }
+                    }
+                    DisplayTask::UpdateButton(function_button_state) => {
+                        ui.nav_buttons(function_button_state);
                     }
                     _ => {}
                 }

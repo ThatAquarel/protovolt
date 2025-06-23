@@ -1,3 +1,4 @@
+use embassy_rp::pio::State;
 use embassy_time::Duration;
 
 #[derive(Debug)]
@@ -41,14 +42,19 @@ pub enum PowerType {
     Standard(Limits),
 }
 
+pub enum Change {
+    Pressed,
+    Released
+}
+
 pub enum InterfaceEvent {
     ButtonUp,
     ButtonDown,
     ButtonLeft,
     ButtonRight,
-    ButtonEnter,
-    ButtonSwitch,
-    ButtonSettings,
+    ButtonEnter(Change),
+    ButtonSwitch(Change),
+    ButtonSettings(Change),
     ButtonChannel(Channel),
 }
 
