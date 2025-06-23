@@ -4,15 +4,23 @@ use embedded_graphics::{
     prelude::{DrawTarget, Point, RgbColor},
 };
 
+pub mod fmt;
+
 pub mod boot;
 pub mod controls;
+pub mod navbar;
 
 use boot::BootScreen;
 use controls::ControlsScreen;
+use navbar::Navbar;
+
 use embedded_graphics::draw_target::DrawTargetExt;
 use u8g2_fonts::{FontRenderer, fonts};
 
-use crate::lib::{display::st7789, event::{Channel, Readout}};
+use crate::lib::{
+    display::st7789,
+    event::{Channel, Limits, PowerType, Readout, SetState},
+};
 
 pub trait Display: DrawTarget<Color = Rgb565> {}
 impl<T: DrawTarget<Color = Rgb565>> Display for T {}
@@ -28,6 +36,8 @@ where
 
     pub boot: BootScreen<'a>,
     pub controls: ControlsScreen,
+
+    pub navbar: Navbar,
 }
 
 impl<'a, D> Ui<'a, D>
@@ -42,6 +52,8 @@ where
 
             boot: BootScreen::new(),
             controls: ControlsScreen::new(),
+
+            navbar: Navbar::new(),
         }
     }
 
@@ -90,15 +102,37 @@ where
         self.controls.draw_units(&mut target, &self.fonts)
     }
 
-    pub fn controls_measurement(&mut self, channel: Channel, readout: Readout) ->  Result<(), ()> {
-        let mut target =  self.layout.channel_section(&mut *self.target, channel);
-        self.controls.draw_measurements(&mut target, &self.fonts, readout)
+    pub fn controls_measurement(&mut self, channel: Channel, readout: Readout) -> Result<(), ()> {
+        let mut target = self.layout.channel_section(&mut *self.target, channel);
+        self.controls
+            .draw_measurements(&mut target, &self.fonts, readout)
     }
 
-    // pub fn controls_submeasurement(&mut self, channel: Channel) ->  Result<(), ()> {
+    pub fn controls_submeasurement(&mut self, channel: Channel, limits: Limits) -> Result<(), ()> {
+        let mut target = self.layout.channel_section(&mut *self.target, channel);
+        self.controls
+            .draw_submeasurements(&mut target, &self.fonts, limits)
+    }
 
-    // }
+    pub fn controls_submeasurement_tag(
+        &mut self,
+        channel: Channel,
+        set_state: SetState,
+    ) -> Result<(), ()> {
+        let mut target = self.layout.channel_section(&mut *self.target, channel);
 
+        let (top_tag, bottom_tag) = match set_state {
+            SetState::SetLimits => (labels::SET, labels::SET),
+            SetState::SetProtection => (labels::OVP, labels::OCP),
+        };
+
+        self.controls
+            .draw_submeasurements_tag(&mut target, &self.fonts, top_tag, bottom_tag)
+    }
+
+    pub fn nav_power_info(&mut self, power_type: PowerType) -> Result<(), ()> {
+        self.navbar.draw_power_info(&mut *self.target, &self.fonts, power_type)
+    }
 }
 
 pub struct Fonts {
@@ -114,7 +148,8 @@ impl Default for Fonts {
     fn default() -> Self {
         Self {
             icons_2x: FontRenderer::new::<fonts::u8g2_font_open_iconic_all_2x_t>(),
-            icons_4x: FontRenderer::new::<fonts::u8g2_font_open_iconic_all_4x_t>(),
+            // icons_4x: FontRenderer::new::<fonts::u8g2_font_open_iconic_all_4x_t>(),
+            icons_4x: FontRenderer::new::<fonts::u8g2_font_open_iconic_other_4x_t>(),
             info_small: FontRenderer::new::<fonts::u8g2_font_helvB08_tf>(),
             info_large: FontRenderer::new::<fonts::u8g2_font_helvR14_tr>(),
             readout_small: FontRenderer::new::<fonts::u8g2_font_logisoso16_tn>(),
@@ -122,6 +157,16 @@ impl Default for Fonts {
         }
     }
 }
+
+pub mod icons_2x {
+    pub const CHECKMARK: &str = "\u{0073}";
+    pub const CROSS: &str = "\u{011B}";
+}
+
+pub mod icons_4x {
+    pub const LIGHTNING: &str = "\u{0040}";
+}
+
 
 pub struct Layout;
 
@@ -171,11 +216,6 @@ impl Layout {
     }
 }
 
-pub mod icons_2x {
-    pub const CHECKMARK: &str = "\u{0073}";
-    pub const CROSS: &str = "\u{011B}";
-}
-
 pub mod color_scheme {
     use embedded_graphics::{
         pixelcolor::Rgb565,
@@ -203,4 +243,8 @@ pub mod labels {
     pub const VOLT: &'static str = "V";
     pub const AMPERE: &'static str = "A";
     pub const WATT: &'static str = "W";
+
+    pub const SET: &'static str = "SET";
+    pub const OVP: &'static str = "OVP";
+    pub const OCP: &'static str = "OCP";
 }

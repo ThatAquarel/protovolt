@@ -13,52 +13,13 @@ use u8g2_fonts::{
 };
 
 use crate::{
-    lib::event::Readout,
-    ui::{
-        Display, Fonts, Layout, color_scheme,
-        labels,
-    },
+    lib::event::{Limits, Readout},
+    ui::{color_scheme, fmt::format_f32, labels, Display, Fonts, Layout},
 };
 
-use core::fmt::Write;
-use heapless::String;
 
 use embedded_graphics_framebuf::{FrameBuf, backends::FrameBufferBackend};
 
-pub fn format_f32<const N: usize>(value: f32, decimals: u32) -> String<N> {
-    let mut buf = String::<N>::new();
-
-    let is_negative = value.is_sign_negative();
-    let abs_value = if is_negative { -value } else { value };
-
-    let int_part = abs_value as u32;
-    let mut frac_part = abs_value - (int_part as f32);
-
-    // Scale fractional part manually (no powi)
-    let mut scale = 1.0;
-    for _ in 0..decimals {
-        scale *= 10.0;
-    }
-
-    frac_part = frac_part * scale;
-    let frac_part = frac_part as u32;
-
-    if is_negative {
-        let _ = buf.write_char('-');
-    }
-
-    if int_part < 10 {
-        let _ = buf.write_char('0');
-    }
-
-    let _ = write!(buf, "{}", int_part);
-    if decimals > 0 {
-        let _ = buf.write_char('.');
-        let _ = write!(buf, "{:0width$}", frac_part, width = decimals as usize);
-    }
-
-    buf
-}
 pub struct ControlsScreen;
 
 impl ControlsScreen {
@@ -163,60 +124,6 @@ impl ControlsScreen {
         Ok(())
     }
 
-    pub fn draw_submeasurement<D>(target: &mut D) -> Result<(), ()>
-    where
-        D: Display,
-    {
-        let font = FontRenderer::new::<fonts::u8g2_font_logisoso16_tn>();
-
-        font.render_aligned(
-            "12.03",
-            Point::new(122, 30 + 36),
-            VerticalPosition::Top,
-            HorizontalAlignment::Right,
-            // FontColor::Transparent(Rgb565::CSS_BLACK),
-            FontColor::Transparent(Rgb565::CSS_DIM_GRAY),
-            target,
-        )
-        .map_err(|_| ())?;
-
-        font.render_aligned(
-            "5.65",
-            Point::new(122, 30 + 36 + 62),
-            VerticalPosition::Top,
-            HorizontalAlignment::Right,
-            FontColor::Transparent(Rgb565::CSS_DIM_GRAY),
-            target,
-        )
-        .map_err(|_| ())?;
-
-        let mode_font = FontRenderer::new::<fonts::u8g2_font_helvB08_tf>();
-
-        mode_font
-            .render_aligned(
-                "SET",
-                Point::new(140, 30 + 36),
-                VerticalPosition::Top,
-                HorizontalAlignment::Center,
-                FontColor::Transparent(Rgb565::CSS_DIM_GRAY),
-                target,
-            )
-            .map_err(|_| ())?;
-
-        mode_font
-            .render_aligned(
-                "SET",
-                Point::new(140, 30 + 36 + 62),
-                VerticalPosition::Top,
-                HorizontalAlignment::Center,
-                FontColor::Transparent(Rgb565::CSS_DIM_GRAY),
-                target,
-            )
-            .map_err(|_| ())?;
-
-        Ok(())
-    }
-
     const MEAS_WIDTH: usize = 108;
     const MEAS_HEIGHT: usize = 32;
     const MEAS_FB_SIZE: usize = ControlsScreen::MEAS_WIDTH * ControlsScreen::MEAS_HEIGHT;
@@ -232,89 +139,101 @@ impl ControlsScreen {
     {
         let font = &fonts.readout_large;
         let readouts = [readout.voltage, readout.current, readout.power];
-        
-        for (i, value) in readouts.iter().enumerate() {
-            let mut measurement_data = [color_scheme::BACKGROUND; ControlsScreen::MEAS_FB_SIZE];
 
-            let mut framebuf = FrameBuf::new(
-                &mut measurement_data,
+        for (i, value) in readouts.iter().enumerate() {
+            let mut fbuf_data = [color_scheme::BACKGROUND; ControlsScreen::MEAS_FB_SIZE];
+            let mut fbuf = FrameBuf::new(
+                &mut fbuf_data,
                 ControlsScreen::MEAS_WIDTH,
                 ControlsScreen::MEAS_HEIGHT,
             );
 
-            framebuf.clear(color_scheme::BACKGROUND);
-
             font.render_aligned(
-                format_f32::<8>(*value, 3).as_str(),
+                format_f32::<6>(*value, 3).as_str(),
                 Point::new(ControlsScreen::MEAS_WIDTH as i32 + 1, -1),
                 VerticalPosition::Top,
                 HorizontalAlignment::Right,
-                FontColor::Transparent(Rgb565::CSS_WHITE),
-                &mut framebuf,
+                FontColor::Transparent(color_scheme::FONT_MAIN),
+                &mut fbuf,
             )
             .map_err(|_| ())?;
 
             let top_left = Point::new(122 - ControlsScreen::MEAS_WIDTH as i32, 30 + 62 * i as i32);
-            let area = Rectangle::new(top_left, framebuf.size());
+            let area = Rectangle::new(top_left, fbuf.size());
 
             target
-                .fill_contiguous(&area, measurement_data)
+                .fill_contiguous(&area, fbuf_data)
                 .map_err(|_| ())?;
         }
 
         Ok(())
     }
 
-    pub fn draw_power_header<D>(target: &mut D) -> Result<(), ()>
+    const SUBMEAS_WIDTH: usize = ControlsScreen::MEAS_WIDTH / 2;
+    const SUBMEAS_HEIGHT: usize = ControlsScreen::MEAS_HEIGHT / 2;
+    const SUBMEAS_FB_SIZE: usize = ControlsScreen::SUBMEAS_WIDTH * ControlsScreen::SUBMEAS_HEIGHT;
+
+    pub fn draw_submeasurements<D>(&mut self, target: &mut D, fonts: &Fonts, limits: Limits) -> Result<(), ()>
     where
-        D: DrawTarget<Color = Rgb565>,
+        D: Display,
     {
-        let font = FontRenderer::new::<fonts::u8g2_font_open_iconic_all_4x_t>();
+        let font = &fonts.readout_small;
 
-        font.render_aligned(
-            "\u{0060}",
-            Point::new(0, 16),
-            VerticalPosition::Center,
-            HorizontalAlignment::Left,
-            FontColor::Transparent(Rgb565::CSS_DARK_GRAY),
-            target,
-        )
-        .map_err(|_| ())?;
+        let values = [limits.voltage, limits.current];
+        for (i, value) in values.iter().enumerate() {
+            let mut fbuf_data = [color_scheme::BACKGROUND; ControlsScreen::SUBMEAS_FB_SIZE];
+            let mut fbuf = FrameBuf::new(
+                &mut fbuf_data,
+                ControlsScreen::SUBMEAS_WIDTH,
+                ControlsScreen::SUBMEAS_HEIGHT,
+            );
 
-        let mode_font = FontRenderer::new::<fonts::u8g2_font_helvB08_tf>();
-
-        mode_font
-            .render_aligned(
-                "USB-C PD",
-                Point::new(36, 6),
-                VerticalPosition::Center,
-                HorizontalAlignment::Left,
-                FontColor::Transparent(Rgb565::CSS_DARK_GRAY),
-                target,
+            font.render_aligned(
+                format_f32::<5>(*value, 2).as_str(),
+                Point::new(ControlsScreen::SUBMEAS_WIDTH as i32, -1),
+                VerticalPosition::Top,
+                HorizontalAlignment::Right,
+                FontColor::Transparent(color_scheme::FONT_SMALL),
+                &mut fbuf,
             )
             .map_err(|_| ())?;
 
-        mode_font
-            .render_aligned(
-                "20 V  5 A",
-                Point::new(36, 16),
-                VerticalPosition::Center,
-                HorizontalAlignment::Left,
-                FontColor::Transparent(Rgb565::CSS_DARK_GRAY),
-                target,
-            )
-            .map_err(|_| ())?;
+            let top_left = Point::new(122 - ControlsScreen::SUBMEAS_WIDTH as i32, 30 + 36 + 62 * i as i32);
+            let area = Rectangle::new(top_left, fbuf.size());
 
-        mode_font
-            .render_aligned(
-                "100 W",
-                Point::new(36, 26),
-                VerticalPosition::Center,
-                HorizontalAlignment::Left,
-                FontColor::Transparent(Rgb565::CSS_DARK_GRAY),
-                target,
-            )
-            .map_err(|_| ())?;
+            target
+                .fill_contiguous(&area, fbuf_data)
+                .map_err(|_| ())?;
+        }
+
+        Ok(())
+    }
+
+    pub fn draw_submeasurements_tag<D>(
+        &mut self,
+        target: &mut D,
+        fonts: &Fonts,
+        top_tag: &'static str,
+        bottom_tag: &'static str,
+    ) -> Result<(), ()>
+    where
+        D: Display,
+    {
+        let mode_font = &fonts.info_small;
+        let tags = [top_tag, bottom_tag];
+
+        for (i, tag) in tags.iter().enumerate() {
+            mode_font
+                .render_aligned(
+                    *tag,
+                    Point::new(140, 30 + 36 + 62 * i as i32),
+                    VerticalPosition::Top,
+                    HorizontalAlignment::Center,
+                    FontColor::Transparent(color_scheme::FONT_SMALL),
+                    target,
+                )
+                .map_err(|_| ())?;
+        }
 
         Ok(())
     }

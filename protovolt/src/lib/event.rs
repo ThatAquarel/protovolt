@@ -20,6 +20,27 @@ pub struct Readout {
     pub power: f32,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct Limits {
+    pub voltage: f32,
+    pub current: f32
+}
+
+impl Default for Limits {
+    fn default() -> Self {
+        Self {
+            voltage: 5.00,
+            current: 0.50,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum PowerType {
+    PowerDelivery(Limits),
+    Standard(Limits),
+}
+
 pub enum InterfaceEvent {
     ButtonUp,
     ButtonDown,
@@ -55,6 +76,11 @@ pub enum HardwareTask {
 pub enum Channel {
     A,
     B
+}
+
+pub enum SetState {
+    SetLimits,
+    SetProtection,
 }
 
 #[derive(Clone, Copy)]

@@ -31,7 +31,7 @@ use lib::event::InterfaceEvent;
 use lib::interface::{ButtonsInterface, matrix};
 
 use crate::lib::display::DisplayInterface;
-use crate::lib::event::{AppEvent, DisplayTask, HardwareEvent, HardwareTask, Readout};
+use crate::lib::event::{AppEvent, DisplayTask, HardwareEvent, HardwareTask, Limits, Readout};
 use crate::ui::color_scheme::CH_B_SELECTED;
 use crate::ui::{Ui, boot};
 use crate::ui::{color_scheme, controls};
@@ -128,7 +128,6 @@ async fn main(spawner: Spawner) {
                         ui.boot_splash_text(2, "CONVERTER", "CH A, CH B", true);
                     }
                     DisplayTask::SetupMain => {
-
                         ui.clear();
 
                         let channels = [lib::event::Channel::A, lib::event::Channel::B];
@@ -136,6 +135,11 @@ async fn main(spawner: Spawner) {
                         for channel in channels.iter() {
                             ui.controls_channel_box(color_scheme::UNSELECTED, *channel);
                             ui.controls_channel_units(*channel);
+
+                            ui.controls_submeasurement(*channel, Limits {voltage: 12.024, current: 59.014});
+                            ui.controls_submeasurement_tag(*channel, lib::event::SetState::SetLimits);
+
+                            ui.nav_power_info(lib::event::PowerType::PowerDelivery(Limits { voltage: 20.1, current: 4.56}));
                         }
                     }
                     DisplayTask::UpdateReadout(channel, readout) => {
