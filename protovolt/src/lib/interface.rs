@@ -70,9 +70,9 @@ impl ButtonsInterface<'_> {
             //         1 => Some(InterfaceEvent::ButtonSwitch),
             //         2 => Some(InterfaceEvent::ButtonEnter),
             //         3 => Some(InterfaceEvent::ButtonRight),
+            //         6 => Some(InterfaceEvent::ButtonLeft),
             //         4 => Some(InterfaceEvent::ButtonUp),
             //         5 => Some(InterfaceEvent::ButtonDown),
-            //         6 => Some(InterfaceEvent::ButtonLeft),
             //         7 => Some(InterfaceEvent::ButtonChannel(Channel::B)),
             //         8 => Some(InterfaceEvent::ButtonChannel(Channel::A)),
             //         _ => None
@@ -92,22 +92,15 @@ impl ButtonsInterface<'_> {
                     0 => Some(InterfaceEvent::ButtonSettings(change)),
                     1 => Some(InterfaceEvent::ButtonSwitch(change)),
                     2 => Some(InterfaceEvent::ButtonEnter(change)),
-                    4 => match change {
-                        Change::Pressed => Some(InterfaceEvent::ButtonUp),
-                        Change::Released => None,
-                    },
-                    5 => match change {
-                        Change::Pressed => Some(InterfaceEvent::ButtonDown),
-                        Change::Released => None,
-                    },
-                    7 => match change {
-                        Change::Pressed => Some(InterfaceEvent::ButtonChannel(Channel::B)),
-                        Change::Released => None,
-                    },
-                    8 => match change {
-                        Change::Pressed => Some(InterfaceEvent::ButtonChannel(Channel::A)),
-                        Change::Released => None,
-                    },
+
+                    3 => emit_on_press(change, InterfaceEvent::ButtonRight),
+                    6 => emit_on_press(change, InterfaceEvent::ButtonLeft),
+
+                    4 => emit_on_press(change, InterfaceEvent::ButtonUp),
+                    5 => emit_on_press(change, InterfaceEvent::ButtonDown),
+
+                    7 => emit_on_press(change, InterfaceEvent::ButtonChannel(Channel::B)),
+                    8 => emit_on_press(change, InterfaceEvent::ButtonChannel(Channel::A)),
                     _ => None,
                 }
             }
@@ -116,5 +109,12 @@ impl ButtonsInterface<'_> {
         self.prev_state = self.current_state;
 
         button_event
+    }
+}
+
+fn emit_on_press(change: Change, event: InterfaceEvent) -> Option<InterfaceEvent> {
+    match change {
+        Change::Pressed => Some(event),
+        Change::Released => None,
     }
 }

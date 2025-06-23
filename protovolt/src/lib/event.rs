@@ -92,6 +92,15 @@ pub enum Channel {
     B,
 }
 
+impl Channel {
+    pub fn get_other(self) -> Self {
+        match self {
+            Channel::A => Channel::B,
+            Channel::B => Channel::A
+        }
+    }
+}
+
 #[derive(Clone, Copy, Default)]
 pub enum SetState {
     #[default]

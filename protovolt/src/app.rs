@@ -184,31 +184,8 @@ impl App {
                         SetState::Set => SetState::Limits,
                         SetState::Limits => SetState::Set,
                     };
-                    let (ch_a_set, ch_b_set) = self.get_current_set();
-                    let (ch_a_select, ch_b_select) = self.get_current_select_set();
-
-                    AppTaskBuilder::new()
+                    self.setpoints_task()
                         .display(DisplayTask::UpdateButton(Some(FunctionButton::Switch)))
-                        .display(DisplayTask::UpdateSetState(
-                            Channel::A,
-                            self.set_state,
-                            ch_a_select,
-                        ))
-                        .display(DisplayTask::UpdateSetState(
-                            Channel::B,
-                            self.set_state,
-                            ch_b_select,
-                        ))
-                        .display(DisplayTask::UpdateSetpoint(
-                            Channel::A,
-                            ch_a_set,
-                            ch_a_select,
-                        ))
-                        .display(DisplayTask::UpdateSetpoint(
-                            Channel::B,
-                            ch_b_set,
-                            ch_b_select,
-                        ))
                         .build()
                 }
                 Change::Released => AppTaskBuilder::new()
@@ -225,92 +202,38 @@ impl App {
             },
             InterfaceEvent::ButtonUp => match self.interface_state.arrows_function {
                 ArrowsFunction::Navigation => {
-                    match self.interface_state.selected_channel {
-                        Some(Channel::A) => {
-                            self.ch_a.set_select = SetSelect::Voltage;
-                        }
-                        Some(Channel::B) => {
-                            self.ch_b.set_select = SetSelect::Voltage;
-                        }
-                        _ => {}
-                    };
-
-                    let (ch_a_set, ch_b_set) = self.get_current_set();
-                    let (ch_a_select, ch_b_select) = self.get_current_select_set();
-
-                    AppTaskBuilder::new()
-                        .display(DisplayTask::UpdateSetState(
-                            Channel::A,
-                            self.set_state,
-                            ch_a_select,
-                        ))
-                        .display(DisplayTask::UpdateSetState(
-                            Channel::B,
-                            self.set_state,
-                            ch_b_select,
-                        ))
-                        .display(DisplayTask::UpdateSetpoint(
-                            Channel::A,
-                            ch_a_set,
-                            ch_a_select,
-                        ))
-                        .display(DisplayTask::UpdateSetpoint(
-                            Channel::B,
-                            ch_b_set,
-                            ch_b_select,
-                        ))
-                        .build()
+                    self.set_current_select_set(SetSelect::Voltage);
+                    self.setpoints_task().build()
                 }
                 _ => None,
             },
             InterfaceEvent::ButtonDown => match self.interface_state.arrows_function {
                 ArrowsFunction::Navigation => {
-                    match self.interface_state.selected_channel {
-                        Some(Channel::A) => {
-                            self.ch_a.set_select = SetSelect::Current;
-                        }
-                        Some(Channel::B) => {
-                            self.ch_b.set_select = SetSelect::Current;
-                        }
-                        _ => {}
-                    };
-
-                    let (ch_a_set, ch_b_set) = self.get_current_set();
-                    let (ch_a_select, ch_b_select) = self.get_current_select_set();
-
-                    AppTaskBuilder::new()
-                        .display(DisplayTask::UpdateSetState(
-                            Channel::A,
-                            self.set_state,
-                            ch_a_select,
-                        ))
-                        .display(DisplayTask::UpdateSetState(
-                            Channel::B,
-                            self.set_state,
-                            ch_b_select,
-                        ))
-                        .display(DisplayTask::UpdateSetpoint(
-                            Channel::A,
-                            ch_a_set,
-                            ch_a_select,
-                        ))
-                        .display(DisplayTask::UpdateSetpoint(
-                            Channel::B,
-                            ch_b_set,
-                            ch_b_select,
-                        ))
-                        .build()
+                    self.set_current_select_set(SetSelect::Current);
+                    self.setpoints_task().build()
                 }
                 _ => None,
             },
-            InterfaceEvent::ButtonRight => None,
-            InterfaceEvent::ButtonLeft => None,
+            InterfaceEvent::ButtonRight => match self.interface_state.arrows_function {
+                
+                ArrowsFunction::Navigation => {
+                    info!("right B");
+                    self.navigation_channel_focus(Channel::B)},
+                _ => None,
+            },
+            InterfaceEvent::ButtonLeft => match self.interface_state.arrows_function {
+                
+                ArrowsFunction::Navigation => {
+                    info!("left A");
+                    self.navigation_channel_focus(Channel::A)},
+                _ => None,
+            },
             InterfaceEvent::ButtonChannel(event_channel) => {
-                let (current_state, other_state) = match event_channel {
-                    Channel::A => (&mut self.ch_a, &self.ch_b),
-                    Channel::B => (&mut self.ch_b, &self.ch_a),
+                let current_state = match event_channel {
+                    Channel::A => &mut self.ch_a,
+                    Channel::B => &mut self.ch_b,
                 };
-                // mutate channel box selection
+
                 let selected_channel = &mut self.interface_state.selected_channel;
 
                 if selected_channel.as_ref() == Some(&event_channel) {
@@ -318,48 +241,7 @@ impl App {
                 };
                 *selected_channel = Some(event_channel);
 
-                let other_focus = if other_state.enable {
-                    ChannelFocus::UnselectedActive
-                } else {
-                    ChannelFocus::UnselectedInactive
-                };
-                let current_focus = if current_state.enable {
-                    ChannelFocus::SelectedActive
-                } else {
-                    ChannelFocus::SelectedInactive
-                };
-
-                let (focus_a, focus_b) = match event_channel {
-                    Channel::A => (current_focus, other_focus),
-                    Channel::B => (other_focus, current_focus),
-                };
-
-                let (ch_a_set, ch_b_set) = self.get_current_set();
-                let (ch_a_select, ch_b_select) = self.get_current_select_set();
-
-                AppTaskBuilder::new()
-                    .display(DisplayTask::UpdateChannelFocus(focus_a, focus_b))
-                    .display(DisplayTask::UpdateSetState(
-                        Channel::A,
-                        self.set_state,
-                        ch_a_select,
-                    ))
-                    .display(DisplayTask::UpdateSetState(
-                        Channel::B,
-                        self.set_state,
-                        ch_b_select,
-                    ))
-                    .display(DisplayTask::UpdateSetpoint(
-                        Channel::A,
-                        ch_a_set,
-                        ch_a_select,
-                    ))
-                    .display(DisplayTask::UpdateSetpoint(
-                        Channel::B,
-                        ch_b_set,
-                        ch_b_select,
-                    ))
-                    .build()
+                self.shift_channel_focus_task(event_channel).build()
             }
         }
     }
@@ -382,5 +264,90 @@ impl App {
             Some(Channel::B) => (None, Some(self.ch_b.set_select)),
             _ => (None, None),
         }
+    }
+
+    pub fn set_current_select_set(&mut self, set_select: SetSelect) {
+        match self.interface_state.selected_channel {
+            Some(Channel::A) => {
+                self.ch_a.set_select = set_select;
+            }
+            Some(Channel::B) => {
+                self.ch_b.set_select = set_select;
+            }
+            _ => {}
+        };
+    }
+
+    pub fn setpoints_task(&mut self) -> AppTaskBuilder {
+        let (ch_a_set, ch_b_set) = self.get_current_set();
+        let (ch_a_select, ch_b_select) = self.get_current_select_set();
+
+        AppTaskBuilder::new()
+            .display(DisplayTask::UpdateSetState(
+                Channel::A,
+                self.set_state,
+                ch_a_select,
+            ))
+            .display(DisplayTask::UpdateSetState(
+                Channel::B,
+                self.set_state,
+                ch_b_select,
+            ))
+            .display(DisplayTask::UpdateSetpoint(
+                Channel::A,
+                ch_a_set,
+                ch_a_select,
+            ))
+            .display(DisplayTask::UpdateSetpoint(
+                Channel::B,
+                ch_b_set,
+                ch_b_select,
+            ))
+    }
+
+    pub fn shift_channel_focus_task(&mut self, channel: Channel) -> AppTaskBuilder {
+        let (current_state, other_state) = match channel {
+            Channel::A => (&self.ch_a, &self.ch_b),
+            Channel::B => (&self.ch_b, &self.ch_a),
+        };
+
+        let other_focus = if other_state.enable {
+            ChannelFocus::UnselectedActive
+        } else {
+            ChannelFocus::UnselectedInactive
+        };
+        let current_focus = if current_state.enable {
+            ChannelFocus::SelectedActive
+        } else {
+            ChannelFocus::SelectedInactive
+        };
+
+        let (focus_a, focus_b) = match channel {
+            Channel::A => (current_focus, other_focus),
+            Channel::B => (other_focus, current_focus),
+        };
+
+        self.setpoints_task()
+            .display(DisplayTask::UpdateChannelFocus(focus_a, focus_b))
+    }
+
+    pub fn navigation_channel_focus(&mut self, resulting_channel: Channel) -> Option<AppTask> {
+        if let Some(current_channel) = self.interface_state.selected_channel {
+            if current_channel == resulting_channel {
+                return None;
+            }
+
+            self.interface_state.selected_channel = Some(resulting_channel);
+
+            let (current_set_select, other_set_select) = match resulting_channel {
+                Channel::A => (self.ch_b.set_select, &mut self.ch_a.set_select),
+                Channel::B => (self.ch_a.set_select, &mut self.ch_b.set_select),
+            };
+            *other_set_select = current_set_select;
+
+            return self.shift_channel_focus_task(resulting_channel).build();
+        }
+
+        None
     }
 }
