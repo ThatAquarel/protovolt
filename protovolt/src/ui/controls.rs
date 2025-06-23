@@ -14,7 +14,10 @@ use u8g2_fonts::{
 
 use crate::{
     lib::event::Readout,
-    ui::{Display, Fonts, Layout, color_scheme, labels},
+    ui::{
+        Display, Fonts, Layout, color_scheme,
+        labels,
+    },
 };
 
 use core::fmt::Write;
@@ -56,30 +59,11 @@ pub fn format_f32<const N: usize>(value: f32, decimals: u32) -> String<N> {
 
     buf
 }
-
-mod framebuffer {
-    pub const MEAS_WIDTH: usize = 108;
-    pub const MEAS_HEIGHT: usize = 32;
-    pub const SUBMEAS_WIDTH: usize = MEAS_WIDTH / 2;
-    pub const SUBMEAS_HEIGHT: usize = MEAS_HEIGHT / 2;
-
-    pub const MEAS_FB_SIZE: usize = MEAS_WIDTH * MEAS_HEIGHT;
-    pub const SUBMEAS_FB_SIZE: usize = SUBMEAS_WIDTH * SUBMEAS_HEIGHT;
-}
-
-pub struct ControlsScreen {
-    measurement_data: [Rgb565; framebuffer::MEAS_FB_SIZE],
-    submeasurement_data: [Rgb565; framebuffer::SUBMEAS_FB_SIZE],
-    // measurement_framebuffer: FrameBuf<Rgb565, &'b mut [Rgb565; framebuffer::MEAS_FB_SIZE]>,
-    // submeasurement_framebuffer: FrameBuf<Rgb565, &'b mut [Rgb565; framebuffer::SUBMEAS_FB_SIZE]>,
-}
+pub struct ControlsScreen;
 
 impl ControlsScreen {
     pub fn new() -> Self {
-        Self {
-            measurement_data: [color_scheme::BACKGROUND; framebuffer::MEAS_FB_SIZE],
-            submeasurement_data: [color_scheme::BACKGROUND; framebuffer::SUBMEAS_FB_SIZE],
-        }
+        Self {}
     }
 
     pub fn draw_channel_background<D>(
@@ -233,6 +217,10 @@ impl ControlsScreen {
         Ok(())
     }
 
+    const MEAS_WIDTH: usize = 108;
+    const MEAS_HEIGHT: usize = 32;
+    const MEAS_FB_SIZE: usize = ControlsScreen::MEAS_WIDTH * ControlsScreen::MEAS_HEIGHT;
+
     pub fn draw_measurements<D>(
         &mut self,
         target: &mut D,
@@ -244,19 +232,21 @@ impl ControlsScreen {
     {
         let font = &fonts.readout_large;
         let readouts = [readout.voltage, readout.current, readout.power];
-
+        
         for (i, value) in readouts.iter().enumerate() {
+            let mut measurement_data = [color_scheme::BACKGROUND; ControlsScreen::MEAS_FB_SIZE];
+
             let mut framebuf = FrameBuf::new(
-                &mut self.measurement_data,
-                framebuffer::MEAS_WIDTH,
-                framebuffer::MEAS_HEIGHT,
+                &mut measurement_data,
+                ControlsScreen::MEAS_WIDTH,
+                ControlsScreen::MEAS_HEIGHT,
             );
 
             framebuf.clear(color_scheme::BACKGROUND);
 
             font.render_aligned(
                 format_f32::<8>(*value, 3).as_str(),
-                Point::new(108 + 1, -1),
+                Point::new(ControlsScreen::MEAS_WIDTH as i32 + 1, -1),
                 VerticalPosition::Top,
                 HorizontalAlignment::Right,
                 FontColor::Transparent(Rgb565::CSS_WHITE),
@@ -264,10 +254,12 @@ impl ControlsScreen {
             )
             .map_err(|_| ())?;
 
-            let top_left = Point::new(122 - 108, 30 + 62 * i as i32);
+            let top_left = Point::new(122 - ControlsScreen::MEAS_WIDTH as i32, 30 + 62 * i as i32);
             let area = Rectangle::new(top_left, framebuf.size());
 
-            target.fill_contiguous(&area, self.measurement_data).map_err(|_| ())?;
+            target
+                .fill_contiguous(&area, measurement_data)
+                .map_err(|_| ())?;
         }
 
         Ok(())

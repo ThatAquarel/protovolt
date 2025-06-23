@@ -23,7 +23,7 @@ use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::{Channel, Sender};
-use embassy_time::{Duration, Ticker, Timer};
+use embassy_time::{Duration, Instant, Ticker, Timer};
 
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
@@ -33,8 +33,8 @@ use lib::interface::{ButtonsInterface, matrix};
 use crate::lib::display::DisplayInterface;
 use crate::lib::event::{AppEvent, DisplayTask, HardwareEvent, HardwareTask, Readout};
 use crate::ui::color_scheme::CH_B_SELECTED;
-use crate::ui::{color_scheme, controls};
 use crate::ui::{Ui, boot};
+use crate::ui::{color_scheme, controls};
 
 use {defmt_rtt as _, panic_probe as _};
 
@@ -115,40 +115,43 @@ async fn main(spawner: Spawner) {
             if let Some(display_task) = task.display {
                 match display_task {
                     DisplayTask::SetupSplash => {
-                        // ui.clear();
-                        // ui.boot_splash_screen();
+                        ui.clear();
+                        ui.boot_splash_screen();
                     }
                     DisplayTask::ConfirmPowerDelivery => {
-                        // ui.boot_splash_text(0, "INPUT", "PD 20V 5A", true);
+                        ui.boot_splash_text(0, "INPUT", "PD 20V 5A", true);
                     }
                     DisplayTask::ConfirmSense => {
-                        // ui.boot_splash_text(1, "SENSE", "CH A ERR", false);
+                        ui.boot_splash_text(1, "SENSE", "CH A ERR", false);
                     }
                     DisplayTask::ConfirmConverter => {
-                        // ui.boot_splash_text(2, "CONVERTER", "CH A, CH B", true);
+                        ui.boot_splash_text(2, "CONVERTER", "CH A, CH B", true);
                     }
                     DisplayTask::SetupMain => {
-                        // ui.clear();
+
+                        ui.clear();
 
                         let channels = [lib::event::Channel::A, lib::event::Channel::B];
 
                         for channel in channels.iter() {
-                            // ui.controls_channel_box(color_scheme::UNSELECTED, *channel);
-                            // ui.controls_channel_units(*channel);
+                            ui.controls_channel_box(color_scheme::UNSELECTED, *channel);
+                            ui.controls_channel_units(*channel);
                         }
                     }
                     DisplayTask::UpdateReadout(channel, readout) => {
-                        // ui.controls_measurement(channel, readout);
+                        ui.controls_measurement(channel, readout);
                     }
                     DisplayTask::UpdateChannelFocus(focus_a, focus_b) => {
                         let focuses = [focus_a, focus_b];
 
                         for (i, focus) in focuses.iter().enumerate() {
-                            // let mut section = target.translated(Point::new(163 * i as i32, 40));
-
                             let focus_color = match focus {
-                                lib::event::ChannelFocus::SelectedInactive => color_scheme::SELECTED,
-                                lib::event::ChannelFocus::UnselectedInactive => color_scheme::UNSELECTED,
+                                lib::event::ChannelFocus::SelectedInactive => {
+                                    color_scheme::SELECTED
+                                }
+                                lib::event::ChannelFocus::UnselectedInactive => {
+                                    color_scheme::UNSELECTED
+                                }
                                 lib::event::ChannelFocus::SelectedActive => match i {
                                     0 => color_scheme::CH_A_SELECTED,
                                     1 => color_scheme::CH_B_SELECTED,
@@ -166,7 +169,7 @@ async fn main(spawner: Spawner) {
                                 _ => lib::event::Channel::B,
                             };
 
-                            // ui.controls_channel_box(focus_color, channel);
+                            ui.controls_channel_box(focus_color, channel);
                         }
                     }
                     _ => {}
