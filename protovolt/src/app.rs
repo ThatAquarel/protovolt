@@ -4,7 +4,7 @@ use defmt::*;
 
 use crate::lib::event::{
     AppEvent, AppTask, Change, Channel, ChannelFocus, DisplayTask, FunctionButton, HardwareEvent,
-    HardwareTask, InterfaceEvent, Readout,
+    HardwareTask, InterfaceEvent, Limits, Readout,
 };
 
 #[derive(Default)]
@@ -18,8 +18,7 @@ pub struct App {
 
 struct ChannelState {
     pub enable: bool,
-    pub v_set: f32,
-    pub i_set: f32,
+    pub limits: Limits,
 
     pub readout: Option<Readout>,
 }
@@ -28,8 +27,10 @@ impl Default for ChannelState {
     fn default() -> Self {
         Self {
             enable: false,
-            v_set: 5.000,
-            i_set: 1.00,
+            limits: Limits {
+                voltage: 5.000,
+                current: 1.000,
+            },
             readout: None,
         }
     }

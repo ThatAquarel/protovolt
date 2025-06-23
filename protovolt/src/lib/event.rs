@@ -75,7 +75,8 @@ pub enum HardwareTask {
     EnableReadoutLoop,
 
 
-    DelayedHardwareEvent(Duration, HardwareEvent)
+    DelayedInterfaceEvent(Duration, InterfaceEvent),
+    DelayedHardwareEvent(Duration, HardwareEvent),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

@@ -7,6 +7,7 @@
 
 mod app;
 mod ui;
+mod task;
 
 mod lib;
 
@@ -32,14 +33,15 @@ use lib::interface::{ButtonsInterface, matrix};
 
 use crate::lib::display::DisplayInterface;
 use crate::lib::event::{AppEvent, DisplayTask, HardwareEvent, HardwareTask, Limits, Readout};
+use crate::task::{handle_display_task, handle_hardware_task};
 use crate::ui::color_scheme::CH_B_SELECTED;
 use crate::ui::{Ui, boot};
 use crate::ui::{color_scheme, controls};
 
 use {defmt_rtt as _, panic_probe as _};
 
-static INTERFACE_CHANNEL: Channel<ThreadModeRawMutex, InterfaceEvent, 32> = Channel::new();
-static HARDWARE_CHANNEL: Channel<ThreadModeRawMutex, HardwareEvent, 32> = Channel::new();
+pub static INTERFACE_CHANNEL: Channel<ThreadModeRawMutex, InterfaceEvent, 32> = Channel::new();
+pub static HARDWARE_CHANNEL: Channel<ThreadModeRawMutex, HardwareEvent, 32> = Channel::new();
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
@@ -72,6 +74,7 @@ async fn main(spawner: Spawner) {
 
     let hw_sender = HARDWARE_CHANNEL.sender();
     hw_sender.send(HardwareEvent::PowerOn).await;
+    let int_sender = INTERFACE_CHANNEL.sender();
 
     let mut ticker = Ticker::every(Duration::from_hz(100));
     loop {
@@ -85,103 +88,10 @@ async fn main(spawner: Spawner) {
 
         if let Some(task) = next_app_task {
             if let Some(hardware_task) = task.hardware {
-                match hardware_task {
-                    HardwareTask::EnablePowerDelivery => {
-                        Timer::after_millis(10).await;
-
-                        hw_sender.send(HardwareEvent::PowerDeliveryReady).await;
-                    }
-                    HardwareTask::EnableSense => {
-                        Timer::after_millis(10).await;
-
-                        hw_sender.send(HardwareEvent::SenseReady).await;
-                    }
-                    HardwareTask::EnableConverter => {
-                        Timer::after_millis(10).await;
-
-                        hw_sender.send(HardwareEvent::ConverterReady).await;
-                    }
-                    HardwareTask::EnableReadoutLoop => {
-                        info!("enable readout loop");
-                        unwrap!(spawner.spawn(poll_readout(HARDWARE_CHANNEL.sender())));
-                    }
-
-                    HardwareTask::DelayedHardwareEvent(duration, event) => {
-                        Timer::after(duration).await;
-                        hw_sender.send(event).await;
-                    }
-                }
+                handle_hardware_task(hardware_task, spawner, &hw_sender, &int_sender).await;
             }
             if let Some(display_task) = task.display {
-                match display_task {
-                    DisplayTask::SetupSplash => {
-                        ui.clear();
-                        ui.boot_splash_screen();
-                    }
-                    DisplayTask::ConfirmPowerDelivery => {
-                        ui.boot_splash_text(0, "INPUT", "PD 20V 5A", true);
-                    }
-                    DisplayTask::ConfirmSense => {
-                        ui.boot_splash_text(1, "SENSE", "CH A ERR", false);
-                    }
-                    DisplayTask::ConfirmConverter => {
-                        ui.boot_splash_text(2, "CONVERTER", "CH A, CH B", true);
-                    }
-                    DisplayTask::SetupMain => {
-                        ui.clear();
-
-                        let channels = [lib::event::Channel::A, lib::event::Channel::B];
-
-                        for channel in channels.iter() {
-                            ui.controls_channel_box(color_scheme::UNSELECTED, *channel);
-                            ui.controls_channel_units(*channel);
-
-                            ui.controls_submeasurement(*channel, Limits {voltage: 12.024, current: 59.014});
-                            ui.controls_submeasurement_tag(*channel, lib::event::SetState::SetLimits);
-
-                            ui.nav_power_info(lib::event::PowerType::PowerDelivery(Limits { voltage: 20.1, current: 4.56}));
-                            ui.nav_buttons(None);
-                        }
-                    }
-                    DisplayTask::UpdateReadout(channel, readout) => {
-                        ui.controls_measurement(channel, readout);
-                    }
-                    DisplayTask::UpdateChannelFocus(focus_a, focus_b) => {
-                        let focuses = [focus_a, focus_b];
-
-                        for (i, focus) in focuses.iter().enumerate() {
-                            let focus_color = match focus {
-                                lib::event::ChannelFocus::SelectedInactive => {
-                                    color_scheme::SELECTED
-                                }
-                                lib::event::ChannelFocus::UnselectedInactive => {
-                                    color_scheme::UNSELECTED
-                                }
-                                lib::event::ChannelFocus::SelectedActive => match i {
-                                    0 => color_scheme::CH_A_SELECTED,
-                                    1 => color_scheme::CH_B_SELECTED,
-                                    _ => color_scheme::SELECTED,
-                                },
-                                lib::event::ChannelFocus::UnselectedActive => match i {
-                                    0 => color_scheme::CH_A_UNSELECTED,
-                                    1 => color_scheme::CH_B_UNSELECTED,
-                                    _ => color_scheme::UNSELECTED,
-                                },
-                            };
-
-                            let channel = match i {
-                                0 => lib::event::Channel::A,
-                                _ => lib::event::Channel::B,
-                            };
-
-                            ui.controls_channel_box(focus_color, channel);
-                        }
-                    }
-                    DisplayTask::UpdateButton(function_button_state) => {
-                        ui.nav_buttons(function_button_state);
-                    }
-                    _ => {}
-                }
+                handle_display_task(display_task, &mut ui, &hw_sender, &int_sender).await
             }
         }
 
@@ -190,7 +100,7 @@ async fn main(spawner: Spawner) {
 }
 
 #[embassy_executor::task]
-async fn poll_readout(channel: Sender<'static, ThreadModeRawMutex, HardwareEvent, 32>) {
+pub async fn poll_readout(channel: Sender<'static, ThreadModeRawMutex, HardwareEvent, 32>) {
     let mut ticker = Ticker::every(Duration::from_hz(5)); // 100ms
     let mut v: f32 = 10.0;
     let mut c: f32 = 5.0;

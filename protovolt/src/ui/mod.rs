@@ -19,7 +19,7 @@ use u8g2_fonts::{FontRenderer, fonts};
 
 use crate::lib::{
     display::st7789,
-    event::{Channel, FunctionButton, Limits, PowerType, Readout, SetState},
+    event::{Channel, ChannelFocus, FunctionButton, Limits, PowerType, Readout, SetState},
 };
 
 pub trait Display: DrawTarget<Color = Rgb565> {}
@@ -84,7 +84,24 @@ where
         )
     }
 
-    pub fn controls_channel_box(&mut self, color: Rgb565, channel: Channel) -> Result<(), ()> {
+    pub fn controls_channel_box(
+        &mut self,
+        channel: Channel,
+        focus: ChannelFocus,
+    ) -> Result<(), ()> {
+        let color = match focus {
+            ChannelFocus::SelectedInactive => color_scheme::SELECTED,
+            ChannelFocus::UnselectedInactive => color_scheme::UNSELECTED,
+            ChannelFocus::SelectedActive => match channel {
+                Channel::A => color_scheme::CH_A_SELECTED,
+                Channel::B => color_scheme::CH_B_SELECTED,
+            },
+            ChannelFocus::UnselectedActive => match channel {
+                Channel::A => color_scheme::CH_A_UNSELECTED,
+                Channel::B => color_scheme::CH_B_UNSELECTED,
+            },
+        };
+
         let text = match channel {
             Channel::A => labels::CHANNEL_A,
             Channel::B => labels::CHANNEL_B,
@@ -131,11 +148,13 @@ where
     }
 
     pub fn nav_power_info(&mut self, power_type: PowerType) -> Result<(), ()> {
-        self.navbar.draw_power_info(&mut *self.target, &self.fonts, power_type)
+        self.navbar
+            .draw_power_info(&mut *self.target, &self.fonts, power_type)
     }
 
-    pub fn nav_buttons(&mut self, button_state: Option<FunctionButton>) -> Result <(), ()> {
-        self.navbar.draw_button(&mut *self.target, &self.fonts, button_state)
+    pub fn nav_buttons(&mut self, button_state: Option<FunctionButton>) -> Result<(), ()> {
+        self.navbar
+            .draw_button(&mut *self.target, &self.fonts, button_state)
     }
 }
 
@@ -174,7 +193,6 @@ pub mod icons_2x {
 pub mod icons_4x {
     pub const LIGHTNING: &str = "\u{0040}";
 }
-
 
 pub struct Layout;
 
