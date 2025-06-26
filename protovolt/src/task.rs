@@ -8,8 +8,7 @@ use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::DrawTarget;
 
 use crate::lib::event::{
-    Channel, ChannelFocus, DisplayTask, HardwareEvent, HardwareTask, InterfaceEvent, Limits,
-    PowerType, SetState,
+    Channel, ChannelFocus, ConfirmState, DisplayTask, HardwareEvent, HardwareTask, InterfaceEvent, Limits, PowerType, SetState
 };
 use crate::ui::{Ui, color_scheme, labels};
 use crate::{HARDWARE_CHANNEL, poll_readout};
@@ -100,7 +99,7 @@ pub async fn handle_display_task<D>(
             ui.clear();
 
             ui.nav_power_info(power_type);
-            ui.nav_buttons(None);
+            ui.nav_buttons(ConfirmState::AwaitModify, None);
 
             let channels = [Channel::A, Channel::B];
             for channel in channels.iter() {
@@ -132,8 +131,8 @@ pub async fn handle_display_task<D>(
                 ui.controls_channel_box(channel, *focus);
             }
         }
-        DisplayTask::UpdateButton(function_button_state) => {
-            ui.nav_buttons(function_button_state);
+        DisplayTask::UpdateButton(confirm_state, function_button_state) => {
+            ui.nav_buttons(confirm_state, function_button_state);
         }
         DisplayTask::UpdateSetState(channel, set_state, set_select) => {
             ui.controls_submeasurement_tag(channel, set_state, set_select);

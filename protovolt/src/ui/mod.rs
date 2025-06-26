@@ -21,7 +21,10 @@ use crate::{
     app::SetSelect,
     lib::{
         display::st7789,
-        event::{Channel, ChannelFocus, FunctionButton, Limits, PowerType, Readout, SetState},
+        event::{
+            Channel, ChannelFocus, ConfirmState, FunctionButton, Limits, PowerType, Readout,
+            SetState,
+        },
     },
 };
 
@@ -166,9 +169,13 @@ where
             .draw_power_info(&mut *self.target, &self.fonts, power_type)
     }
 
-    pub fn nav_buttons(&mut self, button_state: Option<FunctionButton>) -> Result<(), ()> {
+    pub fn nav_buttons(
+        &mut self,
+        confirm_state: ConfirmState,
+        button_state: Option<FunctionButton>,
+    ) -> Result<(), ()> {
         self.navbar
-            .draw_button(&mut *self.target, &self.fonts, button_state)
+            .draw_button(&mut *self.target, &self.fonts, confirm_state, button_state)
     }
 }
 
@@ -200,6 +207,7 @@ pub mod icons_2x {
     pub const CHECKMARK: &str = "\u{0073}";
     pub const CROSS: &str = "\u{011B}";
 
+    pub const PENCIL: &str = "\u{00E3}";
     pub const SETTINGS: &str = "\u{0081}";
     pub const SWITCH: &str = "\u{00CC}";
 }

@@ -3,6 +3,8 @@ use core::{array::IntoIter, iter::FilterMap};
 use embassy_rp::pio::State;
 use embassy_time::Duration;
 
+use defmt::*;
+
 use crate::app::SetSelect;
 
 #[derive(Debug)]
@@ -96,7 +98,7 @@ impl Channel {
     pub fn get_other(self) -> Self {
         match self {
             Channel::A => Channel::B,
-            Channel::B => Channel::A
+            Channel::B => Channel::A,
         }
     }
 }
@@ -116,8 +118,14 @@ pub enum ChannelFocus {
     UnselectedInactive,
 }
 
+#[derive(Clone, Copy)]
+pub enum ConfirmState {
+    AwaitModify,
+    AwaitConfirmModify,
+}
+
 pub enum FunctionButton {
-    Enter,
+    Enter(ConfirmState),
     Switch,
     Settings,
 }
@@ -140,7 +148,7 @@ pub enum DisplayTask {
     UpdateSetState(Channel, SetState, Option<SetSelect>),
 
     // Navbar
-    UpdateButton(Option<FunctionButton>),
+    UpdateButton(ConfirmState, Option<FunctionButton>),
 
     // Settings
     SetupSettings,
@@ -165,10 +173,8 @@ pub struct AppTask {
 
 impl IntoIterator for AppTask {
     type Item = Task;
-    type IntoIter = FilterMap<
-        IntoIter<Option<Task>, APP_TASK_SIZE_LIMIT>,
-        fn(Option<Task>) -> Option<Task>,
-    >;
+    type IntoIter =
+        FilterMap<IntoIter<Option<Task>, APP_TASK_SIZE_LIMIT>, fn(Option<Task>) -> Option<Task>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.tasks.into_iter().filter_map(|opt| opt)
@@ -189,22 +195,40 @@ impl AppTaskBuilder {
         }
     }
 
-    pub fn hardware(mut self, task: HardwareTask) -> Self {
-        if self.inner.count < self.inner.tasks.len() {
-            self.inner.tasks[self.inner.count] = Some(Task::Hardware(task));
-            self.inner.count += 1;
+    pub fn extend(mut self, other: AppTaskBuilder) -> Self {
+        let i = &mut self.inner.count;
+        let mut iter = other.inner.tasks.into_iter().filter_map(|opt| opt);
+
+        while let Some(task) = iter.next() {
+            if *i >= APP_TASK_SIZE_LIMIT {
+                warn!("AppTaskBuilder tasks overflow from extend");
+                break;
+            }
+
+            self.inner.tasks[*i] = Some(task);
+            *i += 1;
         }
 
         self
     }
 
-    pub fn display(mut self, task: DisplayTask) -> Self {
+    pub fn push_task(mut self, task: Task) -> Self {
         if self.inner.count < self.inner.tasks.len() {
-            self.inner.tasks[self.inner.count] = Some(Task::Display(task));
+            self.inner.tasks[self.inner.count] = Some(task);
             self.inner.count += 1;
-        }
+        } else {
+            warn!("AppTaskBuilder tasks overflow");
+        };
 
         self
+    }
+
+    pub fn hardware(self, task: HardwareTask) -> Self {
+        self.push_task(Task::Hardware(task))
+    }
+
+    pub fn display(mut self, task: DisplayTask) -> Self {
+        self.push_task(Task::Display(task))
     }
 
     pub fn build(self) -> Option<AppTask> {
@@ -212,16 +236,22 @@ impl AppTaskBuilder {
     }
 
     pub fn hardware_task(task: HardwareTask) -> Option<AppTask> {
-        let mut tasks = [const {None}; APP_TASK_SIZE_LIMIT];
+        let mut tasks = [const { None }; APP_TASK_SIZE_LIMIT];
         tasks[0] = Some(Task::Hardware(task));
 
-        Some(AppTask { tasks: tasks, count: 1 })
+        Some(AppTask {
+            tasks: tasks,
+            count: 1,
+        })
     }
 
     pub fn display_task(task: DisplayTask) -> Option<AppTask> {
-        let mut tasks = [const {None}; APP_TASK_SIZE_LIMIT];
+        let mut tasks = [const { None }; APP_TASK_SIZE_LIMIT];
         tasks[0] = Some(Task::Display(task));
 
-        Some(AppTask { tasks: tasks, count: 1 })
+        Some(AppTask {
+            tasks: tasks,
+            count: 1,
+        })
     }
 }

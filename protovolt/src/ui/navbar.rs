@@ -13,7 +13,7 @@ use u8g2_fonts::{
 };
 
 use crate::{
-    lib::event::{FunctionButton, Limits, PowerType, Readout},
+    lib::event::{ConfirmState, FunctionButton, Limits, PowerType, Readout},
     ui::{
         Display, Fonts, Layout,
         color_scheme::{self, FONT_SMALL, SELECTED},
@@ -99,6 +99,7 @@ impl Navbar {
         &mut self,
         target: &mut D,
         fonts: &Fonts,
+        confirm_state: ConfirmState,
         button_state: Option<FunctionButton>,
     ) -> Result<(), ()>
     where
@@ -106,17 +107,22 @@ impl Navbar {
     {
         let icons = &fonts.icons_2x;
 
-        let mut box_style = PrimitiveStyleBuilder::new()
+        let box_style = PrimitiveStyleBuilder::new()
             .stroke_width(2)
-            .stroke_alignment(StrokeAlignment::Inside);
+            .stroke_alignment(StrokeAlignment::Inside)
+            .fill_color(color_scheme::BACKGROUND);
 
         let gap = 64;
         let w = 60;
 
-        let buttons = [icons_2x::CHECKMARK, icons_2x::SWITCH, icons_2x::SETTINGS];
+        let enter_icon = match confirm_state {
+            ConfirmState::AwaitConfirmModify => icons_2x::CHECKMARK,
+            ConfirmState::AwaitModify=> icons_2x::PENCIL,
+        };
+        let buttons = [enter_icon, icons_2x::SWITCH, icons_2x::SETTINGS];
 
         let selected_index = match button_state {
-            Some(FunctionButton::Enter) => Some(0),
+            Some(FunctionButton::Enter(_)) => Some(0),
             Some(FunctionButton::Switch) => Some(1),
             Some(FunctionButton::Settings) => Some(2),
             _ => None,
@@ -132,7 +138,9 @@ impl Navbar {
                 color_scheme::UNSELECTED
             };
 
-            let current_style = box_style.stroke_color(color).build();
+            let current_style = box_style
+                .stroke_color(color)
+                .build();
 
             RoundedRectangle::new(
                 Rectangle::new(Point::new(left, 0), Size::new(w as u32, 30)),
