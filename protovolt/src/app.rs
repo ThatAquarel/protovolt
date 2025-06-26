@@ -327,10 +327,11 @@ impl App {
                         };
                     self.interface_state.arrows_function = arrow_function;
 
-                    self.current_confirm_state_button_task(Some(FunctionButton::Enter(
-                        enter_confirm_state,
-                    )))
-                    .build()
+                    self.setpoints_task()
+                        .extend(self.current_confirm_state_button_task(Some(
+                            FunctionButton::Enter(enter_confirm_state),
+                        )))
+                        .build()
                 }
                 Change::Released => {
                     let function_button = match self.interface_state.arrows_function {
@@ -425,30 +426,43 @@ impl App {
         };
     }
 
+    fn get_confirm_state(&self) -> ConfirmState {
+        match self.interface_state.arrows_function {
+            ArrowsFunction::Navigation => ConfirmState::AwaitModify,
+            ArrowsFunction::SetpointEdit => ConfirmState::AwaitConfirmModify,
+        }
+    }
+
     pub fn setpoints_task(&mut self) -> AppTaskBuilder {
         let (ch_a_set, ch_b_set) = self.get_current_set();
         let (ch_a_select, ch_b_select) = self.get_current_select_set();
+
+        let confirm_state = self.get_confirm_state();
 
         AppTaskBuilder::new()
             .display(DisplayTask::UpdateSetState(
                 Channel::A,
                 self.set_state,
                 ch_a_select,
+                confirm_state,
             ))
             .display(DisplayTask::UpdateSetState(
                 Channel::B,
                 self.set_state,
                 ch_b_select,
+                confirm_state,
             ))
             .display(DisplayTask::UpdateSetpoint(
                 Channel::A,
                 ch_a_set,
                 ch_a_select,
+                confirm_state,
             ))
             .display(DisplayTask::UpdateSetpoint(
                 Channel::B,
                 ch_b_set,
                 ch_b_select,
+                confirm_state,
             ))
     }
 
@@ -482,11 +496,7 @@ impl App {
         &mut self,
         function_button: Option<FunctionButton>,
     ) -> AppTaskBuilder {
-        let confirm_state = match self.interface_state.arrows_function {
-            ArrowsFunction::Navigation => ConfirmState::AwaitModify,
-            ArrowsFunction::SetpointEdit => ConfirmState::AwaitConfirmModify,
-        };
-
+        let confirm_state = self.get_confirm_state();
         AppTaskBuilder::new().display(DisplayTask::UpdateButton(confirm_state, function_button))
     }
 

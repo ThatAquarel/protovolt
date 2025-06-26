@@ -143,9 +143,9 @@ pub enum DisplayTask {
 
     // Updates
     UpdateReadout(Channel, Readout),
-    UpdateSetpoint(Channel, Limits, Option<SetSelect>),
+    UpdateSetpoint(Channel, Limits, Option<SetSelect>, ConfirmState),
     UpdateChannelFocus(ChannelFocus, ChannelFocus),
-    UpdateSetState(Channel, SetState, Option<SetSelect>),
+    UpdateSetState(Channel, SetState, Option<SetSelect>, ConfirmState),
 
     // Navbar
     UpdateButton(ConfirmState, Option<FunctionButton>),

@@ -136,10 +136,17 @@ where
         channel: Channel,
         set_select: Option<SetSelect>,
         limits: Limits,
+        confirm_state: ConfirmState,
     ) -> Result<(), ()> {
         let mut target = self.layout.channel_section(&mut *self.target, channel);
-        self.controls
-            .draw_submeasurements(&mut target, &self.fonts, set_select, limits)
+        self.controls.draw_submeasurements(
+            &mut target,
+            &self.fonts,
+            set_select,
+            limits,
+            channel,
+            confirm_state,
+        )
     }
 
     pub fn controls_submeasurement_tag(
@@ -147,6 +154,7 @@ where
         channel: Channel,
         set_state: SetState,
         set_select: Option<SetSelect>,
+        confirm_state: ConfirmState,
     ) -> Result<(), ()> {
         let mut target = self.layout.channel_section(&mut *self.target, channel);
 
@@ -161,6 +169,8 @@ where
             set_select,
             top_tag,
             bottom_tag,
+            channel,
+            confirm_state,
         )
     }
 

@@ -14,7 +14,7 @@ use u8g2_fonts::{
 
 use crate::{
     app::SetSelect,
-    lib::event::{Limits, Readout},
+    lib::event::{Channel, ConfirmState, Limits, Readout},
     ui::{Display, Fonts, Layout, color_scheme, fmt::format_f32, labels},
 };
 
@@ -177,6 +177,8 @@ impl ControlsScreen {
         fonts: &Fonts,
         set_select: Option<SetSelect>,
         limits: Limits,
+        channel: Channel,
+        confirm_state: ConfirmState,
     ) -> Result<(), ()>
     where
         D: Display,
@@ -189,6 +191,11 @@ impl ControlsScreen {
             _ => None,
         };
 
+        let await_confirm_modify_color = match channel {
+            Channel::A => color_scheme::CH_A_SELECTED,
+            Channel::B => color_scheme::CH_B_SELECTED,
+        };
+
         let values = [limits.voltage, limits.current];
         for (i, value) in values.iter().enumerate() {
             let mut fbuf_data = [color_scheme::BACKGROUND; ControlsScreen::SUBMEAS_FB_SIZE];
@@ -199,7 +206,10 @@ impl ControlsScreen {
             );
 
             let color = if select_index == Some(i) {
-                color_scheme::SELECTED
+                match confirm_state {
+                    ConfirmState::AwaitConfirmModify => await_confirm_modify_color,
+                    ConfirmState::AwaitModify => color_scheme::SELECTED,
+                }
             } else {
                 color_scheme::UNSELECTED
             };
@@ -237,6 +247,8 @@ impl ControlsScreen {
         set_select: Option<SetSelect>,
         top_tag: &'static str,
         bottom_tag: &'static str,
+        channel: Channel,
+        confirm_state: ConfirmState,
     ) -> Result<(), ()>
     where
         D: Display,
@@ -250,6 +262,11 @@ impl ControlsScreen {
             _ => None,
         };
 
+        let await_confirm_modify_color = match channel {
+            Channel::A => color_scheme::CH_A_SELECTED,
+            Channel::B => color_scheme::CH_B_SELECTED,
+        };
+
         for (i, tag) in tags.iter().enumerate() {
             let mut fbuf_data = [color_scheme::BACKGROUND; ControlsScreen::TAG_FB_SIZE];
             let mut fbuf = FrameBuf::new(
@@ -259,7 +276,10 @@ impl ControlsScreen {
             );
 
             let color = if select_index == Some(i) {
-                color_scheme::SELECTED
+                match confirm_state {
+                    ConfirmState::AwaitConfirmModify => await_confirm_modify_color,
+                    ConfirmState::AwaitModify => color_scheme::SELECTED,
+                }
             } else {
                 color_scheme::UNSELECTED
             };
