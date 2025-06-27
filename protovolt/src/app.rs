@@ -3,10 +3,13 @@ use embassy_rp::pac::usb_dpram::regs::SetupPacketHigh;
 use embassy_time::Duration;
 use micromath::F32Ext;
 
-use crate::lib::event::{
-    AppEvent, AppTask, AppTaskBuilder, Change, Channel, ChannelFocus, ConfirmState, DisplayTask,
-    FunctionButton, HardwareEvent, HardwareTask, InterfaceEvent, Limits, PowerType, Readout,
-    SetState,
+use crate::{
+    lib::event::{
+        AppEvent, AppTask, AppTaskBuilder, Change, Channel, ChannelFocus, ConfirmState,
+        DisplayTask, FunctionButton, HardwareEvent, HardwareTask, InterfaceEvent, Limits,
+        PowerType, Readout, SetState,
+    },
+    ui::labels::CHANNEL_A,
 };
 
 #[derive(Default)]
@@ -22,92 +25,86 @@ pub struct App {
     pub hardware_state: HardwareState,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct SetPrecision {
-    pub exponent: f32,
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DecimalPrecision {
+    pub exponent: i8,
 }
 
-impl Default for SetPrecision {
-    fn default() -> Self {
-        Self { exponent: 0.0 }
+// impl Default for DecimalPrecision {
+//     fn default() -> Self {
+//         Self { exponent: 0 }
+//     }
+// }
+
+impl DecimalPrecision {
+    fn set_exponent(&mut self, exp: i8) {
+        self.exponent = exp.clamp(-2, 1);
     }
-}
 
-impl SetPrecision {
-    fn set_exponent(&mut self, exp: f32) {
-        self.exponent = exp.clamp(-2.0, 1.0);
+    pub fn get_exponent(&self) -> i8 {
+        self.exponent
     }
 
     pub fn cursor_right(&mut self) {
-        self.set_exponent(self.exponent - 1.0);
+        self.set_exponent(self.exponent - 1);
     }
 
     pub fn cursor_left(&mut self) {
-        self.set_exponent(self.exponent + 1.0);
+        self.set_exponent(self.exponent + 1);
     }
 }
 
-pub trait HasPrecisionSetter {
-    fn inner(&self) -> &SetPrecision;
-    fn inner_mut(&mut self) -> &mut SetPrecision;
+#[derive(Default)]
+pub struct WithPrecision {
+    pub value: f32,
+    pub precision: DecimalPrecision,
 
-    fn exponent(&self) -> f32 {
-        self.inner().exponent
-    }
-
-    fn cursor_right(&mut self) {
-        self.inner_mut().cursor_right();
-    }
-
-    fn cursor_left(&mut self) {
-        self.inner_mut().cursor_left();
-    }
-
-    fn multiplier(&self) -> f32;
+    set_state: SetSelect,
 }
 
-#[derive(Debug, Clone, Copy, Default)]
-pub struct SetPrecisionVoltage(pub SetPrecision);
-
-impl HasPrecisionSetter for SetPrecisionVoltage {
-    fn inner(&self) -> &SetPrecision {
-        &self.0
+impl WithPrecision {
+    fn multiplier_current(&self) -> f32 {
+        10f32.powf(self.precision.exponent as f32).max(0.05f32)
     }
-
-    fn inner_mut(&mut self) -> &mut SetPrecision {
-        &mut self.0
+    fn multiplier_voltage(&self) -> f32 {
+        10f32.powf(self.precision.exponent as f32)
     }
 
     fn multiplier(&self) -> f32 {
-        10f32.powf(self.0.exponent)
-    }
-}
-
-#[derive(Debug, Clone, Copy, Default)]
-pub struct SetPrecisionCurrent(pub SetPrecision);
-
-impl HasPrecisionSetter for SetPrecisionCurrent {
-    fn inner(&self) -> &SetPrecision {
-        &self.0
+        match self.set_state {
+            SetSelect::Voltage => self.multiplier_voltage(),
+            SetSelect::Current => self.multiplier_current(),
+        }
     }
 
-    fn inner_mut(&mut self) -> &mut SetPrecision {
-        &mut self.0
+    pub fn increment(&mut self) {
+        self.value += self.multiplier();
     }
 
-    fn multiplier(&self) -> f32 {
-        10f32.powf(self.0.exponent).max(0.05f32)
+    pub fn decrement(&mut self) {
+        self.value -= self.multiplier();
     }
-}
 
-pub struct WithPrecision<T, P: HasPrecisionSetter> {
-    pub value: T,
-    pub precision: P,
+    pub fn precision(&self) -> DecimalPrecision {
+        self.precision
+    }
+
+    pub fn cursor_right(&mut self) {
+        self.precision.cursor_right();
+    }
+
+    pub fn cursor_left(&mut self) {
+        self.precision.cursor_left();
+    }
+
+    pub fn exponent(&self) -> i8 {
+        self.precision.get_exponent()
+    }
 }
 
 pub struct VoltageCurrentWithSetter {
-    pub voltage: WithPrecision<f32, SetPrecisionVoltage>,
-    pub current: WithPrecision<f32, SetPrecisionCurrent>,
+    pub voltage: WithPrecision,
+    pub current: WithPrecision,
 }
 
 impl VoltageCurrentWithSetter {
@@ -115,10 +112,12 @@ impl VoltageCurrentWithSetter {
         let (v, i) = (limits.voltage, limits.current);
         Self {
             voltage: WithPrecision {
+                set_state: SetSelect::Voltage,
                 value: v,
                 precision: Default::default(),
             },
             current: WithPrecision {
+                set_state: SetSelect::Current,
                 value: i,
                 precision: Default::default(),
             },
@@ -287,7 +286,7 @@ impl App {
                 Change::Pressed => self
                     .current_confirm_state_button_task(Some(FunctionButton::Settings))
                     .build(),
-                Change::Released => self.current_confirm_state_button_task(None).build(),
+                Change::Released => self.return_current_button_state_task().build(),
             },
             InterfaceEvent::ButtonSwitch(change) => match change {
                 Change::Pressed => {
@@ -303,7 +302,7 @@ impl App {
                         )
                         .build()
                 }
-                Change::Released => self.current_confirm_state_button_task(None).build(),
+                Change::Released => self.return_current_button_state_task().build(),
             },
             InterfaceEvent::ButtonEnter(change) => match change {
                 Change::Pressed => {
@@ -342,6 +341,7 @@ impl App {
                     };
                     self.current_confirm_state_button_task(function_button)
                         .build()
+                    // None
                 }
             },
             InterfaceEvent::ButtonUp => match self.interface_state.arrows_function {
@@ -349,28 +349,54 @@ impl App {
                     self.set_current_select_set(SetSelect::Voltage);
                     self.setpoints_task().build()
                 }
-                _ => None,
+                ArrowsFunction::SetpointEdit => {
+                    let val = self.get_select_precision_mut();
+                    if let Some(val) = val {
+                        val.increment();
+                        return self.setpoints_task().build();
+                    }
+                    None
+                }
             },
             InterfaceEvent::ButtonDown => match self.interface_state.arrows_function {
                 ArrowsFunction::Navigation => {
                     self.set_current_select_set(SetSelect::Current);
                     self.setpoints_task().build()
                 }
-                _ => None,
+                ArrowsFunction::SetpointEdit => {
+                    let val = self.get_select_precision_mut();
+                    if let Some(val) = val {
+                        val.decrement();
+                        return self.setpoints_task().build();
+                    }
+                    None
+                }
             },
             InterfaceEvent::ButtonRight => match self.interface_state.arrows_function {
                 ArrowsFunction::Navigation => {
-                    info!("right B");
                     self.navigation_channel_focus(Channel::B)
                 }
-                _ => None,
+                ArrowsFunction::SetpointEdit => {
+                    let val = self.get_select_precision_mut();
+                    if let Some(val) = val {
+                        val.cursor_right();
+                        return self.setpoints_task().build();
+                    }
+                    None
+                }
             },
             InterfaceEvent::ButtonLeft => match self.interface_state.arrows_function {
                 ArrowsFunction::Navigation => {
-                    info!("left A");
                     self.navigation_channel_focus(Channel::A)
                 }
-                _ => None,
+                ArrowsFunction::SetpointEdit => {
+                    let val = self.get_select_precision_mut();
+                    if let Some(val) = val {
+                        val.cursor_left();
+                        return self.setpoints_task().build();
+                    }
+                    None
+                }
             },
             InterfaceEvent::ButtonChannel(event_channel) => {
                 let current_state = match event_channel {
@@ -380,12 +406,22 @@ impl App {
 
                 let selected_channel = &mut self.interface_state.selected_channel;
 
+                let mut set_value_override = false;
                 if selected_channel.as_ref() == Some(&event_channel) {
                     current_state.enable = !current_state.enable;
-                };
+                } else {
+                    self.interface_state.arrows_function = ArrowsFunction::Navigation;
+                    set_value_override = true;
+                }
                 *selected_channel = Some(event_channel);
 
-                self.shift_channel_focus_task(event_channel).build()
+                if set_value_override {
+                    self.shift_channel_focus_task(event_channel)
+                        .extend(self.current_confirm_state_button_task(None))
+                } else {
+                    self.shift_channel_focus_task(event_channel)
+                }
+                .build()
             }
         }
     }
@@ -433,11 +469,42 @@ impl App {
         }
     }
 
+    fn get_select_precision_mut(&mut self) -> Option<&mut WithPrecision> {
+        let (ch_a_set, ch_b_set) = match self.set_state {
+            SetState::Set => (&mut self.ch_a.target, &mut self.ch_b.target),
+            SetState::Limits => (&mut self.ch_a.limits, &mut self.ch_b.limits),
+        };
+
+        let (ch_set, set_select) = match self.interface_state.selected_channel {
+            Some(Channel::A) => (ch_a_set, self.ch_a.set_select),
+            Some(Channel::B) => (ch_b_set, self.ch_b.set_select),
+            _ => return None,
+        };
+
+        match set_select {
+            SetSelect::Voltage => Some(&mut ch_set.voltage),
+            SetSelect::Current => Some(&mut ch_set.current),
+        }
+    }
+
+    fn get_select_precision(&mut self) -> Option<DecimalPrecision> {
+        let with_precision = self.get_select_precision_mut();
+
+        match with_precision {
+            Some(value) => Some(value.precision),
+            None => None,
+        }
+    }
+
     pub fn setpoints_task(&mut self) -> AppTaskBuilder {
         let (ch_a_set, ch_b_set) = self.get_current_set();
         let (ch_a_select, ch_b_select) = self.get_current_select_set();
 
         let confirm_state = self.get_confirm_state();
+        let select_precision = match self.interface_state.arrows_function {
+            ArrowsFunction::Navigation => None,
+            ArrowsFunction::SetpointEdit => self.get_select_precision(),
+        };
 
         AppTaskBuilder::new()
             .display(DisplayTask::UpdateSetState(
@@ -457,12 +524,14 @@ impl App {
                 ch_a_set,
                 ch_a_select,
                 confirm_state,
+                select_precision,
             ))
             .display(DisplayTask::UpdateSetpoint(
                 Channel::B,
                 ch_b_set,
                 ch_b_select,
                 confirm_state,
+                select_precision,
             ))
     }
 
@@ -498,6 +567,17 @@ impl App {
     ) -> AppTaskBuilder {
         let confirm_state = self.get_confirm_state();
         AppTaskBuilder::new().display(DisplayTask::UpdateButton(confirm_state, function_button))
+    }
+
+    pub fn return_current_button_state_task(&mut self) -> AppTaskBuilder {
+        let function_button = match self.interface_state.arrows_function {
+            ArrowsFunction::Navigation => None,
+            ArrowsFunction::SetpointEdit => {
+                Some(FunctionButton::Enter(ConfirmState::AwaitConfirmModify))
+            }
+        };
+
+        self.current_confirm_state_button_task(function_button)
     }
 
     pub fn navigation_channel_focus(&mut self, resulting_channel: Channel) -> Option<AppTask> {

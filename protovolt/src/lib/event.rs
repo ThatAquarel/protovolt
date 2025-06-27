@@ -5,7 +5,7 @@ use embassy_time::Duration;
 
 use defmt::*;
 
-use crate::app::SetSelect;
+use crate::app::{DecimalPrecision, SetSelect};
 
 #[derive(Debug)]
 pub enum HardwareEvent {
@@ -143,7 +143,7 @@ pub enum DisplayTask {
 
     // Updates
     UpdateReadout(Channel, Readout),
-    UpdateSetpoint(Channel, Limits, Option<SetSelect>, ConfirmState),
+    UpdateSetpoint(Channel, Limits, Option<SetSelect>, ConfirmState, Option<DecimalPrecision>),
     UpdateChannelFocus(ChannelFocus, ChannelFocus),
     UpdateSetState(Channel, SetState, Option<SetSelect>, ConfirmState),
 
@@ -164,7 +164,7 @@ pub enum Task {
     Display(DisplayTask),
 }
 
-const APP_TASK_SIZE_LIMIT: usize = 5;
+const APP_TASK_SIZE_LIMIT: usize = 6;
 
 pub struct AppTask {
     pub tasks: [Option<Task>; APP_TASK_SIZE_LIMIT],

@@ -18,7 +18,7 @@ use embedded_graphics::draw_target::DrawTargetExt;
 use u8g2_fonts::{FontRenderer, fonts};
 
 use crate::{
-    app::SetSelect,
+    app::{DecimalPrecision, SetSelect},
     lib::{
         display::st7789,
         event::{
@@ -137,6 +137,7 @@ where
         set_select: Option<SetSelect>,
         limits: Limits,
         confirm_state: ConfirmState,
+        select_precision: Option<DecimalPrecision>
     ) -> Result<(), ()> {
         let mut target = self.layout.channel_section(&mut *self.target, channel);
         self.controls.draw_submeasurements(
@@ -146,6 +147,7 @@ where
             limits,
             channel,
             confirm_state,
+            select_precision,
         )
     }
 
@@ -190,6 +192,7 @@ where
 }
 
 pub struct Fonts {
+    pub icons_1x: FontRenderer,
     pub icons_2x: FontRenderer,
     pub icons_4x: FontRenderer,
     pub info_small: FontRenderer,
@@ -201,6 +204,7 @@ pub struct Fonts {
 impl Default for Fonts {
     fn default() -> Self {
         Self {
+            icons_1x: FontRenderer::new::<fonts::u8g2_font_open_iconic_arrow_1x_t>(),
             icons_2x: FontRenderer::new::<fonts::u8g2_font_open_iconic_all_2x_t>(),
             // icons_4x: FontRenderer::new::<fonts::u8g2_font_open_iconic_all_4x_t>(),
             icons_4x: FontRenderer::new::<fonts::u8g2_font_open_iconic_other_4x_t>(),
@@ -213,6 +217,10 @@ impl Default for Fonts {
 }
 
 //https://github.com/olikraus/u8g2/wiki/fntgrpiconic
+pub mod icons_1x {
+    pub const UP_ARROW_THICK: &str = "\u{0053}";
+}
+
 pub mod icons_2x {
     pub const CHECKMARK: &str = "\u{0073}";
     pub const CROSS: &str = "\u{011B}";

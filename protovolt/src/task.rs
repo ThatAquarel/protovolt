@@ -111,15 +111,15 @@ pub async fn handle_display_task<D>(
                 ui.controls_channel_box(*channel, ChannelFocus::UnselectedInactive);
                 ui.controls_channel_units(*channel);
 
-                ui.controls_submeasurement(*channel, None, limits, ConfirmState::AwaitModify);
+                ui.controls_submeasurement(*channel, None, limits, ConfirmState::AwaitModify, None);
                 ui.controls_submeasurement_tag(*channel, SetState::Set, None, ConfirmState::AwaitModify);
             }
         }
         DisplayTask::UpdateReadout(channel, readout) => {
             ui.controls_measurement(channel, readout);
         }
-        DisplayTask::UpdateSetpoint(channel,  limits, set_select, confirm_state) => {
-            ui.controls_submeasurement(channel, set_select, limits, confirm_state);
+        DisplayTask::UpdateSetpoint(channel,  limits, set_select, confirm_state, precision) => {
+            ui.controls_submeasurement(channel, set_select, limits, confirm_state, precision);
         }
         DisplayTask::UpdateChannelFocus(focus_a, focus_b) => {
             let focuses = [focus_a, focus_b];

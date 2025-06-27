@@ -13,9 +13,9 @@ use u8g2_fonts::{
 };
 
 use crate::{
-    app::SetSelect,
+    app::{DecimalPrecision, SetSelect},
     lib::event::{Channel, ConfirmState, Limits, Readout},
-    ui::{Display, Fonts, Layout, color_scheme, fmt::format_f32, labels},
+    ui::{Display, Fonts, Layout, color_scheme, fmt::format_f32, icons_1x, labels},
 };
 
 use embedded_graphics_framebuf::{FrameBuf, backends::FrameBufferBackend};
@@ -168,7 +168,7 @@ impl ControlsScreen {
     }
 
     const SUBMEAS_WIDTH: usize = ControlsScreen::MEAS_WIDTH / 2;
-    const SUBMEAS_HEIGHT: usize = ControlsScreen::MEAS_HEIGHT / 2;
+    const SUBMEAS_HEIGHT: usize = ControlsScreen::MEAS_HEIGHT / 2 + 8;
     const SUBMEAS_FB_SIZE: usize = ControlsScreen::SUBMEAS_WIDTH * ControlsScreen::SUBMEAS_HEIGHT;
 
     pub fn draw_submeasurements<D>(
@@ -179,11 +179,12 @@ impl ControlsScreen {
         limits: Limits,
         channel: Channel,
         confirm_state: ConfirmState,
+        select_precision: Option<DecimalPrecision>,
     ) -> Result<(), ()>
     where
         D: Display,
     {
-        let font = &fonts.readout_small;
+        let (font, select_font) = (&fonts.readout_small, &fonts.icons_1x);
 
         let select_index = match set_select {
             Some(SetSelect::Voltage) => Some(0),
@@ -205,7 +206,9 @@ impl ControlsScreen {
                 ControlsScreen::SUBMEAS_HEIGHT,
             );
 
-            let color = if select_index == Some(i) {
+            let selected = select_index == Some(i);
+
+            let color = if selected {
                 match confirm_state {
                     ConfirmState::AwaitConfirmModify => await_confirm_modify_color,
                     ConfirmState::AwaitModify => color_scheme::SELECTED,
@@ -223,6 +226,26 @@ impl ControlsScreen {
                 &mut fbuf,
             )
             .map_err(|_| ())?;
+
+            if selected {
+                if let Some(precision) = &select_precision {
+                    let exp = precision.get_exponent();
+                    let digit_index = (exp + 2) as i32;
+                    let offset = if digit_index < 2 { 4 } else { 10 };
+                    let padding_right: i32 = digit_index * 10 + offset;
+
+                    select_font
+                        .render_aligned(
+                            icons_1x::UP_ARROW_THICK,
+                            Point::new(ControlsScreen::SUBMEAS_WIDTH as i32 - padding_right, 15),
+                            VerticalPosition::Top,
+                            HorizontalAlignment::Center,
+                            FontColor::Transparent(color),
+                            &mut fbuf,
+                        )
+                        .map_err(|_| ())?;
+                }
+            }
 
             let top_left = Point::new(
                 122 - ControlsScreen::SUBMEAS_WIDTH as i32,
