@@ -59,30 +59,34 @@ pub struct WithPrecision {
     pub value: f32,
     pub precision: DecimalPrecision,
 
-    set_state: SetSelect,
+    // set_state: SetSelect,
+    init_range: Option<(f32, f32)>,
+    min_step: f32,
 }
 
 impl WithPrecision {
-    fn multiplier_current(&self) -> f32 {
-        10f32.powf(self.precision.exponent as f32).max(0.05f32)
-    }
     fn multiplier_voltage(&self) -> f32 {
         10f32.powf(self.precision.exponent as f32)
     }
 
     fn multiplier(&self) -> f32 {
-        match self.set_state {
-            SetSelect::Voltage => self.multiplier_voltage(),
-            SetSelect::Current => self.multiplier_current(),
-        }
+        self.multiplier_voltage().max(self.min_step)
     }
 
     pub fn increment(&mut self) {
-        self.value += self.multiplier();
+        let next = self.value + self.multiplier();
+        self.value = match self.init_range {
+            Some((min, max)) => next.clamp(min, max),
+            None => next,
+        };
     }
 
     pub fn decrement(&mut self) {
-        self.value -= self.multiplier();
+        let next = self.value - self.multiplier();
+        self.value = match self.init_range {
+            Some((min, max)) => next.clamp(min, max),
+            None => next,
+        };
     }
 
     pub fn precision(&self) -> DecimalPrecision {
@@ -100,6 +104,11 @@ impl WithPrecision {
     pub fn exponent(&self) -> i8 {
         self.precision.get_exponent()
     }
+
+    pub fn set_range(&mut self, min: f32, max: f32) {
+        self.init_range = Some((min, max));
+        self.value = self.value.clamp(min, max);
+    }
 }
 
 pub struct VoltageCurrentWithSetter {
@@ -108,18 +117,24 @@ pub struct VoltageCurrentWithSetter {
 }
 
 impl VoltageCurrentWithSetter {
-    fn new(limits: Limits) -> Self {
+    fn new(
+        limits: Limits,
+        voltage_range: (f32, f32),
+        current_range: (f32, f32),
+    ) -> Self {
         let (v, i) = (limits.voltage, limits.current);
         Self {
             voltage: WithPrecision {
-                set_state: SetSelect::Voltage,
                 value: v,
                 precision: Default::default(),
+                init_range: Some(voltage_range),
+                min_step: 0.01,
             },
             current: WithPrecision {
-                set_state: SetSelect::Current,
                 value: i,
                 precision: Default::default(),
+                init_range: Some(current_range),
+                min_step: 0.05,
             },
         }
     }
@@ -152,17 +167,28 @@ struct ChannelState {
 
 impl Default for ChannelState {
     fn default() -> Self {
+        let target_limits = Limits {
+            voltage: 5.000,
+            current: 1.000,
+        };
+        let max_limits = Limits {
+            voltage: 20.000,
+            current: 5.000,
+        };
+
         Self {
             enable: false,
-            target: VoltageCurrentWithSetter::new(Limits {
-                voltage: 5.000,
-                current: 1.000,
-            }),
+            target: VoltageCurrentWithSetter::new(
+                target_limits,
+                (1.0, 20.0), // voltage range
+                (0.0, 5.0),  // current range
+            ),
+            limits: VoltageCurrentWithSetter::new(
+                max_limits,
+                (1.0, 20.0),
+                (0.0, 5.0),
+            ),
             set_select: Default::default(),
-            limits: VoltageCurrentWithSetter::new(Limits {
-                voltage: 20.000,
-                current: 5.000,
-            }),
             readout: None,
         }
     }
@@ -373,9 +399,7 @@ impl App {
                 }
             },
             InterfaceEvent::ButtonRight => match self.interface_state.arrows_function {
-                ArrowsFunction::Navigation => {
-                    self.navigation_channel_focus(Channel::B)
-                }
+                ArrowsFunction::Navigation => self.navigation_channel_focus(Channel::B),
                 ArrowsFunction::SetpointEdit => {
                     let val = self.get_select_precision_mut();
                     if let Some(val) = val {
@@ -386,9 +410,7 @@ impl App {
                 }
             },
             InterfaceEvent::ButtonLeft => match self.interface_state.arrows_function {
-                ArrowsFunction::Navigation => {
-                    self.navigation_channel_focus(Channel::A)
-                }
+                ArrowsFunction::Navigation => self.navigation_channel_focus(Channel::A),
                 ArrowsFunction::SetpointEdit => {
                     let val = self.get_select_precision_mut();
                     if let Some(val) = val {
