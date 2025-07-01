@@ -18,7 +18,7 @@ use defmt::*;
 use app::App;
 
 use embassy_executor::Spawner;
-use embassy_rp::gpio::Pin;
+use embassy_rp::gpio::{Output, Pin};
 use embassy_rp::spi::{self, Spi};
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
@@ -66,6 +66,9 @@ async fn main(spawner: Spawner) {
         p.PIN_21.degrade(),
         p.PIN_28.degrade(),
     );
+
+    let _backlight = Output::new(p.PIN_16, embassy_rp::gpio::Level::High);
+
     // let mut target = display.target;
 
     // State Machine
