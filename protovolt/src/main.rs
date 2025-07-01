@@ -168,7 +168,6 @@ async fn poll_interface(
 
     loop {
         if let Some(event) = buttons.poll() {
-            info!("pressed");
             channel.send(event).await;
         }
         ticker.next().await;

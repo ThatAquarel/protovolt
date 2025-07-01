@@ -1,5 +1,6 @@
 use crate::lib::event::{Change, Channel, InterfaceEvent};
 use embassy_rp::gpio::{AnyPin, Input, Level, Output, Pull};
+use embassy_time::{Duration, Timer};
 
 pub mod matrix {
     pub const N_ROWS: usize = 3;
@@ -36,6 +37,8 @@ impl ButtonsInterface<'_> {
     pub fn poll(&mut self) -> Option<InterfaceEvent> {
         for (i, row) in self.rows.iter_mut().enumerate() {
             row.set_low();
+            embassy_time::block_for(Duration::from_micros(5));
+            // allievate weak internal pullups and line capacitance.
 
             for (j, col) in self.cols.iter_mut().enumerate() {
                 let k = i * matrix::N_COLS + j;
@@ -61,24 +64,7 @@ impl ButtonsInterface<'_> {
 
         let mut button_event = None;
 
-        // info!("states {:?}", self.current_state);
         for (i, state) in self.current_state.iter().enumerate() {
-            // if *state == true && self.prev_state[i] == false {
-            //     // info!("pressed {} time {}", i, self.debounce[i]);
-            //     button_event = match i {
-            //         0 => Some(InterfaceEvent::ButtonSettings),
-            //         1 => Some(InterfaceEvent::ButtonSwitch),
-            //         2 => Some(InterfaceEvent::ButtonEnter),
-            //         3 => Some(InterfaceEvent::ButtonRight),
-            //         6 => Some(InterfaceEvent::ButtonLeft),
-            //         4 => Some(InterfaceEvent::ButtonUp),
-            //         5 => Some(InterfaceEvent::ButtonDown),
-            //         7 => Some(InterfaceEvent::ButtonChannel(Channel::B)),
-            //         8 => Some(InterfaceEvent::ButtonChannel(Channel::A)),
-            //         _ => None
-            //     };
-            // }
-
             let change = if *state == true && self.prev_state[i] == false {
                 Some(Change::Pressed)
             } else if *state == false && self.prev_state[i] == true {
@@ -88,6 +74,11 @@ impl ButtonsInterface<'_> {
             };
 
             if let Some(change) = change {
+                match change {
+                    Change::Pressed => {defmt::info!("SW{} press", i+1);}
+                    Change::Released=> {defmt::info!("SW{} release", i+1);}
+                };
+
                 button_event = match i {
                     0 => Some(InterfaceEvent::ButtonSettings(change)),
                     1 => Some(InterfaceEvent::ButtonSwitch(change)),
@@ -102,7 +93,7 @@ impl ButtonsInterface<'_> {
                     7 => emit_on_press(change, InterfaceEvent::ButtonChannel(Channel::B)),
                     8 => emit_on_press(change, InterfaceEvent::ButtonChannel(Channel::A)),
                     _ => None,
-                }
+                };
             }
         }
 
