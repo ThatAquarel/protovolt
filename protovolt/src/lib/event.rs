@@ -1,6 +1,5 @@
 use core::{array::IntoIter, iter::FilterMap};
 
-use embassy_rp::pio::State;
 use embassy_time::Duration;
 
 use defmt::*;
@@ -227,7 +226,7 @@ impl AppTaskBuilder {
         self.push_task(Task::Hardware(task))
     }
 
-    pub fn display(mut self, task: DisplayTask) -> Self {
+    pub fn display(self, task: DisplayTask) -> Self {
         self.push_task(Task::Display(task))
     }
 

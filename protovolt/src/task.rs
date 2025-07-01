@@ -3,14 +3,14 @@ use defmt::*;
 use embassy_executor::Spawner;
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::Sender;
-use embassy_time::{Duration, Ticker, Timer};
+use embassy_time::Timer;
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::DrawTarget;
 
 use crate::lib::event::{
     Channel, ChannelFocus, ConfirmState, DisplayTask, HardwareEvent, HardwareTask, InterfaceEvent, Limits, PowerType, SetState
 };
-use crate::ui::{Ui, color_scheme, labels};
+use crate::ui::{Ui, labels};
 use crate::{HARDWARE_CHANNEL, poll_readout};
 
 pub async fn handle_hardware_task(

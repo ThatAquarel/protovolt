@@ -1,7 +1,7 @@
 use embedded_graphics::{
     draw_target::Translated,
     pixelcolor::Rgb565,
-    prelude::{DrawTarget, Point, RgbColor},
+    prelude::{DrawTarget, Point},
 };
 
 pub mod fmt;

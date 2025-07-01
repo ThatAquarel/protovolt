@@ -16,20 +16,16 @@ use embassy_rp::spi::{self, Spi};
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::{NoopRawMutex, ThreadModeRawMutex};
 use embassy_sync::channel::{Channel, Sender};
-use embassy_time::{Duration, Ticker, Timer};
+use embassy_time::{Duration, Ticker};
 
-use embedded_graphics::pixelcolor::Rgb565;
-use embedded_graphics::prelude::*;
 
-use lib::event::{InterfaceEvent, AppEvent, DisplayTask, HardwareEvent, Limits, Readout, Task};
+use lib::event::{InterfaceEvent, AppEvent, HardwareEvent, Readout, Task};
 use lib::interface::{ButtonsInterface, matrix};
 use lib::display::DisplayInterface;
 
 use task::{handle_display_task, handle_hardware_task};
-use ui::{Ui, boot};
-use ui::color_scheme::{self, CH_B_SELECTED};
+use ui::Ui;
 use app::App;
-use ui::controls;
 
 use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};

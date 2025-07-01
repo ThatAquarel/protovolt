@@ -4,21 +4,20 @@ use embedded_graphics::{
     primitives::{
         CornerRadii, PrimitiveStyleBuilder, Rectangle, RoundedRectangle, StrokeAlignment,
     },
-    text::{Alignment, Baseline, Text, TextStyleBuilder, renderer::CharacterStyle},
 };
 
 use u8g2_fonts::{
-    FontRenderer, U8g2TextStyle, fonts,
+    FontRenderer, fonts,
     types::{FontColor, HorizontalAlignment, VerticalPosition},
 };
 
 use crate::{
     app::{DecimalPrecision, SetSelect},
     lib::event::{Channel, ConfirmState, Limits, Readout},
-    ui::{Display, Fonts, Layout, color_scheme, fmt::format_f32, icons_1x, labels},
+    ui::{Display, Fonts, color_scheme, fmt::format_f32, icons_1x, labels},
 };
 
-use embedded_graphics_framebuf::{FrameBuf, backends::FrameBufferBackend};
+use embedded_graphics_framebuf::FrameBuf;
 
 pub struct ControlsScreen;
 

@@ -4,28 +4,22 @@ use embedded_graphics::{
     primitives::{
         CornerRadii, PrimitiveStyleBuilder, Rectangle, RoundedRectangle, StrokeAlignment,
     },
-    text::{Alignment, Baseline, Text, TextStyleBuilder, renderer::CharacterStyle},
 };
 
-use u8g2_fonts::{
-    FontRenderer, U8g2TextStyle, fonts,
-    types::{FontColor, HorizontalAlignment, VerticalPosition},
-};
+use u8g2_fonts::types::{FontColor, HorizontalAlignment, VerticalPosition};
 
 use crate::{
-    lib::event::{ConfirmState, FunctionButton, Limits, PowerType, Readout},
+    lib::event::{ConfirmState, FunctionButton, PowerType},
     ui::{
-        Display, Fonts, Layout,
-        color_scheme::{self, FONT_SMALL, SELECTED},
+        Fonts,
+        color_scheme::{self},
         fmt::format_f32,
         icons_2x, icons_4x, labels,
     },
 };
 
 use core::fmt::Write;
-use heapless::String;
 
-use embedded_graphics_framebuf::{FrameBuf, backends::FrameBufferBackend};
 
 pub struct Navbar;
 

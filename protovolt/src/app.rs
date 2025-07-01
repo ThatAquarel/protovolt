@@ -1,16 +1,11 @@
-use defmt::*;
-use embassy_rp::pac::usb_dpram::regs::SetupPacketHigh;
 use embassy_time::Duration;
 use micromath::F32Ext;
 
-use crate::{
-    lib::event::{
+use crate::lib::event::{
         AppEvent, AppTask, AppTaskBuilder, Change, Channel, ChannelFocus, ConfirmState,
         DisplayTask, FunctionButton, HardwareEvent, HardwareTask, InterfaceEvent, Limits,
         PowerType, Readout, SetState,
-    },
-    ui::labels::CHANNEL_A,
-};
+    };
 
 #[derive(Default)]
 pub struct App {

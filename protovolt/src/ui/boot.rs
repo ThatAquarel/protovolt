@@ -1,9 +1,6 @@
 use embedded_graphics::{image::Image, pixelcolor::Rgb565, prelude::*};
 use tinybmp::Bmp;
-use u8g2_fonts::{
-    FontRenderer, fonts,
-    types::{FontColor, HorizontalAlignment, VerticalPosition},
-};
+use u8g2_fonts::types::{FontColor, HorizontalAlignment, VerticalPosition};
 
 use crate::ui::{color_scheme::{FONT_MAIN, FONT_SMALL}, icons_2x, Fonts, Layout};
 
