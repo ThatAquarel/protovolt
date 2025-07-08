@@ -83,7 +83,7 @@ pub enum HardwareTask {
     // Idle
     EnableReadoutLoop,
 
-    DelayedInterfaceEvent(Duration, InterfaceEvent),
+    // DelayedInterfaceEvent(Duration, InterfaceEvent),
     DelayedHardwareEvent(Duration, HardwareEvent),
 }
 
@@ -124,7 +124,7 @@ pub enum ConfirmState {
 }
 
 pub enum FunctionButton {
-    Enter(ConfirmState),
+    Enter,
     Switch,
     Settings,
 }
@@ -150,7 +150,7 @@ pub enum DisplayTask {
     UpdateButton(ConfirmState, Option<FunctionButton>),
 
     // Settings
-    SetupSettings,
+    // SetupSettings,
 }
 
 // pub struct AppTask {
@@ -234,15 +234,15 @@ impl AppTaskBuilder {
         Some(self.inner)
     }
 
-    pub fn hardware_task(task: HardwareTask) -> Option<AppTask> {
-        let mut tasks = [const { None }; APP_TASK_SIZE_LIMIT];
-        tasks[0] = Some(Task::Hardware(task));
+    // pub fn hardware_task(task: HardwareTask) -> Option<AppTask> {
+    //     let mut tasks = [const { None }; APP_TASK_SIZE_LIMIT];
+    //     tasks[0] = Some(Task::Hardware(task));
 
-        Some(AppTask {
-            tasks: tasks,
-            count: 1,
-        })
-    }
+    //     Some(AppTask {
+    //         tasks: tasks,
+    //         count: 1,
+    //     })
+    // }
 
     pub fn display_task(task: DisplayTask) -> Option<AppTask> {
         let mut tasks = [const { None }; APP_TASK_SIZE_LIMIT];

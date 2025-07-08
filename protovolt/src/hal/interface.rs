@@ -1,4 +1,4 @@
-use crate::lib::event::{Change, Channel, InterfaceEvent};
+use crate::hal::event::{Change, Channel, InterfaceEvent};
 use embassy_rp::gpio::{AnyPin, Input, Level, Output, Pull};
 use embassy_time::Duration;
 

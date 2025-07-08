@@ -1,35 +1,28 @@
 use embassy_time::Duration;
 use micromath::F32Ext;
 
-use crate::lib::event::{
-        AppEvent, AppTask, AppTaskBuilder, Change, Channel, ChannelFocus, ConfirmState,
-        DisplayTask, FunctionButton, HardwareEvent, HardwareTask, InterfaceEvent, Limits,
-        PowerType, Readout, SetState,
-    };
+use crate::hal::event::{
+    AppEvent, AppTask, AppTaskBuilder, Change, Channel, ChannelFocus, ConfirmState, DisplayTask,
+    FunctionButton, HardwareEvent, HardwareTask, InterfaceEvent, Limits, PowerType, Readout,
+    SetState,
+};
 
 #[derive(Default)]
 pub struct App {
-    pub ch_a: ChannelState,
-    pub ch_b: ChannelState,
+    power_type: PowerType,
+    set_state: SetState,
 
-    pub power_type: PowerType,
+    interface_state: InterfaceState,
+    hardware_state: HardwareState,
 
-    pub set_state: SetState,
-
-    pub interface_state: InterfaceState,
-    pub hardware_state: HardwareState,
+    ch_a: ChannelState,
+    ch_b: ChannelState,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct DecimalPrecision {
     pub exponent: i8,
 }
-
-// impl Default for DecimalPrecision {
-//     fn default() -> Self {
-//         Self { exponent: 0 }
-//     }
-// }
 
 impl DecimalPrecision {
     fn set_exponent(&mut self, exp: i8) {
@@ -84,9 +77,9 @@ impl WithPrecision {
         };
     }
 
-    pub fn precision(&self) -> DecimalPrecision {
-        self.precision
-    }
+    // pub fn precision(&self) -> DecimalPrecision {
+    //     self.precision
+    // }
 
     pub fn cursor_right(&mut self) {
         self.precision.cursor_right();
@@ -96,14 +89,14 @@ impl WithPrecision {
         self.precision.cursor_left();
     }
 
-    pub fn exponent(&self) -> i8 {
-        self.precision.get_exponent()
-    }
+    // pub fn exponent(&self) -> i8 {
+    //     self.precision.get_exponent()
+    // }
 
-    pub fn set_range(&mut self, min: f32, max: f32) {
-        self.init_range = Some((min, max));
-        self.value = self.value.clamp(min, max);
-    }
+    // pub fn set_range(&mut self, min: f32, max: f32) {
+    //     self.init_range = Some((min, max));
+    //     self.value = self.value.clamp(min, max);
+    // }
 }
 
 pub struct VoltageCurrentWithSetter {
@@ -112,11 +105,7 @@ pub struct VoltageCurrentWithSetter {
 }
 
 impl VoltageCurrentWithSetter {
-    fn new(
-        limits: Limits,
-        voltage_range: (f32, f32),
-        current_range: (f32, f32),
-    ) -> Self {
+    fn new(limits: Limits, voltage_range: (f32, f32), current_range: (f32, f32)) -> Self {
         let (v, i) = (limits.voltage, limits.current);
         Self {
             voltage: WithPrecision {
@@ -178,11 +167,7 @@ impl Default for ChannelState {
                 (1.0, 20.0), // voltage range
                 (0.0, 5.0),  // current range
             ),
-            limits: VoltageCurrentWithSetter::new(
-                max_limits,
-                (1.0, 20.0),
-                (0.0, 5.0),
-            ),
+            limits: VoltageCurrentWithSetter::new(max_limits, (1.0, 20.0), (0.0, 5.0)),
             set_select: Default::default(),
             readout: None,
         }
@@ -215,8 +200,7 @@ enum HardwareState {
 
     WaitingMainUi,
     Standby,
-
-    Error,
+    // Error,
 }
 
 #[derive(Default)]
@@ -224,7 +208,7 @@ enum Screen {
     #[default]
     Boot,
     Main,
-    Settings,
+    // Settings,
 }
 
 impl App {
@@ -329,36 +313,24 @@ impl App {
                 Change::Pressed => {
                     if self.interface_state.selected_channel == None {
                         return self
-                            .current_confirm_state_button_task(Some(FunctionButton::Enter(
-                                ConfirmState::AwaitModify,
-                            )))
+                            .current_confirm_state_button_task(Some(FunctionButton::Enter))
                             .build();
                     }
 
-                    let (arrow_function, enter_confirm_state) =
+                    self.interface_state.arrows_function =
                         match self.interface_state.arrows_function {
-                            ArrowsFunction::Navigation => (
-                                ArrowsFunction::SetpointEdit,
-                                ConfirmState::AwaitConfirmModify(self.interface_state.selected_channel),
-                            ),
-                            ArrowsFunction::SetpointEdit => {
-                                (ArrowsFunction::Navigation, ConfirmState::AwaitModify)
-                            }
+                            ArrowsFunction::Navigation => ArrowsFunction::SetpointEdit,
+                            ArrowsFunction::SetpointEdit => ArrowsFunction::Navigation,
                         };
-                    self.interface_state.arrows_function = arrow_function;
 
                     self.setpoints_task()
-                        .extend(self.current_confirm_state_button_task(Some(
-                            FunctionButton::Enter(enter_confirm_state),
-                        )))
+                        .extend(self.current_confirm_state_button_task(Some(FunctionButton::Enter)))
                         .build()
                 }
                 Change::Released => {
                     let function_button = match self.interface_state.arrows_function {
                         ArrowsFunction::Navigation => None,
-                        ArrowsFunction::SetpointEdit => {
-                            Some(FunctionButton::Enter(ConfirmState::AwaitConfirmModify(self.interface_state.selected_channel)))
-                        }
+                        ArrowsFunction::SetpointEdit => Some(FunctionButton::Enter),
                     };
                     self.current_confirm_state_button_task(function_button)
                         .build()
@@ -443,14 +415,14 @@ impl App {
         }
     }
 
-    pub fn get_current_set_mut(
-        &mut self,
-    ) -> (&mut VoltageCurrentWithSetter, &mut VoltageCurrentWithSetter) {
-        match self.set_state {
-            SetState::Set => (&mut self.ch_a.target, &mut self.ch_b.target),
-            SetState::Limits => (&mut self.ch_a.limits, &mut self.ch_b.limits),
-        }
-    }
+    // pub fn get_current_set_mut(
+    //     &mut self,
+    // ) -> (&mut VoltageCurrentWithSetter, &mut VoltageCurrentWithSetter) {
+    //     match self.set_state {
+    //         SetState::Set => (&mut self.ch_a.target, &mut self.ch_b.target),
+    //         SetState::Limits => (&mut self.ch_a.limits, &mut self.ch_b.limits),
+    //     }
+    // }
 
     pub fn get_current_set(&mut self) -> (Limits, Limits) {
         match self.set_state {
@@ -482,7 +454,9 @@ impl App {
     fn get_confirm_state(&self) -> ConfirmState {
         match self.interface_state.arrows_function {
             ArrowsFunction::Navigation => ConfirmState::AwaitModify,
-            ArrowsFunction::SetpointEdit => ConfirmState::AwaitConfirmModify(self.interface_state.selected_channel),
+            ArrowsFunction::SetpointEdit => {
+                ConfirmState::AwaitConfirmModify(self.interface_state.selected_channel)
+            }
         }
     }
 
@@ -589,9 +563,7 @@ impl App {
     pub fn return_current_button_state_task(&mut self) -> AppTaskBuilder {
         let function_button = match self.interface_state.arrows_function {
             ArrowsFunction::Navigation => None,
-            ArrowsFunction::SetpointEdit => {
-                Some(FunctionButton::Enter(ConfirmState::AwaitConfirmModify(self.interface_state.selected_channel)))
-            }
+            ArrowsFunction::SetpointEdit => Some(FunctionButton::Enter),
         };
 
         self.current_confirm_state_button_task(function_button)

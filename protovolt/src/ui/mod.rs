@@ -5,9 +5,6 @@ use embedded_graphics::{
     prelude::{DrawTarget, Point},
 };
 
-use core::cell::RefCell;
-use embassy_sync::blocking_mutex::{Mutex, raw::RawMutex};
-
 pub mod fmt;
 
 pub mod boot;
@@ -23,7 +20,7 @@ use u8g2_fonts::{FontRenderer, fonts};
 
 use crate::{
     app::{DecimalPrecision, SetSelect},
-    lib::{
+    hal::{
         display::st7789,
         event::{
             Channel, ChannelFocus, ConfirmState, FunctionButton, Limits, PowerType, Readout,
@@ -31,7 +28,6 @@ use crate::{
         },
         led::{LedsColor, LedsInterface},
     },
-    ui::color_scheme::LED_OFF,
 };
 
 pub trait Display: DrawTarget<Color = Rgb565> {}
@@ -295,17 +291,17 @@ impl Layout {
         st7789::HEIGHT
     }
 
-    pub fn height(&mut self) -> u16 {
-        st7789::WIDTH
-    }
+    // pub fn height(&mut self) -> u16 {
+    //     st7789::WIDTH
+    // }
 
     pub fn center_x(&mut self) -> i32 {
         self.width() as i32 / 2
     }
 
-    pub fn center_y(&mut self) -> i32 {
-        self.height() as i32 / 2
-    }
+    // pub fn center_y(&mut self) -> i32 {
+    //     self.height() as i32 / 2
+    // }
 
     pub fn channel_section<'a, D>(
         &'a mut self,
@@ -347,7 +343,7 @@ pub mod color_scheme {
     pub const FONT_SMALL: Rgb565 = Rgb565::CSS_DIM_GRAY;
 
     pub const BACKGROUND: Rgb565 = Rgb565::BLACK;
-    pub const ACCENT: Rgb565 = Rgb565::CSS_WHITE;
+    // pub const ACCENT: Rgb565 = Rgb565::CSS_WHITE;
     pub const SELECTED: Rgb565 = Rgb565::CSS_SILVER;
     pub const UNSELECTED: Rgb565 = Rgb565::CSS_DIM_GRAY;
 

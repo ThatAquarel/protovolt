@@ -2,7 +2,7 @@
 #![no_main]
 
 mod app;
-mod lib;
+mod hal;
 mod task;
 mod ui;
 
@@ -13,25 +13,24 @@ use embassy_executor::{Executor, Spawner};
 use embassy_rp::bind_interrupts;
 use embassy_rp::gpio::{Output, Pin};
 use embassy_rp::multicore::{Stack, spawn_core1};
-use embassy_rp::peripherals::{PIO0, SPI0};
+use embassy_rp::peripherals::PIO0;
 use embassy_rp::pio::InterruptHandler;
 use embassy_rp::pio::Pio;
-use embassy_rp::spi::{self, Blocking, Spi};
+use embassy_rp::spi::{self, Spi};
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::{NoopRawMutex, ThreadModeRawMutex};
 use embassy_sync::channel::{Channel, Sender};
 use embassy_time::{Duration, Ticker};
 
-use embedded_hal::spi::SpiBus;
-use lib::display::DisplayInterface;
-use lib::event::{AppEvent, HardwareEvent, InterfaceEvent, Readout, Task};
-use lib::interface::{ButtonsInterface, matrix};
+use hal::display::DisplayInterface;
+use hal::event::{AppEvent, HardwareEvent, InterfaceEvent, Readout, Task};
+use hal::interface::{ButtonsInterface, matrix};
 
 use app::App;
 use task::{handle_display_task, handle_hardware_task};
 use ui::Ui;
 
-use crate::lib::led::LedsInterface;
+use crate::hal::led::LedsInterface;
 use static_cell::StaticCell;
 
 use {defmt_rtt as _, panic_probe as _};
@@ -75,7 +74,7 @@ async fn main(spawner: Spawner) {
     // Interfacing LEDs setup
     let pio = Pio::new(p.PIO0, Irqs);
 
-    let mut leds = LedsInterface::new(pio, p.DMA_CH0, p.PIN_11);
+    let leds = LedsInterface::new(pio, p.DMA_CH0, p.PIN_11);
     // let leds = LEDS_INTERFACE.init(leds);
 
     // App logic
@@ -136,7 +135,7 @@ pub async fn poll_readout(channel: Sender<'static, ThreadModeRawMutex, HardwareE
     loop {
         channel
             .send(HardwareEvent::ReadoutAcquired(
-                lib::event::Channel::A,
+                hal::event::Channel::A,
                 Readout {
                     voltage: v,
                     current: c,
@@ -147,7 +146,7 @@ pub async fn poll_readout(channel: Sender<'static, ThreadModeRawMutex, HardwareE
 
         channel
             .send(HardwareEvent::ReadoutAcquired(
-                lib::event::Channel::B,
+                hal::event::Channel::B,
                 Readout {
                     voltage: (v + 1.5).min(20.0),
                     current: (c + 0.2).min(5.0),

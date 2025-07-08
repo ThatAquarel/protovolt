@@ -9,7 +9,7 @@ use embedded_graphics::{
 use u8g2_fonts::types::{FontColor, HorizontalAlignment, VerticalPosition};
 
 use crate::{
-    lib::event::{ConfirmState, FunctionButton, PowerType},
+    hal::event::{ConfirmState, FunctionButton, PowerType},
     ui::{
         Fonts,
         color_scheme::{self},
@@ -62,10 +62,10 @@ impl Navbar {
                     format_f32::<8>(limits.voltage, 2),
                     format_f32::<8>(limits.current, 2),
                 );
-                voltage_fmt.write_char(' ');
-                voltage_fmt.write_str(labels::VOLT);
-                current_fmt.write_char(' ');
-                current_fmt.write_str(labels::AMPERE);
+                voltage_fmt.write_char(' ').unwrap();
+                voltage_fmt.write_str(labels::VOLT).unwrap();
+                current_fmt.write_char(' ').unwrap();
+                current_fmt.write_str(labels::AMPERE).unwrap();
 
                 (voltage_fmt, current_fmt)
             }
@@ -116,7 +116,7 @@ impl Navbar {
         let buttons = [enter_icon, icons_2x::SWITCH, icons_2x::SETTINGS];
 
         let selected_index = match button_state {
-            Some(FunctionButton::Enter(_)) => Some(0),
+            Some(FunctionButton::Enter) => Some(0),
             Some(FunctionButton::Switch) => Some(1),
             Some(FunctionButton::Settings) => Some(2),
             _ => None,

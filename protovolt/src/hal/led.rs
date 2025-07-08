@@ -1,10 +1,11 @@
-use defmt::*;
 use embassy_rp::{
-    dma::Channel, peripherals::PIO0, pio::{Instance, Pio, PioPin}, pio_programs::ws2812::{PioWs2812, PioWs2812Program}
+    dma::Channel,
+    pio::{Instance, Pio, PioPin},
+    pio_programs::ws2812::{PioWs2812, PioWs2812Program},
 };
 use smart_leds::RGB8;
 
-use crate::lib::led::ws2812::LED_COUNT;
+use crate::hal::led::ws2812::LED_COUNT;
 
 use {defmt_rtt as _, panic_probe as _};
 
@@ -12,11 +13,7 @@ pub mod ws2812 {
     pub const LED_COUNT: usize = 7;
 }
 
-// pub struct LedInterface<'a, PIO: Instance, DMA: Channel, PIN: PioPin> {
 pub struct LedsInterface<'a, PIO: Instance> {
-    // pio: Pio<'a, PIO>,
-    // dma: DMA,
-    // pin: PIN,
     led: PioWs2812<'a, PIO, 0, LED_COUNT>,
     data: [RGB8; LED_COUNT],
 }
@@ -26,8 +23,8 @@ pub enum LedsColor {
     Switch(RGB8),   //1
     Enter(RGB8),    //2
 
-    ChannelA(RGB8, RGB8), //3, 4
-    ChannelB(RGB8, RGB8), //5, 6
+    ChannelA(RGB8, RGB8), //5, 6
+    ChannelB(RGB8, RGB8), //3, 4
 }
 
 impl<'a, PIO> LedsInterface<'a, PIO>

@@ -13,7 +13,7 @@ use u8g2_fonts::{
 
 use crate::{
     app::{DecimalPrecision, SetSelect},
-    lib::event::{Channel, ConfirmState, Limits, Readout},
+    hal::event::{Channel, ConfirmState, Limits, Readout},
     ui::{Display, Fonts, color_scheme, fmt::format_f32, icons_1x, labels},
 };
 

@@ -1,9 +1,7 @@
 use core::cell::RefCell;
 
 use display_interface_spi::SPIInterface;
-// use embassy_embedded_hal::shared_bus::asynch::spi::SpiDevice;
 use embassy_embedded_hal::shared_bus::blocking::spi::SpiDeviceWithConfig;
-// use embassy_embedded_hal::shared_bus::blocking::spi::SpiDevice;
 use embassy_rp::Peripheral;
 use embassy_rp::gpio::Output;
 use embassy_rp::spi::{self, Instance, Spi};
@@ -30,7 +28,7 @@ pub mod st7789 {
 }
 
 pub struct DisplayInterface<'d, T: Instance> {
-    spi_bus: &'d Mutex<NoopRawMutex, RefCell<Spi<'d, T, spi::Blocking>>>,
+    _spi_bus: &'d Mutex<NoopRawMutex, RefCell<Spi<'d, T, spi::Blocking>>>,
     pub target: Display<
         SPIInterface<
             SpiDeviceWithConfig<'d, NoopRawMutex, Spi<'d, T, spi::Blocking>, Output<'d>>,
@@ -74,7 +72,7 @@ where
         // In reality, if the display fails, then there are bigger issues at hand
 
         Self {
-            spi_bus: spi_bus,
+            _spi_bus: spi_bus,
             target: display,
         }
     }
