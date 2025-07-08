@@ -36,9 +36,7 @@ use task::{handle_display_task, handle_hardware_task};
 use ui::Ui;
 
 use crate::hal::led::LedsInterface;
-use crate::hal::{ChannelDevices, Hal};
-
-use crate::hal::event::Channel as OutputChannel;
+use crate::hal::{Hal, HalSense, SENSE_CHANNEL, poll_sense};
 
 use static_cell::StaticCell;
 
@@ -54,6 +52,21 @@ static EXECUTOR1: StaticCell<Executor> = StaticCell::new();
 
 static BUTTONS_INTERFACE: StaticCell<ButtonsInterface> = StaticCell::new();
 
+// type StaticI2c1 = I2c<'static, I2C1, i2c::Blocking>;
+// type I2c0Bus = Mutex<NoopRawMutex, I2c<'static, I2C0, i2c::Blocking>>;
+// type I2c1Bus = Mutex<NoopRawMutex, I2c<'static, I2C1, i2c::Blocking>>;
+
+type StaticI2c0 = I2c<'static, I2C0, i2c::Blocking>;
+type StaticI2c0Bus = Mutex<NoopRawMutex, RefCell<StaticI2c0>>;
+static I2C0_BUS: StaticCell<StaticI2c0Bus> = StaticCell::new();
+
+type StaticI2c1 = I2c<'static, I2C1, i2c::Blocking>;
+type StaticI2c1Bus = Mutex<NoopRawMutex, RefCell<StaticI2c1>>;
+static I2C1_BUS: StaticCell<StaticI2c1Bus> = StaticCell::new();
+
+type StaticHalSense = HalSense<'static, NoopRawMutex, StaticI2c1>;
+static HAL_SENSE: StaticCell<StaticHalSense> = StaticCell::new();
+
 bind_interrupts!(struct Irqs {
     PIO0_IRQ_0 => pio::InterruptHandler<PIO0>;
 });
@@ -65,12 +78,24 @@ async fn main(spawner: Spawner) {
     // Power hardware initialization
     let i2c0 = I2c::new_blocking(p.I2C0, p.PIN_1, p.PIN_0, i2c::Config::default());
     let i2c0_bus: Mutex<NoopRawMutex, _> = I2cMutex::new(RefCell::new(i2c0));
+    let i2c0_bus = I2C0_BUS.init(i2c0_bus);
+
     let i2c1 = I2c::new_blocking(p.I2C1, p.PIN_23, p.PIN_22, i2c::Config::default());
     let i2c1_bus: Mutex<NoopRawMutex, _> = I2cMutex::new(RefCell::new(i2c1));
+    let i2c1_bus = I2C1_BUS.init(i2c1_bus);
+
+    let sense = HalSense::new(i2c1_bus);
+    let sense = HAL_SENSE.init(sense);
+    unwrap!(spawner.spawn(poll_sense(
+        sense,
+        SENSE_CHANNEL.receiver(),
+        HARDWARE_CHANNEL.sender()
+    )));
+
+    let mut hal = Hal::new(i2c0_bus, p.PIN_25.degrade(), p.PIN_24.degrade());
 
     // let pd = I2cDevice::new(&i2c0_bus);
-    let hal = Hal::new(&i2c0_bus, &i2c1_bus, p.PIN_25.degrade(), p.PIN_24.degrade());
-
+    // let hal = Hal::new(i2c0_bus, &i2c1_bus, p.PIN_25.degrade(), p.PIN_24.degrade());
 
     // Buttons (moved to static so Core 1 owns them)
     let buttons = ButtonsInterface::new(
@@ -128,61 +153,13 @@ async fn main(spawner: Spawner) {
             for task in app_task {
                 match task {
                     Task::Hardware(hw_task) => {
-                        handle_hardware_task(hw_task, spawner, &hw_sender, &int_sender).await;
+                        handle_hardware_task(hw_task, &mut hal, &hw_sender, &int_sender).await;
                     }
                     Task::Display(disp_task) => {
                         handle_display_task(disp_task, &mut ui, &hw_sender, &int_sender).await
                     }
                 }
             }
-        }
-
-        ticker.next().await;
-    }
-}
-
-#[embassy_executor::task]
-pub async fn poll_readout(channel: Sender<'static, ThreadModeRawMutex, HardwareEvent, 32>) {
-    let mut ticker = Ticker::every(Duration::from_hz(5)); // 100ms
-    let mut v: f32 = 10.0;
-    let mut c: f32 = 5.0;
-    let mut p: f32 = 0.0;
-
-    loop {
-        channel
-            .send(HardwareEvent::ReadoutAcquired(
-                hal::event::Channel::A,
-                Readout {
-                    voltage: v,
-                    current: c,
-                    power: p,
-                },
-            ))
-            .await;
-
-        channel
-            .send(HardwareEvent::ReadoutAcquired(
-                hal::event::Channel::B,
-                Readout {
-                    voltage: (v + 1.5).min(20.0),
-                    current: (c + 0.2).min(5.0),
-                    power: (p + 2.5).min(99.0),
-                },
-            ))
-            .await;
-
-        v += 0.001;
-        c += 0.005;
-        p += 0.002;
-
-        if v > 20.0 {
-            v = 0.0;
-        }
-        if c > 5.0 {
-            c = 0.0;
-        }
-        if p > 99.0 {
-            p = 0.0;
         }
 
         ticker.next().await;

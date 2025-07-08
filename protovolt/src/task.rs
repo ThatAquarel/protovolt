@@ -2,24 +2,30 @@ use defmt::*;
 
 use embassy_executor::Spawner;
 use embassy_rp::pio::Instance;
-use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
+use embassy_sync::blocking_mutex::raw::{RawMutex, ThreadModeRawMutex};
 use embassy_sync::channel::Sender;
 use embassy_time::Timer;
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::DrawTarget;
+use embedded_hal::i2c::I2c;
 
 use crate::hal::event::{
     Channel, ChannelFocus, ConfirmState, DisplayTask, HardwareEvent, HardwareTask, InterfaceEvent, Limits, PowerType, SetState
 };
+use crate::hal::Hal;
 use crate::ui::{Ui, labels};
-use crate::{HARDWARE_CHANNEL, poll_readout};
+use crate::{HARDWARE_CHANNEL};
 
-pub async fn handle_hardware_task(
+pub async fn handle_hardware_task<M, BUS>(
     hardware_task: HardwareTask,
-    spawner: Spawner,
+    hal: &mut Hal<'_, M, BUS>,
     hw_sender: &Sender<'_, ThreadModeRawMutex, HardwareEvent, 32>,
     _int_sender: &Sender<'_, ThreadModeRawMutex, InterfaceEvent, 32>,
-) {
+) 
+where
+    M: RawMutex,
+    BUS: I2c,
+{
     match hardware_task {
         HardwareTask::EnablePowerDelivery => {
             Timer::after_millis(10).await;
@@ -34,10 +40,9 @@ pub async fn handle_hardware_task(
                 .await;
         }
         HardwareTask::EnableSense => {
+            hal.enable_sense().await;
+            info!("enable sense");
             Timer::after_millis(10).await;
-
-            hw_sender.send(HardwareEvent::SenseReady(Ok(()))).await;
-            // hw_sender.send(HardwareEvent::SenseReady(Err(()))).await;
         }
         HardwareTask::EnableConverter => {
             Timer::after_millis(10).await;
@@ -45,8 +50,8 @@ pub async fn handle_hardware_task(
             hw_sender.send(HardwareEvent::ConverterReady(Ok(()))).await;
         }
         HardwareTask::EnableReadoutLoop => {
+            hal.enable_readout_loop().await;
             info!("enable readout loop");
-            unwrap!(spawner.spawn(poll_readout(HARDWARE_CHANNEL.sender())));
         }
         // HardwareTask::DelayedInterfaceEvent(duration, event) => {
         //     Timer::after(duration).await;
