@@ -1,7 +1,8 @@
 use defmt::*;
 
 use embassy_executor::Spawner;
-use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
+use embassy_rp::pio::Instance;
+use embassy_sync::blocking_mutex::raw::{RawMutex, ThreadModeRawMutex};
 use embassy_sync::channel::Sender;
 use embassy_time::Timer;
 use embedded_graphics::pixelcolor::Rgb565;
@@ -58,13 +59,14 @@ pub async fn handle_hardware_task(
     }
 }
 
-pub async fn handle_display_task<D>(
+pub async fn handle_display_task<D, PIO>(
     display_task: DisplayTask,
-    ui: &mut Ui<'_, D>,
+    ui: &mut Ui<'_, D, PIO>,
     hw_sender: &Sender<'_, ThreadModeRawMutex, HardwareEvent, 32>,
     int_sender: &Sender<'_, ThreadModeRawMutex, InterfaceEvent, 32>,
 ) where
     D: DrawTarget<Color = Rgb565>,
+    PIO: Instance,
 {
     match display_task {
         DisplayTask::SetupSplash => {
@@ -108,7 +110,7 @@ pub async fn handle_display_task<D>(
                     Channel::B => ch_b_limits,
                 };
 
-                ui.controls_channel_box(*channel, ChannelFocus::UnselectedInactive);
+                ui.controls_channel_box(*channel, ChannelFocus::UnselectedInactive).await;
                 ui.controls_channel_units(*channel);
 
                 ui.controls_submeasurement(*channel, None, limits, ConfirmState::AwaitModify, None);
@@ -128,7 +130,7 @@ pub async fn handle_display_task<D>(
                     0 => Channel::A,
                     _ => Channel::B,
                 };
-                ui.controls_channel_box(channel, *focus);
+                ui.controls_channel_box(channel, *focus).await;
             }
         }
         DisplayTask::UpdateButton(confirm_state, function_button_state) => {

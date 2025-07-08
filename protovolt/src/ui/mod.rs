@@ -1,8 +1,13 @@
+use embassy_rp::pio::Instance;
 use embedded_graphics::{
     draw_target::Translated,
     pixelcolor::Rgb565,
     prelude::{DrawTarget, Point},
 };
+
+use core::cell::RefCell;
+use embassy_sync::blocking_mutex::{raw::RawMutex, Mutex};
+
 
 pub mod fmt;
 
@@ -25,17 +30,21 @@ use crate::{
             Channel, ChannelFocus, ConfirmState, FunctionButton, Limits, PowerType, Readout,
             SetState,
         },
+        led::{LedsInterface, LedsColor},
     },
+    ui::color_scheme::LED_OFF,
 };
 
 pub trait Display: DrawTarget<Color = Rgb565> {}
 impl<T: DrawTarget<Color = Rgb565>> Display for T {}
 
-pub struct Ui<'a, D>
+pub struct Ui<'a, D, PIO>
 where
     D: DrawTarget<Color = Rgb565>,
+    PIO: Instance,
 {
     pub target: &'a mut D,
+    pub led_interface: LedsInterface<'a, PIO>,
 
     pub fonts: Fonts,
     pub layout: Layout,
@@ -46,13 +55,16 @@ where
     navbar: Navbar,
 }
 
-impl<'a, D> Ui<'a, D>
+impl<'a, D, PIO> Ui<'a, D, PIO>
 where
     D: DrawTarget<Color = Rgb565>,
+    PIO: Instance,
 {
-    pub fn new(target: &'a mut D) -> Self {
+    pub fn new(target: &'a mut D, led_interface: LedsInterface<'a, PIO>) -> Self {
         Self {
             target: target,
+            led_interface: led_interface,
+
             fonts: Fonts::default(),
             layout: Layout {},
 
@@ -90,7 +102,7 @@ where
         )
     }
 
-    pub fn controls_channel_box(
+    pub async fn controls_channel_box(
         &mut self,
         channel: Channel,
         focus: ChannelFocus,
@@ -117,7 +129,24 @@ where
         self.controls
             .draw_channel_background(&mut target, color)
             .map_err(|_| ())?;
-        self.controls.draw_header_text(&mut target, text)
+        self.controls.draw_header_text(&mut target, text)?;
+
+        let led_color = match focus {
+            ChannelFocus::SelectedInactive | ChannelFocus::UnselectedInactive => {
+                match channel {
+                    Channel::A => LedsColor::ChannelA(color_scheme::LED_OFF, color_scheme::LED_OFF),
+                    Channel::B => LedsColor::ChannelB(color_scheme::LED_OFF, color_scheme::LED_OFF),
+                }
+            }
+            ChannelFocus::SelectedActive | ChannelFocus::UnselectedActive => match channel {
+                Channel::A => LedsColor::ChannelA(color_scheme::LED_CH_A, color_scheme::LED_CH_A),
+                Channel::B => LedsColor::ChannelB(color_scheme::LED_CH_B, color_scheme::LED_CH_B),
+            },
+        };
+
+        self.led_interface.update_color(led_color).await;
+
+        Ok(())
     }
 
     pub fn controls_channel_units(&mut self, channel: Channel) -> Result<(), ()> {
@@ -137,7 +166,7 @@ where
         set_select: Option<SetSelect>,
         limits: Limits,
         confirm_state: ConfirmState,
-        select_precision: Option<DecimalPrecision>
+        select_precision: Option<DecimalPrecision>,
     ) -> Result<(), ()> {
         let mut target = self.layout.channel_section(&mut *self.target, channel);
         self.controls.draw_submeasurements(
@@ -287,6 +316,7 @@ pub mod color_scheme {
         pixelcolor::Rgb565,
         prelude::{RgbColor, WebColors},
     };
+    use smart_leds::RGB8;
 
     pub const FONT_MAIN: Rgb565 = Rgb565::CSS_WHITE;
     pub const FONT_SMALL: Rgb565 = Rgb565::CSS_DIM_GRAY;
@@ -300,6 +330,10 @@ pub mod color_scheme {
     pub const CH_A_UNSELECTED: Rgb565 = Rgb565::CSS_DARK_RED;
     pub const CH_B_SELECTED: Rgb565 = Rgb565::CSS_BLUE;
     pub const CH_B_UNSELECTED: Rgb565 = Rgb565::CSS_DARK_BLUE;
+
+    pub const LED_OFF: RGB8 = RGB8::new(0, 0, 0);
+    pub const LED_CH_A: RGB8 = RGB8::new(10, 0, 0);
+    pub const LED_CH_B: RGB8 = RGB8::new(0, 0, 10);
 }
 
 pub mod labels {
