@@ -36,6 +36,7 @@ mod lm51772 {
 
 use lm51772::*;
 
+
 pub struct BuckBoostConverter<BUS: I2c, EN: OutputPin> {
     i2c: BUS,
     addr: u8,
