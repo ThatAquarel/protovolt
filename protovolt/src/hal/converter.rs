@@ -1,12 +1,15 @@
-use defmt::*;
-use embedded_hal::i2c::I2c;
-use embedded_hal::digital::OutputPin;
+use core::cell::RefCell;
 
+use defmt::*;
+use embassy_rp::gpio::{AnyPin, Level, Output};
+use embassy_sync::blocking_mutex::Mutex;
+use embassy_sync::blocking_mutex::raw::RawMutex;
+use embedded_hal::i2c::I2c;
 
 #[allow(dead_code)]
 mod lm51772 {
     // Addr/Slope --> GND: default addr
-    pub const ADDR:u8 = 0x6A;
+    pub const ADDR: u8 = 0x6A;
 
     // REGISTERS
     pub const CLEAR_FAULTS: u8 = 0x03;
@@ -36,53 +39,58 @@ mod lm51772 {
 
 use lm51772::*;
 
+use crate::hal::device::I2cDeviceWithAddr;
+use crate::hal::event::Channel;
 
-pub struct BuckBoostConverter<BUS: I2c, EN: OutputPin> {
-    i2c: BUS,
-    addr: u8,
-    en: EN,
+pub trait Converter {
+    fn init(&mut self) -> Result<(), ()>;
+
+    fn enable(&mut self) -> Result<(), ()>;
+    fn disable(&mut self) -> Result<(), ()>;
+
+    fn set_voltage(&mut self, voltage: f32) -> Result<(), ()>;
 }
 
-impl<BUS, EN> BuckBoostConverter<BUS, EN>
+pub struct ConverterDevice<'a, M: RawMutex, BUS: I2c> {
+    i2c: I2cDeviceWithAddr<'a, M, BUS>,
+    en: Output<'a>,
+}
+
+impl<'a, M, BUS> ConverterDevice<'a, M, BUS>
 where
-    BUS: I2c,
-    EN: OutputPin
+    M: RawMutex,
+    BUS: I2c + 'a,
 {
-    // TODO: common abstract trait(?) for I2C drivers?
-    pub fn new(i2c: BUS, addr_offset: u8, enable: EN) -> Self {
+    pub fn new(enable_pin: AnyPin, mutex: &'a Mutex<M, RefCell<BUS>>, channel: Channel) -> Self {
+        let en = Output::new(enable_pin, Level::Low);
+
+        let address = match channel {
+            Channel::A => ADDR,
+            Channel::B => ADDR + 1,
+        };
+
         Self {
-            i2c,
-            addr: ADDR + addr_offset,
-            en: enable,
+            i2c: I2cDeviceWithAddr::new(mutex, address),
+            en: en,
         }
     }
+}
 
-    // common trait for read_byte, read_word, etc.
-    fn read_byte(&mut self, reg:u8) -> Result<u8, ()> {
-        let mut byte= [0u8];
-        self.i2c.write_read(self.addr, &[reg], &mut byte)
-            .map_err(|_| ())?;
-
-        Ok(u8::from_be_bytes(byte))
-    }
-
-    pub fn enable(&mut self)  -> Result<(), ()>{
-        self.en.set_high().map_err(|_| ())
-    }
-
-    pub fn disable(&mut self)  -> Result<(), ()>{
-        self.en.set_low().map_err(|_| ())
-    }
-
-    pub fn init(&mut self) -> Result<(), ()> {
+impl<'a, M, BUS> Converter for ConverterDevice<'a, M, BUS>
+where
+    M: RawMutex,
+    BUS: I2c + 'a,
+{
+    fn init(&mut self) -> Result<(), ()> {
         info!("disbling converter");
-        
+
         // UVLO -> disable converter
         self.disable()?;
         info!("disabled");
 
-        let status = self.read_byte(STATUS_BYTE).unwrap();
-        // VOUT_OV fault, VIN_UV fault  
+        let status = self.i2c.read_reg_byte(STATUS_BYTE).map_err(|_| ())?;
+
+        // VOUT_OV fault, VIN_UV fault
         if status != 0x48 {
             error!("buck boost unresonsive: status got 0x{:04X}", status);
             return Err(());
@@ -94,15 +102,28 @@ where
         let d8: u8 = 0b00001100;
         let d9: u8 = 0b00000000;
 
-        self.i2c.write(self.addr, &[MFR_SPECIFIC_D0, d0]).unwrap();
-        self.i2c.write(self.addr, &[MFR_SPECIFIC_D8, d8]).unwrap();
-        self.i2c.write(self.addr, &[MFR_SPECIFIC_D9, d9]).unwrap();
+        self.i2c.write(&[MFR_SPECIFIC_D0, d0]).map_err(|_| ())?;
+        self.i2c.write(&[MFR_SPECIFIC_D8, d8]).map_err(|_| ())?;
+        self.i2c.write(&[MFR_SPECIFIC_D9, d9]).map_err(|_| ())?;
 
         Ok(())
     }
 
-    pub fn set_output_voltage(&mut self, voltage: f32, precise: bool) -> Result<(), ()>{
-        let d8: u8 = self.read_byte(MFR_SPECIFIC_D8)?;
+    fn enable(&mut self) -> Result<(), ()> {
+        self.en.set_high();
+        Ok(())
+    }
+
+    fn disable(&mut self) -> Result<(), ()> {
+        self.en.set_low();
+        Ok(())
+    }
+
+    fn set_voltage(&mut self, voltage: f32) -> Result<(), ()> {
+        let d8: u8 = self.i2c.read_reg_byte(MFR_SPECIFIC_D8).map_err(|_| ())?;
+
+        let precise = false;
+
         let (d8, multiplier): (u8, u16) = if precise {
             (d8 & !0b1000_0000, (voltage / 0.010) as u16 + 1)
         } else {
@@ -112,9 +133,9 @@ where
         let lsb = (multiplier & 0xFF) as u8;
         let msb = ((multiplier >> 8) & 0xFF) as u8;
 
-        self.i2c.write(self.addr, &[MFR_SPECIFIC_D8, d8]).unwrap();
-        self.i2c.write(self.addr, &[VOUT_TARGET1_LSB, lsb]).unwrap();
-        self.i2c.write(self.addr, &[VOUT_TARGET1_MSB, msb]).unwrap();
+        self.i2c.write(&[MFR_SPECIFIC_D8, d8]).map_err(|_| ())?;
+        self.i2c.write(&[VOUT_TARGET1_LSB, lsb]).map_err(|_| ())?;
+        self.i2c.write(&[VOUT_TARGET1_MSB, msb]).map_err(|_| ())?;
 
         Ok(())
     }

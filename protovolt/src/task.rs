@@ -37,6 +37,7 @@ pub async fn handle_hardware_task(
             Timer::after_millis(10).await;
 
             hw_sender.send(HardwareEvent::SenseReady(Ok(()))).await;
+            // hw_sender.send(HardwareEvent::SenseReady(Err(()))).await;
         }
         HardwareTask::EnableConverter => {
             Timer::after_millis(10).await;

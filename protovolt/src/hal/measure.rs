@@ -1,6 +1,8 @@
-use defmt::*;
-use embedded_hal::i2c::I2c;
+use core::cell::RefCell;
 
+use defmt::*;
+use embassy_sync::blocking_mutex::{raw::RawMutex, Mutex};
+use embedded_hal::i2c::I2c;
 
 #[allow(dead_code)]
 mod ina226 {
@@ -23,15 +25,14 @@ mod ina226 {
     pub const DIE_ID: u8 = 0xFF;
 }
 
-
-const R_SHUNT:f32 = 0.010;  // 10mR
+const R_SHUNT: f32 = 0.010; // 10mR
 const I_MAX: f32 = 5.00; // 5A limit
 // TODO: move all into hardware file
 
 const CURRENT_LSB: f32 = I_MAX / ((1 << 15) as f32);
 const POWER_LSB: f32 = CURRENT_LSB * 25.0;
-const CAL: [u8;2] = compute_cal(CURRENT_LSB, R_SHUNT);
-const fn compute_cal(current_lsb: f32, shunt_resistance: f32) -> [u8;2] {
+const CAL: [u8; 2] = compute_cal(CURRENT_LSB, R_SHUNT);
+const fn compute_cal(current_lsb: f32, shunt_resistance: f32) -> [u8; 2] {
     let cal = 0.00512 / (current_lsb * shunt_resistance);
 
     // TODO: figure out rounding or truncating?
@@ -41,26 +42,46 @@ const fn compute_cal(current_lsb: f32, shunt_resistance: f32) -> [u8;2] {
 
 use ina226::*;
 
-pub struct PowerMonitor<BUS: I2c> {
-    i2c: BUS,
-    addr: u8,
+use crate::hal::{device::I2cDeviceWithAddr, event::Channel};
+
+pub trait Measure {
+    fn init(&mut self) -> Result<(), ()>;
+    fn read_shunt_voltage(&mut self) -> Result<f32, ()>;
+    fn read_bus_voltage(&mut self) -> Result<f32, ()>;
+    fn read_current(&mut self) -> Result<f32, ()>;
+    fn read_power(&mut self) -> Result<f32, ()>;
 }
 
-impl<BUS> PowerMonitor<BUS>
-where
-    BUS: I2c,
+pub struct MeasureDevice<'a, M: RawMutex, BUS: I2c> {
+    i2c: I2cDeviceWithAddr<'a, M, BUS>
+}
+
+impl <'a, M, BUS> MeasureDevice<'a, M, BUS>
+where 
+    M: RawMutex,
+    BUS: I2c + 'a,
 {
-    pub fn new(i2c: BUS, addr_offset: u8) -> Self {
+    pub fn new(mutex: &'a Mutex<M, RefCell<BUS>>, channel: Channel) -> Self {
+        let address = match channel {
+            Channel::A => ADDR,
+            Channel::B => ADDR + 1,
+        };
+
         Self {
-            i2c,
-            addr: ADDR + addr_offset,
+            i2c: I2cDeviceWithAddr::new(mutex, address)
         }
     }
+}
 
-    pub fn init(&mut self) -> Result<(), ()> {
+impl<'a, M, BUS> Measure for MeasureDevice<'a, M, BUS>
+where 
+    M: RawMutex,
+    BUS: I2c + 'a,
+{
+    fn init(&mut self) -> Result<(), ()>{
         let mut manufacturer_id = [0u8; 2];
         self.i2c
-            .write_read(self.addr, &[MANUFACTURER_ID], &mut manufacturer_id)
+            .write_read( &[MANUFACTURER_ID], &mut manufacturer_id)
             .map_err(|_| ())?;
 
         let id = u16::from_be_bytes(manufacturer_id);
@@ -74,43 +95,33 @@ where
         info!("cal 0 {}", CAL[0]);
         info!("cal 1 {}", CAL[1]);
 
-        self.i2c.write(self.addr, &[CALIBRATION, CAL[0], CAL[1]]).unwrap();
+        self.i2c
+            .write( &[CALIBRATION, CAL[0], CAL[1]])
+            .map_err(|_| ())?;
+
         // TODO: verify CAL is correctly written
 
         Ok(())
-
     }
 
-    fn read_word(&mut self, reg: u8) -> Result<u16, ()> {
-        let mut word = [0u8; 2];
-        self.i2c.write_read(self.addr, &[reg], &mut word).map_err(|_| ())?;
-
-        Ok(u16::from_be_bytes(word))
-    }
-
-    pub fn read_shunt_voltage(&mut self) -> Result<f32, ()> {
-        let reg = self.read_word(SHUNT_VOLTAGE)?;
+    fn read_shunt_voltage(&mut self) -> Result<f32, ()> {
+        let reg = self.i2c.read_reg_word(SHUNT_VOLTAGE).map_err(|_| ())?;
         Ok((reg as f32) * 2.5e-6)
-        // TODO: move 2.5uV LSB out into INA226 constants
     }
 
-    pub fn read_bus_voltage(&mut self) -> Result<f32, ()> {
-        let reg = self.read_word(BUS_VOLTAGE)?;
+    fn read_bus_voltage(&mut self) -> Result<f32, ()> {
+        let reg = self.i2c.read_reg_word(BUS_VOLTAGE).map_err(|_| ())?;
         Ok((reg as f32) * 1.25e-3)
-        // TODO: move 1.25mV LSB out into INA226 constants
     }
 
-    pub fn read_current(&mut self) -> Result<f32, ()> {
-        let reg = self.read_word(CURRENT)?;
-
-        // info!("read current reg {}", reg);
-
+    fn read_current(&mut self) -> Result<f32, ()> {
+        let reg = self.i2c.read_reg_word(CURRENT).map_err(|_| ())?;
         Ok((reg as f32) * CURRENT_LSB)
         // TODO: move 1.25mV LSB out into INA226 constants
     }
 
-    pub fn read_power(&mut self) -> Result<f32, ()> {
-        let reg = self.read_word(POWER)?;
+    fn read_power(&mut self) -> Result<f32, ()> {
+        let reg = self.i2c.read_reg_word(POWER).map_err(|_| ())?;
         Ok((reg as f32) * POWER_LSB)
         // TODO: move 1.25mV LSB out into INA226 constants
     }

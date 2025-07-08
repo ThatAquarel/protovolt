@@ -9,16 +9,21 @@ mod ui;
 use core::cell::RefCell;
 
 use defmt::*;
+use embassy_embedded_hal::shared_bus::blocking::i2c::I2cDevice;
 use embassy_executor::{Executor, Spawner};
-use embassy_rp::bind_interrupts;
 use embassy_rp::gpio::{Output, Pin};
+use embassy_rp::i2c::I2c;
 use embassy_rp::multicore::{Stack, spawn_core1};
-use embassy_rp::peripherals::PIO0;
-use embassy_rp::pio::InterruptHandler;
+use embassy_rp::peripherals::{I2C0, I2C1, PIO0};
+use embassy_rp::pio;
 use embassy_rp::pio::Pio;
 use embassy_rp::spi::{self, Spi};
+use embassy_rp::{bind_interrupts, i2c};
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::{NoopRawMutex, ThreadModeRawMutex};
+
+use embassy_sync::blocking_mutex::Mutex as I2cMutex;
+
 use embassy_sync::channel::{Channel, Sender};
 use embassy_time::{Duration, Ticker};
 
@@ -31,6 +36,10 @@ use task::{handle_display_task, handle_hardware_task};
 use ui::Ui;
 
 use crate::hal::led::LedsInterface;
+use crate::hal::{ChannelDevices, Hal};
+
+use crate::hal::event::Channel as OutputChannel;
+
 use static_cell::StaticCell;
 
 use {defmt_rtt as _, panic_probe as _};
@@ -46,12 +55,22 @@ static EXECUTOR1: StaticCell<Executor> = StaticCell::new();
 static BUTTONS_INTERFACE: StaticCell<ButtonsInterface> = StaticCell::new();
 
 bind_interrupts!(struct Irqs {
-    PIO0_IRQ_0 => InterruptHandler<PIO0>;
+    PIO0_IRQ_0 => pio::InterruptHandler<PIO0>;
 });
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
+
+    // Power hardware initialization
+    let i2c0 = I2c::new_blocking(p.I2C0, p.PIN_1, p.PIN_0, i2c::Config::default());
+    let i2c0_bus: Mutex<NoopRawMutex, _> = I2cMutex::new(RefCell::new(i2c0));
+    let i2c1 = I2c::new_blocking(p.I2C1, p.PIN_23, p.PIN_22, i2c::Config::default());
+    let i2c1_bus: Mutex<NoopRawMutex, _> = I2cMutex::new(RefCell::new(i2c1));
+
+    // let pd = I2cDevice::new(&i2c0_bus);
+    let hal = Hal::new(&i2c0_bus, &i2c1_bus, p.PIN_25.degrade(), p.PIN_24.degrade());
+
 
     // Buttons (moved to static so Core 1 owns them)
     let buttons = ButtonsInterface::new(
@@ -73,9 +92,7 @@ async fn main(spawner: Spawner) {
 
     // Interfacing LEDs setup
     let pio = Pio::new(p.PIO0, Irqs);
-
     let leds = LedsInterface::new(pio, p.DMA_CH0, p.PIN_11);
-    // let leds = LEDS_INTERFACE.init(leds);
 
     // App logic
     let mut app = App::default();
@@ -122,7 +139,6 @@ async fn main(spawner: Spawner) {
 
         ticker.next().await;
     }
-
 }
 
 #[embassy_executor::task]
