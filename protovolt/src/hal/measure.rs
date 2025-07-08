@@ -106,7 +106,7 @@ where
 
     fn read_shunt_voltage(&mut self) -> Result<f32, ()> {
         let reg = self.i2c.read_reg_word(SHUNT_VOLTAGE).map_err(|_| ())?;
-        Ok((reg as f32) * 2.5e-6)
+        Ok((reg as i16 as f32) * 2.5e-6)
     }
 
     fn read_bus_voltage(&mut self) -> Result<f32, ()> {
@@ -116,7 +116,7 @@ where
 
     fn read_current(&mut self) -> Result<f32, ()> {
         let reg = self.i2c.read_reg_word(CURRENT).map_err(|_| ())?;
-        Ok((reg as f32) * CURRENT_LSB)
+        Ok((reg as i16 as f32) * CURRENT_LSB)
         // TODO: move 1.25mV LSB out into INA226 constants
     }
 
