@@ -53,11 +53,11 @@ where
         }
     }
 
-    async fn refresh(&mut self) {
+    pub async fn refresh(&mut self) {
         self.led.write(&self.data).await;
     }
 
-    pub async fn update_color(&mut self, color: LedsColor) {
+    pub fn update_color(&mut self, color: LedsColor) {
         let d = &mut self.data;
         match color {
             LedsColor::Settings(c) => d[0] = c,
@@ -66,7 +66,10 @@ where
             LedsColor::ChannelA(c_a, c_b) => (d[5], d[6]) = (c_a, c_b),
             LedsColor::ChannelB(c_a, c_b) => (d[3], d[4]) = (c_a, c_b),
         }
+    }
 
+    pub async fn update_refresh(&mut self, color: LedsColor) {
+        self.update_color(color);
         self.refresh().await;
     }
 }

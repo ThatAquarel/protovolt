@@ -339,7 +339,7 @@ impl App {
                         match self.interface_state.arrows_function {
                             ArrowsFunction::Navigation => (
                                 ArrowsFunction::SetpointEdit,
-                                ConfirmState::AwaitConfirmModify,
+                                ConfirmState::AwaitConfirmModify(self.interface_state.selected_channel),
                             ),
                             ArrowsFunction::SetpointEdit => {
                                 (ArrowsFunction::Navigation, ConfirmState::AwaitModify)
@@ -357,7 +357,7 @@ impl App {
                     let function_button = match self.interface_state.arrows_function {
                         ArrowsFunction::Navigation => None,
                         ArrowsFunction::SetpointEdit => {
-                            Some(FunctionButton::Enter(ConfirmState::AwaitConfirmModify))
+                            Some(FunctionButton::Enter(ConfirmState::AwaitConfirmModify(self.interface_state.selected_channel)))
                         }
                     };
                     self.current_confirm_state_button_task(function_button)
@@ -482,7 +482,7 @@ impl App {
     fn get_confirm_state(&self) -> ConfirmState {
         match self.interface_state.arrows_function {
             ArrowsFunction::Navigation => ConfirmState::AwaitModify,
-            ArrowsFunction::SetpointEdit => ConfirmState::AwaitConfirmModify,
+            ArrowsFunction::SetpointEdit => ConfirmState::AwaitConfirmModify(self.interface_state.selected_channel),
         }
     }
 
@@ -590,7 +590,7 @@ impl App {
         let function_button = match self.interface_state.arrows_function {
             ArrowsFunction::Navigation => None,
             ArrowsFunction::SetpointEdit => {
-                Some(FunctionButton::Enter(ConfirmState::AwaitConfirmModify))
+                Some(FunctionButton::Enter(ConfirmState::AwaitConfirmModify(self.interface_state.selected_channel)))
             }
         };
 

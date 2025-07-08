@@ -209,7 +209,7 @@ impl ControlsScreen {
 
             let color = if selected {
                 match confirm_state {
-                    ConfirmState::AwaitConfirmModify => await_confirm_modify_color,
+                    ConfirmState::AwaitConfirmModify(_) => await_confirm_modify_color,
                     ConfirmState::AwaitModify => color_scheme::SELECTED,
                 }
             } else {
@@ -299,7 +299,7 @@ impl ControlsScreen {
 
             let color = if select_index == Some(i) {
                 match confirm_state {
-                    ConfirmState::AwaitConfirmModify => await_confirm_modify_color,
+                    ConfirmState::AwaitConfirmModify(_) => await_confirm_modify_color,
                     ConfirmState::AwaitModify => color_scheme::SELECTED,
                 }
             } else {

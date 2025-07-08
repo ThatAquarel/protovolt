@@ -6,8 +6,7 @@ use embedded_graphics::{
 };
 
 use core::cell::RefCell;
-use embassy_sync::blocking_mutex::{raw::RawMutex, Mutex};
-
+use embassy_sync::blocking_mutex::{Mutex, raw::RawMutex};
 
 pub mod fmt;
 
@@ -30,7 +29,7 @@ use crate::{
             Channel, ChannelFocus, ConfirmState, FunctionButton, Limits, PowerType, Readout,
             SetState,
         },
-        led::{LedsInterface, LedsColor},
+        led::{LedsColor, LedsInterface},
     },
     ui::color_scheme::LED_OFF,
 };
@@ -132,19 +131,17 @@ where
         self.controls.draw_header_text(&mut target, text)?;
 
         let led_color = match focus {
-            ChannelFocus::SelectedInactive | ChannelFocus::UnselectedInactive => {
-                match channel {
-                    Channel::A => LedsColor::ChannelA(color_scheme::LED_OFF, color_scheme::LED_OFF),
-                    Channel::B => LedsColor::ChannelB(color_scheme::LED_OFF, color_scheme::LED_OFF),
-                }
-            }
+            ChannelFocus::SelectedInactive | ChannelFocus::UnselectedInactive => match channel {
+                Channel::A => LedsColor::ChannelA(color_scheme::LED_OFF, color_scheme::LED_OFF),
+                Channel::B => LedsColor::ChannelB(color_scheme::LED_OFF, color_scheme::LED_OFF),
+            },
             ChannelFocus::SelectedActive | ChannelFocus::UnselectedActive => match channel {
                 Channel::A => LedsColor::ChannelA(color_scheme::LED_CH_A, color_scheme::LED_CH_A),
                 Channel::B => LedsColor::ChannelB(color_scheme::LED_CH_B, color_scheme::LED_CH_B),
             },
         };
 
-        self.led_interface.update_color(led_color).await;
+        self.led_interface.update_refresh(led_color).await;
 
         Ok(())
     }
@@ -210,13 +207,41 @@ where
             .draw_power_info(&mut *self.target, &self.fonts, power_type)
     }
 
-    pub fn nav_buttons(
+    pub async fn nav_buttons(
         &mut self,
         confirm_state: ConfirmState,
         button_state: Option<FunctionButton>,
     ) -> Result<(), ()> {
+        let (switch_color, settings_color) = match &button_state {
+            Some(button) => match button {
+                FunctionButton::Switch => (color_scheme::LED_ON, color_scheme::LED_OFF),
+                FunctionButton::Settings => (color_scheme::LED_OFF, color_scheme::LED_ON),
+                _ => (color_scheme::LED_OFF, color_scheme::LED_OFF),
+            },
+            None => (color_scheme::LED_OFF, color_scheme::LED_OFF),
+        };
+        let enter_led_color = match confirm_state {
+            ConfirmState::AwaitConfirmModify(channel) => match channel {
+                Some(channel) => match channel {
+                    Channel::A => color_scheme::LED_CH_A,
+                    Channel::B => color_scheme::LED_CH_B,
+                },
+                None => color_scheme::LED_OFF,
+            },
+            ConfirmState::AwaitModify => color_scheme::LED_OFF,
+        };
+
         self.navbar
-            .draw_button(&mut *self.target, &self.fonts, confirm_state, button_state)
+            .draw_button(&mut *self.target, &self.fonts, confirm_state, button_state)?;
+
+        self.led_interface
+            .update_color(LedsColor::Enter(enter_led_color));
+        self.led_interface
+            .update_color(LedsColor::Switch(switch_color));
+        self.led_interface
+            .update_color(LedsColor::Settings(settings_color));
+        self.led_interface.refresh().await;
+        Ok(())
     }
 }
 
@@ -332,6 +357,7 @@ pub mod color_scheme {
     pub const CH_B_UNSELECTED: Rgb565 = Rgb565::CSS_DARK_BLUE;
 
     pub const LED_OFF: RGB8 = RGB8::new(0, 0, 0);
+    pub const LED_ON: RGB8 = RGB8::new(10, 10, 10);
     pub const LED_CH_A: RGB8 = RGB8::new(10, 0, 0);
     pub const LED_CH_B: RGB8 = RGB8::new(0, 0, 10);
 }

@@ -110,7 +110,7 @@ impl Navbar {
         let w = 60;
 
         let enter_icon = match confirm_state {
-            ConfirmState::AwaitConfirmModify => icons_2x::CHECKMARK,
+            ConfirmState::AwaitConfirmModify(_) => icons_2x::CHECKMARK,
             ConfirmState::AwaitModify=> icons_2x::PENCIL,
         };
         let buttons = [enter_icon, icons_2x::SWITCH, icons_2x::SETTINGS];

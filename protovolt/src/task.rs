@@ -101,7 +101,7 @@ pub async fn handle_display_task<D, PIO>(
             ui.clear();
 
             ui.nav_power_info(power_type);
-            ui.nav_buttons(ConfirmState::AwaitModify, None);
+            ui.nav_buttons(ConfirmState::AwaitModify, None).await;
 
             let channels = [Channel::A, Channel::B];
             for channel in channels.iter() {
@@ -134,7 +134,7 @@ pub async fn handle_display_task<D, PIO>(
             }
         }
         DisplayTask::UpdateButton(confirm_state, function_button_state) => {
-            ui.nav_buttons(confirm_state, function_button_state);
+            ui.nav_buttons(confirm_state, function_button_state).await;
         }
         DisplayTask::UpdateSetState(channel, set_state, set_select, confirm_state) => {
             ui.controls_submeasurement_tag(channel, set_state, set_select, confirm_state);

@@ -120,7 +120,7 @@ pub enum ChannelFocus {
 #[derive(Clone, Copy)]
 pub enum ConfirmState {
     AwaitModify,
-    AwaitConfirmModify,
+    AwaitConfirmModify(Option<Channel>),
 }
 
 pub enum FunctionButton {
