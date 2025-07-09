@@ -36,6 +36,7 @@ use task::{handle_display_task, handle_hardware_task};
 use ui::Ui;
 
 use crate::hal::led::LedsInterface;
+use crate::hal::power::{PowerDelivery, PowerDeliveryDevice};
 use crate::hal::{Hal, HalSense, SENSE_CHANNEL, poll_sense};
 
 use static_cell::StaticCell;
@@ -95,6 +96,23 @@ async fn main(spawner: Spawner) {
     let mut hal = Hal::new(i2c0_bus, p.PIN_25.degrade(), p.PIN_24.degrade());
 
     // let pd = I2cDevice::new(&i2c0_bus);
+    let mut pd_dev = PowerDeliveryDevice::new(&i2c0_bus);
+
+    for pdo in 1..4u8 {
+        info!("({}) voltage (V) {}", pdo, pd_dev.get_voltage(pdo));
+        info!("({}) current (A) {}", pdo, pd_dev.get_current(pdo, ));
+        info!("({}) lower voltage tolerance (%) {}", pdo, pd_dev.get_lower_voltage_limit(pdo));
+        info!("({}) upper voltage tolerance (%) {}", pdo, pd_dev.get_upper_voltage_limit(pdo));
+    }
+    info!("pdo number {}", pd_dev.get_pdo_number());
+    info!("flex current {}", pd_dev.get_flex_current());
+    info!("external power {}", pd_dev.get_external_power());
+    info!("usb comm capable {}", pd_dev.get_usb_comm_capable());
+    info!("configuration ok gpio {}", pd_dev.get_config_ok_gpio());
+    info!("extra gpio pin config {}", pd_dev.get_gpio_ctrl());
+    info!("power out >5V only {}", pd_dev.get_power_above_5v_only());
+    info!("operating current {}", pd_dev.get_req_src_current());
+
     // let hal = Hal::new(i2c0_bus, &i2c1_bus, p.PIN_25.degrade(), p.PIN_24.degrade());
 
     // Buttons (moved to static so Core 1 owns them)

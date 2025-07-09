@@ -45,9 +45,9 @@ where
             Timer::after_millis(10).await;
         }
         HardwareTask::EnableConverter => {
+            let res = hal.enable_converter().await;
             Timer::after_millis(10).await;
-
-            hw_sender.send(HardwareEvent::ConverterReady(Ok(()))).await;
+            hw_sender.send(HardwareEvent::ConverterReady(res)).await;
         }
         HardwareTask::EnableReadoutLoop => {
             hal.enable_readout_loop().await;

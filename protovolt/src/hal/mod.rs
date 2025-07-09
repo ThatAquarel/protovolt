@@ -13,7 +13,7 @@ use embedded_hal::{digital::OutputPin, i2c::I2c};
 
 use crate::{
     hal::{
-        converter::ConverterDevice,
+        converter::{Converter, ConverterDevice},
         event::{Channel as OutputChannel, HardwareEvent},
         measure::{Measure, MeasureDevice},
     }, ui::labels::SENSE, StaticI2c1
@@ -28,6 +28,7 @@ mod device;
 
 pub mod converter;
 pub mod measure;
+pub mod power;
 
 pub struct Hal<'a, M: RawMutex, BUS: I2c> {
     ch_a: ConverterDevice<'a, M, BUS>,
@@ -56,6 +57,11 @@ where
 
     pub async fn enable_readout_loop(&mut self) {
         SENSE_CHANNEL.send(SenseEvent::StartReadoutLoop).await;
+    }
+
+    pub async fn enable_converter(&mut self) -> Result<(), ()>{
+        self.ch_a.init().await?;
+        self.ch_b.init().await
     }
 }
 

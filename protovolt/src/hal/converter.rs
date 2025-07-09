@@ -4,46 +4,31 @@ use defmt::*;
 use embassy_rp::gpio::{AnyPin, Level, Output};
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::RawMutex;
+use embassy_time::Timer;
 use embedded_hal::i2c::I2c;
 
 #[allow(dead_code)]
-mod lm51772 {
-    // Addr/Slope --> GND: default addr
-    pub const ADDR: u8 = 0x6A;
+mod tps55289 {
+    pub const ADDR: u8 = 0x74;
 
     // REGISTERS
-    pub const CLEAR_FAULTS: u8 = 0x03;
-
-    pub const ILIM_THRESHOLD: u8 = 0x0A;
-
-    pub const VOUT_TARGET1_LSB: u8 = 0x0C;
-    pub const VOUT_TARGET1_MSB: u8 = 0x0D;
-
-    pub const USB_PD_STATUS_0: u8 = 0x21;
-    pub const STATUS_BYTE: u8 = 0x78;
-    pub const USB_PD_CONTROL_0: u8 = 0x81;
-
-    pub const MFR_SPECIFIC_D0: u8 = 0xD0;
-    pub const MFR_SPECIFIC_D1: u8 = 0xD1;
-    pub const MFR_SPECIFIC_D2: u8 = 0xD2;
-    pub const MFR_SPECIFIC_D3: u8 = 0xD3;
-    pub const MFR_SPECIFIC_D4: u8 = 0xD4;
-    pub const MFR_SPECIFIC_D5: u8 = 0xD5;
-    pub const MFR_SPECIFIC_D6: u8 = 0xD6;
-    pub const MFR_SPECIFIC_D7: u8 = 0xD7;
-    pub const MFR_SPECIFIC_D8: u8 = 0xD8;
-    pub const MFR_SPECIFIC_D9: u8 = 0xD9;
-
-    pub const IVP_VOLTAGE: u8 = 0xDA;
+    pub const REF_LSB: u8 = 0x00;
+    pub const REF_MSB: u8 = 0x01;
+    pub const IOUT_LIMIT: u8 = 0x02;
+    pub const VOUT_SR: u8 = 0x03;
+    pub const VOUT_FS: u8 = 0x04;
+    pub const CDC: u8 = 0x05;
+    pub const MODE: u8 = 0x06;
+    pub const STATUS: u8 = 0x07;
 }
 
-use lm51772::*;
+use tps55289::*;
 
 use crate::hal::device::I2cDeviceWithAddr;
 use crate::hal::event::Channel;
 
 pub trait Converter {
-    fn init(&mut self) -> Result<(), ()>;
+    async fn init(&mut self) -> Result<(), ()>;
 
     fn enable(&mut self) -> Result<(), ()>;
     fn disable(&mut self) -> Result<(), ()>;
@@ -81,61 +66,56 @@ where
     M: RawMutex,
     BUS: I2c + 'a,
 {
-    fn init(&mut self) -> Result<(), ()> {
-        info!("disbling converter");
+    async fn init(&mut self) -> Result<(), ()> {
+        self.en.set_high();
 
-        // UVLO -> disable converter
-        self.disable()?;
-        info!("disabled");
+        Timer::after_millis(1).await; // Await controller start after EN/UVLO pulled high
 
-        let status = self.i2c.read_reg_byte(STATUS_BYTE).map_err(|_| ())?;
+        info!("start converter");
 
-        // VOUT_OV fault, VIN_UV fault
-        if status != 0x48 {
-            error!("buck boost unresonsive: status got 0x{:04X}", status);
+        let mut regs = [0u8; 8];
+        self.i2c.write_read(&[REF_LSB], &mut regs).map_err(|_| {
+            warn!("start converter, i2c read error");
+            ()
+        })?;
+
+        info!("regs {}", regs);
+
+        let (mode, status) = (
+            regs[MODE as usize] & 0b1110_0010,
+            regs[STATUS as usize] & 0b1110_0011,
+        );
+        if mode == 32 && status == 1 {
+            info!("verified mode, status: 0b{:08b} 0b{:08b}", mode, status);
+        } else {
+            warn!("invalid mode, status");
             return Err(());
         }
-        info!("verified status 0x{:04X}", status);
 
-        // D0, D9 reg config.
-        let d0: u8 = 0b00110011;
-        let d8: u8 = 0b00001100;
-        let d9: u8 = 0b00000000;
-
-        self.i2c.write(&[MFR_SPECIFIC_D0, d0]).map_err(|_| ())?;
-        self.i2c.write(&[MFR_SPECIFIC_D8, d8]).map_err(|_| ())?;
-        self.i2c.write(&[MFR_SPECIFIC_D9, d9]).map_err(|_| ())?;
+        self.disable()?;
 
         Ok(())
     }
 
     fn enable(&mut self) -> Result<(), ()> {
-        self.en.set_high();
-        Ok(())
+        self.i2c.write(&[MODE, 0b1010_0000]).map_err(|_| ())
     }
 
     fn disable(&mut self) -> Result<(), ()> {
-        self.en.set_low();
-        Ok(())
+        self.i2c.write(&[MODE, 0b0011_0000]).map_err(|_| ())
     }
 
     fn set_voltage(&mut self, voltage: f32) -> Result<(), ()> {
-        let d8: u8 = self.i2c.read_reg_byte(MFR_SPECIFIC_D8).map_err(|_| ())?;
+        let reference = (voltage * 0.0564 - 0.045) / 0.0005645;
+        let reference = reference as u16;
 
-        let precise = false;
+        self.i2c
+            .write(&[REF_LSB, (reference & 0xFF) as u8, (reference >> 8) as u8])
+            .map_err(|_| ())?;
 
-        let (d8, multiplier): (u8, u16) = if precise {
-            (d8 & !0b1000_0000, (voltage / 0.010) as u16 + 1)
-        } else {
-            (d8 | 0b1000_0000, (voltage / 0.020) as u16 + 1)
-        };
-
-        let lsb = (multiplier & 0xFF) as u8;
-        let msb = ((multiplier >> 8) & 0xFF) as u8;
-
-        self.i2c.write(&[MFR_SPECIFIC_D8, d8]).map_err(|_| ())?;
-        self.i2c.write(&[VOUT_TARGET1_LSB, lsb]).map_err(|_| ())?;
-        self.i2c.write(&[VOUT_TARGET1_MSB, msb]).map_err(|_| ())?;
+        let lsb = self.i2c.read_reg_byte(REF_LSB).map_err(|_| ())?;
+        let msb = self.i2c.read_reg_byte(REF_MSB).map_err(|_| ())?;
+        info!("enabled with REF_MSB, REF_LSB: {:08b} {:08b}", msb, lsb);
 
         Ok(())
     }
