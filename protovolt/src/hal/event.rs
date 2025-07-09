@@ -86,6 +86,7 @@ pub enum HardwareTask {
     // Updates
     UpdateConverterState(Channel, bool),
     UpdateConverterVoltage(Channel, f32),
+    UpdateConverterCurrent(Channel, f32),
 
     // DelayedInterfaceEvent(Duration, InterfaceEvent),
     DelayedHardwareEvent(Duration, HardwareEvent),

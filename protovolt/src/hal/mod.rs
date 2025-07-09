@@ -85,9 +85,22 @@ where
         channel: OutputChannel,
         voltage: f32,
     ) -> Result<(), ()> {
+        let voltage = (voltage * 1000.0) as u16;
         match channel {
-            OutputChannel::A => self.ch_a.set_voltage(voltage),
-            OutputChannel::B => self.ch_b.set_voltage(voltage),
+            OutputChannel::A => self.ch_a.set_voltage(voltage).await,
+            OutputChannel::B => self.ch_b.set_voltage(voltage).await,
+        }
+    }
+
+    pub async fn update_converter_current(
+        &mut self,
+        channel: OutputChannel,
+        current: f32,
+    ) -> Result<(),()> {
+        let current = (current * 1000.0) as u16;
+        match channel {
+            OutputChannel::A => self.ch_a.set_current(current),
+            OutputChannel::B => self.ch_b.set_current(current),
         }
     }
 }

@@ -271,16 +271,8 @@ impl App {
                 let power_type = self.power_type;
                 let (ch_a_limit, ch_b_limit) = self.get_current_set();
 
-                AppTaskBuilder::new()
+                self.initialize_converters_task()
                     .hardware(HardwareTask::EnableReadoutLoop)
-                    .hardware(HardwareTask::UpdateConverterVoltage(
-                        Channel::A,
-                        self.ch_a.target.voltage.value(),
-                    ))
-                    .hardware(HardwareTask::UpdateConverterVoltage(
-                        Channel::B,
-                        self.ch_b.target.voltage.value(),
-                    ))
                     .display(DisplayTask::SetupMain(power_type, ch_a_limit, ch_b_limit))
                     .build()
             }
@@ -332,27 +324,21 @@ impl App {
                         Some(channel) => channel,
                     };
 
-                    let mut converter_target_task = AppTaskBuilder::new();
+                    let mut converter_task = AppTaskBuilder::new();
 
                     self.interface_state.arrows_function =
                         match self.interface_state.arrows_function {
                             ArrowsFunction::Navigation => ArrowsFunction::SetpointEdit,
                             ArrowsFunction::SetpointEdit => {
-                                let voltage = match channel {
-                                    Channel::A => self.ch_a.target.voltage.value(),
-                                    Channel::B => self.ch_b.target.voltage.value(),
-                                };
-                                converter_target_task = converter_target_task.hardware(
-                                    HardwareTask::UpdateConverterVoltage(channel, voltage),
-                                );
-
+                                converter_task = converter_task
+                                    .extend(self.update_converter_task(channel));
                                 ArrowsFunction::Navigation
                             }
                         };
 
                     self.setpoints_task()
                         .extend(self.current_confirm_state_button_task(Some(FunctionButton::Enter)))
-                        .extend(converter_target_task)
+                        .extend(converter_task)
                         .build()
                 }
                 Change::Released => {
@@ -448,15 +434,6 @@ impl App {
             }
         }
     }
-
-    // pub fn get_current_set_mut(
-    //     &mut self,
-    // ) -> (&mut VoltageCurrentWithSetter, &mut VoltageCurrentWithSetter) {
-    //     match self.set_state {
-    //         SetState::Set => (&mut self.ch_a.target, &mut self.ch_b.target),
-    //         SetState::Limits => (&mut self.ch_a.limits, &mut self.ch_b.limits),
-    //     }
-    // }
 
     pub fn get_current_set(&mut self) -> (Limits, Limits) {
         match self.set_state {
@@ -601,6 +578,28 @@ impl App {
         };
 
         self.current_confirm_state_button_task(function_button)
+    }
+
+    pub fn update_converter_task(&self, channel: Channel) -> AppTaskBuilder {
+        let target = match channel {
+            Channel::A => &self.ch_a.target,
+            Channel::B => &self.ch_b.target,
+        };
+
+        AppTaskBuilder::new()
+            .hardware(HardwareTask::UpdateConverterVoltage(
+                channel,
+                target.voltage.value(),
+            ))
+            .hardware(HardwareTask::UpdateConverterCurrent(
+                channel,
+                target.current.value(),
+            ))
+    }
+
+    pub fn initialize_converters_task(&self) -> AppTaskBuilder {
+        self.update_converter_task(Channel::A)
+            .extend(self.update_converter_task(Channel::B))
     }
 
     pub fn navigation_channel_focus(&mut self, resulting_channel: Channel) -> Option<AppTask> {

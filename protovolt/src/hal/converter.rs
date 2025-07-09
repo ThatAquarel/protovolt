@@ -20,6 +20,12 @@ mod tps55289 {
     pub const CDC: u8 = 0x05;
     pub const MODE: u8 = 0x06;
     pub const STATUS: u8 = 0x07;
+
+    pub fn cc_discharge_time(v_i: u16, v_f: u16) -> u64 {
+        // capacitance 590uF on output
+        // + extra
+        590 * (v_i as u64 - v_f as u64) / 100 + 20000
+    }
 }
 
 use tps55289::*;
@@ -33,7 +39,11 @@ pub trait Converter {
     fn enable(&mut self) -> Result<(), ()>;
     fn disable(&mut self) -> Result<(), ()>;
 
-    fn set_voltage(&mut self, voltage: f32) -> Result<(), ()>;
+    fn get_enabled(&mut self) -> Result<bool, ()>;
+    fn get_voltage(&mut self) -> Result<u16, ()>;
+
+    async fn set_voltage(&mut self, voltage: u16) -> Result<(), ()>;
+    fn set_current(&mut self, current: u16) -> Result<(), ()>;
 }
 
 pub struct ConverterDevice<'a, M: RawMutex, BUS: I2c> {
@@ -98,24 +108,95 @@ where
     }
 
     fn enable(&mut self) -> Result<(), ()> {
-        self.i2c.write(&[MODE, 0b1010_0000]).map_err(|_| ())
+        self.i2c.write(&[MODE, 0b1011_0000]).map_err(|_| ())
     }
 
     fn disable(&mut self) -> Result<(), ()> {
+        // self.set_voltage(0)?;
         self.i2c.write(&[MODE, 0b0011_0000]).map_err(|_| ())
     }
 
-    fn set_voltage(&mut self, voltage: f32) -> Result<(), ()> {
-        let reference = (voltage * 0.0564 - 0.045) / 0.0005645;
-        let reference = reference as u16;
+    fn get_enabled(&mut self) -> Result<bool, ()> {
+        let reg = self.i2c.read_reg_byte(MODE).map_err(|_| ())?;
+        let enabled = reg & (1 << 7) != 0;
 
-        self.i2c
-            .write(&[REF_LSB, (reference & 0xFF) as u8, (reference >> 8) as u8])
-            .map_err(|_| ())?;
+        Ok(enabled)
+    }
 
-        let lsb = self.i2c.read_reg_byte(REF_LSB).map_err(|_| ())?;
-        let msb = self.i2c.read_reg_byte(REF_MSB).map_err(|_| ())?;
-        info!("enabled with REF_MSB, REF_LSB: {:08b} {:08b}", msb, lsb);
+    fn get_voltage(&mut self) -> Result<u16, ()> {
+        let feedback_reg = self.i2c.read_reg_byte(VOUT_FS).map_err(|_| ())?;
+        let feedback_divisor = match feedback_reg & 3 {
+            0 => 625u32,
+            1 => 1250u32,
+            2 => 1875u32,
+            _ => 2500u32,
+        };
+
+        let mut read = [0u8; 2];
+        self.i2c.write_read(&[REF_LSB], &mut read).map_err(|_| ())?;
+        let (lsb, msb) = (read[0], read[1]);
+
+        let voltage_reg = (msb as u32) << 8 | lsb as u32;
+
+        let vref = voltage_reg * 1129 / 2;
+        let conv = (vref + 45_000) * feedback_divisor / 141_000;
+
+        Ok(conv as u16)
+    }
+
+    /// Set TPS55289 output voltage
+    /// * voltage: mV
+    async fn set_voltage(&mut self, voltage: u16) -> Result<(), ()> {
+        let (feedback_divisor, feedback_reg) = match voltage {
+            200..=5000 => (625u32, 0u8),
+            5001..=10000 => (1250u32, 1u8),
+            10001..=15000 => (1875u32, 2u8),
+            15001..=20000 => (2500u32, 3u8),
+            _ => return Err(()),
+        };
+
+        let conv = voltage as u32 * 1000; // mV -> uV
+        let vref = conv * 141 / feedback_divisor - 45_000;
+        let reg = (vref * 2 / 1129) as u16;
+
+        let (msb, lsb) = ((reg >> 8) as u8, reg as u8 & 0xFF);
+
+        let was_enabled = self.get_enabled()?;
+        let prev_voltage = self.get_voltage()?;
+
+        self.disable()?;
+        if was_enabled && (prev_voltage > voltage) {
+            let us_delay = cc_discharge_time(prev_voltage, voltage);
+            info!("v initial {} mV, v final {} mV, discharge time {} us", prev_voltage, voltage, us_delay);
+            Timer::after_micros(us_delay).await;
+        }
+
+        self.i2c.write(&[VOUT_FS, feedback_reg]).map_err(|_| ())?;
+        self.i2c.write(&[REF_LSB, lsb, msb]).map_err(|_| ())?;
+
+        if was_enabled {
+            self.enable()?;
+        };
+
+        // let buf = ((msb as u16) << 8) | (lsb as u16);
+        info!(
+            "set voltage {} mV: MSB {:08b} LSB {:08b}",
+            voltage, msb, lsb
+        );
+
+        Ok(())
+    }
+
+    /// Set TPS55289 output current limit
+    /// * current: mA
+    fn set_current(&mut self, current: u16) -> Result<(), ()> {
+        let enable = 1u8 << 7;
+        let current_limit_setting = (current / 50) as u8 & !enable;
+        let reg = enable | current_limit_setting;
+
+        self.i2c.write(&[IOUT_LIMIT, reg]).map_err(|_| ())?;
+
+        info!("set current {} mA: REG {:08b}", current, reg);
 
         Ok(())
     }

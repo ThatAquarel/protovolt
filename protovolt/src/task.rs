@@ -62,6 +62,9 @@ where
         HardwareTask::UpdateConverterVoltage(channel, value) => {
             hal.update_converter_voltage(channel, value).await.unwrap();
         }
+        HardwareTask::UpdateConverterCurrent(channel, value) => {
+            hal.update_converter_current(channel, value).await.unwrap();
+        }
         HardwareTask::UpdateConverterState(channel, state) => {
             hal.update_converter_state(channel, state).await.unwrap();
         }

@@ -9,7 +9,7 @@ mod stusb4500 {
     pub const ADDR: u8 = 0x28;
 
     // Additional con~stants from your C defines
-    pub const DEFAULT: u8 = 0xFF;
+    // pub const DEFAULT: u8 = 0xFF;
 
     pub const FTP_CUST_PASSWORD_REG: u8 = 0x95;
     pub const FTP_CUST_PASSWORD: u8 = 0x47;
@@ -25,8 +25,8 @@ mod stusb4500 {
     pub const FTP_CUST_OPCODE: u8 = 0x07;
 
     pub const RW_BUFFER: u8 = 0x53;
-    pub const TX_HEADER_LOW: u8 = 0x51;
-    pub const PD_COMMAND_CTRL: u8 = 0x1A;
+    // pub const TX_HEADER_LOW: u8 = 0x51;
+    // pub const PD_COMMAND_CTRL: u8 = 0x1A;
     pub const DPM_PDO_NUMB: u8 = 0x70;
 
     pub const READ: u8 = 0x00;
@@ -44,9 +44,6 @@ mod stusb4500 {
 }
 
 pub trait PowerDelivery {
-    /// Initialize device on given I2C address (default 0x28)
-    fn begin(&mut self, device_address: u8) -> Result<(), ()>;
-
     /// Read the NVM memory from the device
     fn read(&mut self) -> Result<(), ()>;
 
@@ -289,10 +286,6 @@ where
     M: RawMutex,
     BUS: I2c + 'a,
 {
-    fn begin(&mut self, device_address: u8) -> Result<(), ()> {
-        Ok(())
-    }
-
     fn read(&mut self) -> Result<(), ()> {
         let mut buffer = [0u8; 1];
         self.read_sectors = true;
