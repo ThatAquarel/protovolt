@@ -9,7 +9,6 @@ mod ui;
 use core::cell::RefCell;
 
 use defmt::*;
-use embassy_embedded_hal::shared_bus::blocking::i2c::I2cDevice;
 use embassy_executor::{Executor, Spawner};
 use embassy_rp::gpio::{Output, Pin};
 use embassy_rp::i2c::I2c;
@@ -28,7 +27,7 @@ use embassy_sync::channel::{Channel, Sender};
 use embassy_time::{Duration, Ticker};
 
 use hal::display::DisplayInterface;
-use hal::event::{AppEvent, HardwareEvent, InterfaceEvent, Readout, Task};
+use hal::event::{AppEvent, HardwareEvent, InterfaceEvent, Task};
 use hal::interface::{ButtonsInterface, matrix};
 
 use app::App;

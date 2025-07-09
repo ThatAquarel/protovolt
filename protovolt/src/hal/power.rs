@@ -1,10 +1,9 @@
 use core::cell::RefCell;
 
 use embassy_sync::blocking_mutex::{Mutex, raw::RawMutex};
-use embedded_graphics::primitives::sector;
 use embedded_hal::i2c::I2c;
 
-use crate::hal::{device::I2cDeviceWithAddr, event::Channel};
+use crate::hal::device::I2cDeviceWithAddr;
 
 mod stusb4500 {
     pub const ADDR: u8 = 0x28;

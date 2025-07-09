@@ -1,4 +1,4 @@
-use core::{cell::RefCell, fmt::Error};
+use core::cell::RefCell;
 
 use embassy_embedded_hal::shared_bus::{I2cDeviceError, blocking::i2c::I2cDevice};
 use embassy_sync::blocking_mutex::{Mutex, raw::RawMutex};

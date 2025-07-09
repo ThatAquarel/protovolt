@@ -1,6 +1,5 @@
 use defmt::*;
 
-use embassy_executor::Spawner;
 use embassy_rp::pio::Instance;
 use embassy_sync::blocking_mutex::raw::{RawMutex, ThreadModeRawMutex};
 use embassy_sync::channel::Sender;
@@ -14,7 +13,6 @@ use crate::hal::event::{
 };
 use crate::hal::Hal;
 use crate::ui::{Ui, labels};
-use crate::{HARDWARE_CHANNEL};
 
 pub async fn handle_hardware_task<M, BUS>(
     hardware_task: HardwareTask,

@@ -1,6 +1,6 @@
-use core::{cell::RefCell, str::EncodeUtf16};
+use core::cell::RefCell;
 
-use embassy_rp::gpio::{AnyPin, Output};
+use embassy_rp::gpio::AnyPin;
 use embassy_sync::{
     blocking_mutex::{
         Mutex,
@@ -9,7 +9,7 @@ use embassy_sync::{
     channel::{Channel, Receiver, Sender},
 };
 use embassy_time::{Duration, Ticker};
-use embedded_hal::{digital::OutputPin, i2c::I2c};
+use embedded_hal::i2c::I2c;
 
 use crate::{
     StaticI2c1,
@@ -18,7 +18,6 @@ use crate::{
         event::{Channel as OutputChannel, HardwareEvent},
         measure::{Measure, MeasureDevice},
     },
-    ui::labels::SENSE,
 };
 
 pub mod display;
