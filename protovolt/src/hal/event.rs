@@ -83,6 +83,10 @@ pub enum HardwareTask {
     // Idle
     EnableReadoutLoop,
 
+    // Updates
+    UpdateConverterState(Channel, bool),
+    UpdateConverterVoltage(Channel, f32),
+
     // DelayedInterfaceEvent(Duration, InterfaceEvent),
     DelayedHardwareEvent(Duration, HardwareEvent),
 }
@@ -163,7 +167,7 @@ pub enum Task {
     Display(DisplayTask),
 }
 
-const APP_TASK_SIZE_LIMIT: usize = 6;
+const APP_TASK_SIZE_LIMIT: usize = 8;
 
 pub struct AppTask {
     pub tasks: [Option<Task>; APP_TASK_SIZE_LIMIT],

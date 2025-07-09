@@ -44,8 +44,8 @@ impl DecimalPrecision {
 
 #[derive(Default)]
 pub struct WithPrecision {
-    pub value: f32,
-    pub precision: DecimalPrecision,
+    value: f32,
+    precision: DecimalPrecision,
 
     // set_state: SetSelect,
     init_range: Option<(f32, f32)>,
@@ -87,6 +87,10 @@ impl WithPrecision {
 
     pub fn cursor_left(&mut self) {
         self.precision.cursor_left();
+    }
+
+    pub fn value(&self) -> f32 {
+        return self.value;
     }
 
     // pub fn exponent(&self) -> i8 {
@@ -269,6 +273,14 @@ impl App {
 
                 AppTaskBuilder::new()
                     .hardware(HardwareTask::EnableReadoutLoop)
+                    .hardware(HardwareTask::UpdateConverterVoltage(
+                        Channel::A,
+                        self.ch_a.target.voltage.value(),
+                    ))
+                    .hardware(HardwareTask::UpdateConverterVoltage(
+                        Channel::B,
+                        self.ch_b.target.voltage.value(),
+                    ))
                     .display(DisplayTask::SetupMain(power_type, ch_a_limit, ch_b_limit))
                     .build()
             }
@@ -311,20 +323,36 @@ impl App {
             },
             InterfaceEvent::ButtonEnter(change) => match change {
                 Change::Pressed => {
-                    if self.interface_state.selected_channel == None {
-                        return self
-                            .current_confirm_state_button_task(Some(FunctionButton::Enter))
-                            .build();
-                    }
+                    let channel = match self.interface_state.selected_channel {
+                        None => {
+                            return self
+                                .current_confirm_state_button_task(Some(FunctionButton::Enter))
+                                .build();
+                        }
+                        Some(channel) => channel,
+                    };
+
+                    let mut converter_target_task = AppTaskBuilder::new();
 
                     self.interface_state.arrows_function =
                         match self.interface_state.arrows_function {
                             ArrowsFunction::Navigation => ArrowsFunction::SetpointEdit,
-                            ArrowsFunction::SetpointEdit => ArrowsFunction::Navigation,
+                            ArrowsFunction::SetpointEdit => {
+                                let voltage = match channel {
+                                    Channel::A => self.ch_a.target.voltage.value(),
+                                    Channel::B => self.ch_b.target.voltage.value(),
+                                };
+                                converter_target_task = converter_target_task.hardware(
+                                    HardwareTask::UpdateConverterVoltage(channel, voltage),
+                                );
+
+                                ArrowsFunction::Navigation
+                            }
                         };
 
                     self.setpoints_task()
                         .extend(self.current_confirm_state_button_task(Some(FunctionButton::Enter)))
+                        .extend(converter_target_task)
                         .build()
                 }
                 Change::Released => {
@@ -395,9 +423,14 @@ impl App {
 
                 let selected_channel = &mut self.interface_state.selected_channel;
 
+                let mut converter_update_task = AppTaskBuilder::new();
+
                 let mut set_value_override = false;
                 if selected_channel.as_ref() == Some(&event_channel) {
                     current_state.enable = !current_state.enable;
+                    converter_update_task = converter_update_task.hardware(
+                        HardwareTask::UpdateConverterState(event_channel, current_state.enable),
+                    );
                 } else {
                     self.interface_state.arrows_function = ArrowsFunction::Navigation;
                     set_value_override = true;
@@ -409,6 +442,7 @@ impl App {
                         .extend(self.current_confirm_state_button_task(None))
                 } else {
                     self.shift_channel_focus_task(event_channel)
+                        .extend(converter_update_task)
                 }
                 .build()
             }

@@ -1,6 +1,6 @@
 use core::{cell::RefCell, str::EncodeUtf16};
 
-use embassy_rp::gpio::AnyPin;
+use embassy_rp::gpio::{AnyPin, Output};
 use embassy_sync::{
     blocking_mutex::{
         Mutex,
@@ -12,11 +12,13 @@ use embassy_time::{Duration, Ticker};
 use embedded_hal::{digital::OutputPin, i2c::I2c};
 
 use crate::{
+    StaticI2c1,
     hal::{
         converter::{Converter, ConverterDevice},
         event::{Channel as OutputChannel, HardwareEvent},
         measure::{Measure, MeasureDevice},
-    }, ui::labels::SENSE, StaticI2c1
+    },
+    ui::labels::SENSE,
 };
 
 pub mod display;
@@ -59,9 +61,35 @@ where
         SENSE_CHANNEL.send(SenseEvent::StartReadoutLoop).await;
     }
 
-    pub async fn enable_converter(&mut self) -> Result<(), ()>{
+    pub async fn enable_converter(&mut self) -> Result<(), ()> {
         self.ch_a.init().await?;
         self.ch_b.init().await
+    }
+
+    pub async fn update_converter_state(
+        &mut self,
+        channel: OutputChannel,
+        active: bool,
+    ) -> Result<(), ()> {
+        let ch = match channel {
+            OutputChannel::A => &mut self.ch_a,
+            OutputChannel::B => &mut self.ch_b,
+        };
+        match active {
+            true => ch.enable(),
+            false => ch.disable(),
+        }
+    }
+
+    pub async fn update_converter_voltage(
+        &mut self,
+        channel: OutputChannel,
+        voltage: f32,
+    ) -> Result<(), ()> {
+        match channel {
+            OutputChannel::A => self.ch_a.set_voltage(voltage),
+            OutputChannel::B => self.ch_b.set_voltage(voltage),
+        }
     }
 }
 
@@ -97,7 +125,7 @@ pub async fn poll_sense(
     data_channel: Sender<'static, ThreadModeRawMutex, HardwareEvent, 32>,
 ) {
     match sense_channel.receive().await {
-        SenseEvent::Enable => {} 
+        SenseEvent::Enable => {}
         _ => return,
     };
 
@@ -110,10 +138,9 @@ pub async fn poll_sense(
     };
 
     match sense_channel.receive().await {
-        SenseEvent::StartReadoutLoop => {} 
+        SenseEvent::StartReadoutLoop => {}
         _ => return,
     };
-
 
     let mut ticker = Ticker::every(Duration::from_hz(5)); // 100ms
     loop {

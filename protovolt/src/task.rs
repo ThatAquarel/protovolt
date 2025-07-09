@@ -61,6 +61,12 @@ where
             Timer::after(duration).await;
             hw_sender.send(event).await;
         }
+        HardwareTask::UpdateConverterVoltage(channel, value) => {
+            hal.update_converter_voltage(channel, value).await.unwrap();
+        }
+        HardwareTask::UpdateConverterState(channel, state) => {
+            hal.update_converter_state(channel, state).await.unwrap();
+        }
     }
 }
 
