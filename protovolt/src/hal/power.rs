@@ -45,9 +45,11 @@ mod stusb4500 {
 
 pub trait PowerDelivery {
     /// Read the NVM memory from the device
+    #[allow(dead_code)]
     fn read(&mut self) -> Result<(), ()>;
 
     /// Write NVM settings to the device
+    #[allow(dead_code)]
     fn write(&mut self, default_vals: u8) -> Result<(), ()>;
 
     /// Get voltage for given PDO number (1 to 3)

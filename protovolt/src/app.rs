@@ -168,10 +168,10 @@ impl Default for ChannelState {
             enable: false,
             target: VoltageCurrentWithSetter::new(
                 target_limits,
-                (1.0, 20.0), // voltage range
+                (0.2, 20.0), // voltage range
                 (0.0, 5.0),  // current range
             ),
-            limits: VoltageCurrentWithSetter::new(max_limits, (1.0, 20.0), (0.0, 5.0)),
+            limits: VoltageCurrentWithSetter::new(max_limits, (0.2, 20.0), (0.0, 5.0)),
             set_select: Default::default(),
             readout: None,
         }

@@ -46,7 +46,10 @@ use crate::hal::{device::I2cDeviceWithAddr, event::Channel};
 
 pub trait Measure {
     fn init(&mut self) -> Result<(), ()>;
+
+    #[allow(dead_code)]
     fn read_shunt_voltage(&mut self) -> Result<f32, ()>;
+
     fn read_bus_voltage(&mut self) -> Result<f32, ()>;
     fn read_current(&mut self) -> Result<f32, ()>;
     fn read_power(&mut self) -> Result<f32, ()>;
@@ -63,8 +66,8 @@ where
 {
     pub fn new(mutex: &'a Mutex<M, RefCell<BUS>>, channel: Channel) -> Self {
         let address = match channel {
-            Channel::A => ADDR,
-            Channel::B => ADDR + 1,
+            Channel::A => ADDR + 1,
+            Channel::B => ADDR,
         };
 
         Self {

@@ -92,7 +92,7 @@ async fn main(spawner: Spawner) {
         HARDWARE_CHANNEL.sender()
     )));
 
-    let mut hal = Hal::new(i2c0_bus, p.PIN_25.degrade(), p.PIN_24.degrade());
+    let mut hal = Hal::new(i2c0_bus, p.PIN_24.degrade(), p.PIN_25.degrade());
 
     // let pd = I2cDevice::new(&i2c0_bus);
     let mut pd_dev = PowerDeliveryDevice::new(&i2c0_bus);

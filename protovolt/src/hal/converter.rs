@@ -60,8 +60,8 @@ where
         let en = Output::new(enable_pin, Level::Low);
 
         let address = match channel {
-            Channel::A => ADDR,
-            Channel::B => ADDR + 1,
+            Channel::A => ADDR + 1,
+            Channel::B => ADDR,
         };
 
         Self {
@@ -167,7 +167,10 @@ where
         self.disable()?;
         if was_enabled && (prev_voltage > voltage) {
             let us_delay = cc_discharge_time(prev_voltage, voltage);
-            info!("v initial {} mV, v final {} mV, discharge time {} us", prev_voltage, voltage, us_delay);
+            info!(
+                "v initial {} mV, v final {} mV, discharge time {} us",
+                prev_voltage, voltage, us_delay
+            );
             Timer::after_micros(us_delay).await;
         }
 
