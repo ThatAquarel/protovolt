@@ -130,7 +130,7 @@ async fn main(spawner: Spawner) {
         p.PIN_21.degrade(),
         p.PIN_28.degrade(),
     );
-    let _backlight = Output::new(p.PIN_16, embassy_rp::gpio::Level::High);
+    let mut backlight = Output::new(p.PIN_16, embassy_rp::gpio::Level::Low);
 
     // Interfacing LEDs setup
     let pio = Pio::new(p.PIO0, Irqs);
@@ -139,6 +139,8 @@ async fn main(spawner: Spawner) {
     // App logic
     let mut app = App::default();
     let mut ui = Ui::new(&mut display.target, leds);
+    ui.clear().unwrap();
+    backlight.set_high();
 
     // Start core 1 and spawn poll_interface there
     spawn_core1(

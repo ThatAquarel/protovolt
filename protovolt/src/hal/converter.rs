@@ -79,7 +79,7 @@ where
     async fn init(&mut self) -> Result<(), ()> {
         self.en.set_high();
 
-        Timer::after_millis(1).await; // Await controller start after EN/UVLO pulled high
+        Timer::after_millis(100).await; // Await controller start after EN/UVLO pulled high
 
         info!("start converter");
 
