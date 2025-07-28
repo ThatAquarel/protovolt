@@ -5,6 +5,7 @@
 fp-*
 **/gerber/
 *.bak
+*-bak
 *sym-lib-table
 *.pyc
 *.egg-info
