@@ -11,7 +11,7 @@ pub struct BootScreen<'b> {
 impl<'b> BootScreen<'b> {
     pub fn new() -> Self {
         Self {
-            logo_bmp: Bmp::from_slice(include_bytes!("../assets/protovolt_mini.bmp")).unwrap(),
+            logo_bmp: Bmp::from_slice(include_bytes!("../assets/output.bmp")).unwrap(),
         }
     }
 
