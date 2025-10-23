@@ -29,8 +29,8 @@ where
             hw_sender
                 .send(HardwareEvent::PowerDeliveryReady(PowerType::PowerDelivery(
                     Limits {
-                        voltage: 12.345,
-                        current: 6.789,
+                        voltage: 20.00,
+                        current: 5.00,
                     },
                 )))
                 .await;
