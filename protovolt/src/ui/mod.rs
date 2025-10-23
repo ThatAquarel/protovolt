@@ -74,6 +74,11 @@ where
         self.target.clear(color_scheme::BACKGROUND).map_err(|_| ())
     }
 
+    #[cfg(feature = "demo")]
+    pub fn boot_demo_mode(&mut self) -> Result<(), ()> {
+        self.boot.draw_demo_screen(&mut *self.target, &mut self.layout, &self.fonts)
+    }
+
     pub fn boot_splash_screen(&mut self) -> Result<(), ()> {
         self.boot
             .draw_splash_screen(&mut *self.target, &mut self.layout)
@@ -370,6 +375,9 @@ pub mod labels {
     pub const PASS: &'static str = "PASS";
     pub const FAIL: &'static str = "FAIL";
 
+    #[cfg(feature = "demo")]
+    pub const DEMO: &'static str = concat!("DEMO BUILD v", env!("CARGO_PKG_VERSION"));
+
     // Controls
     pub const CHANNEL_A: &'static str = "CHANNEL A";
     pub const CHANNEL_B: &'static str = "CHANNEL B";
@@ -382,3 +390,8 @@ pub mod labels {
     pub const OVP: &'static str = "OVP";
     pub const OCP: &'static str = "OCP";
 }
+
+#[cfg(feature = "demo")]
+pub const SCREEN_HOLD_TIME: u64 = 2000;
+#[cfg(not(feature = "demo"))]
+pub const SCREEN_HOLD_TIME: u64 = 10;

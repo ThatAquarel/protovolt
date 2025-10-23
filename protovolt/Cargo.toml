@@ -58,3 +58,7 @@ opt-level = 'z'
 debug = 2
 lto = true
 opt-level = "z"
+
+[features]
+default = []
+demo = []

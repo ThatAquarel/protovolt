@@ -12,7 +12,7 @@ use crate::hal::event::{
     Channel, ChannelFocus, ConfirmState, DisplayTask, HardwareEvent, HardwareTask, InterfaceEvent, Limits, PowerType, SetState
 };
 use crate::hal::Hal;
-use crate::ui::{Ui, labels};
+use crate::ui::{labels, Ui, SCREEN_HOLD_TIME};
 
 pub async fn handle_hardware_task<M, BUS>(
     hardware_task: HardwareTask,
@@ -26,8 +26,6 @@ where
 {
     match hardware_task {
         HardwareTask::EnablePowerDelivery => {
-            Timer::after_millis(10).await;
-
             hw_sender
                 .send(HardwareEvent::PowerDeliveryReady(PowerType::PowerDelivery(
                     Limits {
@@ -40,11 +38,9 @@ where
         HardwareTask::EnableSense => {
             hal.enable_sense().await;
             info!("enable sense");
-            Timer::after_millis(10).await;
         }
         HardwareTask::EnableConverter => {
             let res = hal.enable_converter().await;
-            Timer::after_millis(10).await;
             hw_sender.send(HardwareEvent::ConverterReady(res)).await;
         }
         HardwareTask::EnableReadoutLoop => {
@@ -83,7 +79,15 @@ pub async fn handle_display_task<D, PIO>(
     match display_task {
         DisplayTask::SetupSplash => {
             ui.clear().unwrap();
+
+            #[cfg(feature = "demo")]
+            {
+                ui.boot_demo_mode().unwrap();
+                Timer::after_millis(SCREEN_HOLD_TIME).await;
+            }
+
             ui.boot_splash_screen().unwrap();
+            Timer::after_millis(SCREEN_HOLD_TIME).await;
         }
         DisplayTask::ConfirmPowerDelivery(power_type) => {
             let (usb_type, valid) = match power_type {
@@ -92,6 +96,7 @@ pub async fn handle_display_task<D, PIO>(
             };
 
             ui.boot_splash_text(0, labels::INPUT, usb_type, valid).unwrap();
+            Timer::after_millis(SCREEN_HOLD_TIME).await;
         }
         DisplayTask::ConfirmSense(result) => {
             let (res, valid) = match result {
@@ -100,6 +105,7 @@ pub async fn handle_display_task<D, PIO>(
             };
 
             ui.boot_splash_text(1, labels::SENSE, res, valid).unwrap();
+            Timer::after_millis(SCREEN_HOLD_TIME).await;
         }
         DisplayTask::ConfirmConverter(result) => {
             let (res, valid) = match result {
@@ -108,6 +114,7 @@ pub async fn handle_display_task<D, PIO>(
             };
 
             ui.boot_splash_text(2, labels::CONVERTER, res, valid).unwrap();
+            Timer::after_millis(SCREEN_HOLD_TIME).await;
         }
         DisplayTask::SetupMain(power_type, ch_a_limits, ch_b_limits) => {
             ui.clear().unwrap();

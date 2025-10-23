@@ -4,6 +4,9 @@ use u8g2_fonts::types::{FontColor, HorizontalAlignment, VerticalPosition};
 
 use crate::ui::{color_scheme::{FONT_MAIN, FONT_SMALL}, icons_2x, Fonts, Layout};
 
+#[cfg(feature = "demo")]
+use crate::ui::labels::DEMO;
+
 pub struct BootScreen<'b> {
     logo_bmp: Bmp<'b, Rgb565>,
 }
@@ -11,8 +14,33 @@ pub struct BootScreen<'b> {
 impl<'b> BootScreen<'b> {
     pub fn new() -> Self {
         Self {
-            logo_bmp: Bmp::from_slice(include_bytes!("../assets/output.bmp")).unwrap(),
+            logo_bmp: Bmp::from_slice(include_bytes!("../assets/protov_mini.bmp")).unwrap(),
         }
+    }
+
+    #[cfg(feature = "demo")]
+    pub fn draw_demo_screen<D>(&mut self, target: &mut D, layout: &mut Layout, fonts: &Fonts) -> Result<(), ()>
+    where
+        D: DrawTarget<Color = Rgb565>,
+    {
+        let font = &fonts.info_small;
+
+        
+        let center = layout.center_x();
+
+        let x_skew = 60;
+
+        font.render_aligned(
+            DEMO,
+            Point::new(center - x_skew + 10, 100),
+            VerticalPosition::Center,
+            HorizontalAlignment::Left,
+            FontColor::Transparent(FONT_SMALL),
+            target,
+        )
+        .map_err(|_| ())?;
+
+        Ok(())
     }
 
     pub fn draw_splash_screen<D>(&mut self, target: &mut D, layout: &mut Layout) -> Result<(), ()>
