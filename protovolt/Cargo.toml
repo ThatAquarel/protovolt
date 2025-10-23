@@ -60,5 +60,6 @@ lto = true
 opt-level = "z"
 
 [features]
-default = []
+default = ["calibrated"]
+calibrated = []
 demo = []

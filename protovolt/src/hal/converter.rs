@@ -26,6 +26,9 @@ mod tps55289 {
         // + extra
         590 * (v_i as u64 - v_f as u64) / 100 + 20000
     }
+
+    #[cfg(feature = "calibrated")]
+    pub const VOLTAGE_OFFSET: u16 = 20; // shift down by 20mV
 }
 
 use tps55289::*;
@@ -141,13 +144,23 @@ where
         let vref = voltage_reg * 1129 / 2;
         let conv = (vref + 45_000) * feedback_divisor / 141_000;
 
-        Ok(conv as u16)
+        Ok(if cfg!(feature = "calibrated") {
+            (conv as u16) + VOLTAGE_OFFSET
+        } else {
+            conv as u16
+        })
     }
 
     /// Set TPS55289 output voltage
     /// * voltage: mV
     async fn set_voltage(&mut self, voltage: u16) -> Result<(), ()> {
-        let (feedback_divisor, feedback_reg) = match voltage {
+        let target_voltage = if cfg!(feature = "calibrated") {
+            voltage - VOLTAGE_OFFSET
+        } else {
+            voltage
+        };
+
+        let (feedback_divisor, feedback_reg) = match target_voltage {
             200..=5000 => (625u32, 0u8),
             5001..=10000 => (1250u32, 1u8),
             10001..=15000 => (1875u32, 2u8),
@@ -155,7 +168,7 @@ where
             _ => return Err(()),
         };
 
-        let conv = voltage as u32 * 1000; // mV -> uV
+        let conv = target_voltage as u32 * 1000; // mV -> uV
         let vref = conv * 141 / feedback_divisor - 45_000;
         let reg = (vref * 2 / 1129) as u16;
 
@@ -165,11 +178,11 @@ where
         let prev_voltage = self.get_voltage()?;
 
         self.disable()?;
-        if was_enabled && (prev_voltage > voltage) {
-            let us_delay = cc_discharge_time(prev_voltage, voltage);
+        if was_enabled && (prev_voltage > target_voltage) {
+            let us_delay = cc_discharge_time(prev_voltage, target_voltage);
             info!(
                 "v initial {} mV, v final {} mV, discharge time {} us",
-                prev_voltage, voltage, us_delay
+                prev_voltage, target_voltage, us_delay
             );
             Timer::after_micros(us_delay).await;
         }
