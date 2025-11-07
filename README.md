@@ -1,32 +1,14 @@
 # ProtoV MINI
 
-> **A dual-channel, USB-C powered, credit-card sized lab power supply**  
-> For precision electronics prototyping and field testing.
+<a href="https://www.crowdsupply.com/flake-and-blade-robotics-design/protov-mini" target="_blank" title="Available on Crowd Supply">
+<img src="https://img.shields.io/badge/Available%20on-Crowd%20Supply-00bfa5?style=for-the-badge&logo=crowdsupply&logoColor=white" 
+        alt="Available on Crowd Supply" height="24" style="vertical-align:middle;"/>
+</a>
 
----
 
-<div>
-  <table>
-    <tr>
-      <td width="30%">
-        <p><strong>ProtoV MINI</strong> delivers adjustable dual outputs in a form factor smaller than a wallet.  
-        Powered by USB-C PD, it’s perfect for on-the-go testing, breadboarding, and rapid prototyping.</p>
-        <div>
-        <a href="https://www.crowdsupply.com/flake-and-blade-robotics-design/protov-mini" target="_blank" title="Available on Crowd Supply">
-            <img src="https://www.mouser.ca/images/suppliers/logos/crowd-supply.png" 
-                alt="Available on Crowd Supply" height="60" style="border-radius: 8px; margin-top: 8px;"/>
-        </a>
-        <p><sub><em>Available now on Crowd Supply</em></sub></p>
-        </div>
-      </td>
-      <td width="70%" align="center">
-        <img src="docs/res/front_page.png" alt="Protovolt render"/>
-      </td>
-    </tr>
-  </table>
-</div>
+**ProtoV MINI** is a dual-channel, USB-C powered, credit card-sized lab power supply for electronics prototyping and field testing. Designed for precision, portability, and rapid iteration.
 
----
+![ProtoV MINI powering a breadboard](docs/res/front_page.png)
 
 ## Features
 
