@@ -20,6 +20,11 @@ Follow along and be part of the adventure! Launching soon on <a href="https://ww
 
 ## Quick Specs
 
+<a href="https://www.crowdsupply.com/flake-and-blade-robotics-design/protov-mini" target="_blank" title="Available on Crowd Supply">
+<img src="https://img.shields.io/badge/MORE%20INFO%20on-Crowd%20Supply-00bfa5?style=for-the-badge&logo=crowdsupply&logoColor=white" 
+        alt="Available on Crowd Supply" height="24" style="vertical-align:middle;"/>
+</a>
+
 | Feature           | Description                        |
 |-------------------|------------------------------------|
 | Input Power       | USB-C PD 2.0, up to 100W           |
