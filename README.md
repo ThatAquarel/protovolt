@@ -1,10 +1,20 @@
 # ProtoV MINI
 
+<!-- <p>
+<b>LAUNCHING ON: </b>
 <a href="https://www.crowdsupply.com/flake-and-blade-robotics-design/protov-mini" target="_blank" title="Available on Crowd Supply">
-<img src="https://img.shields.io/badge/Available%20on-Crowd%20Supply-00bfa5?style=for-the-badge&logo=crowdsupply&logoColor=white" 
-        alt="Available on Crowd Supply" height="24" style="vertical-align:middle;"/>
+<img src="https://www.crowdsupply.com/_marvin/images/crowd-supply-logo-light.png" width="25%">
 </a>
+</p> -->
 
+<div style="display: flex; align-items: center; gap: 10px;">
+  <span style="font-weight: bold; font-size: 1.25em;">Launching on</span>
+  <a href="https://www.crowdsupply.com/flake-and-blade-robotics-design/protov-mini" target="_blank" title="Available on Crowd Supply">
+    <img src="https://www.crowdsupply.com/_marvin/images/crowd-supply-logo-light.png" alt="Crowd Supply" style="height: 24px;">
+  </a>
+</div>
+
+---
 
 **ProtoV MINI** is a dual-channel, USB-C powered, credit card-sized lab power supply for electronics prototyping and field testing. Designed for precision, portability, and rapid iteration.
 
