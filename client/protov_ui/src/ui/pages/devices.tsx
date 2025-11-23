@@ -100,7 +100,7 @@ export function DeviceCard({
     ));
 
     const channel_details = channels.map((ch) => (
-        <ChannelChip channel={ch} />
+        <ChannelChip key={ch.identifier} channel={ch} />
     ));
 
     return (
