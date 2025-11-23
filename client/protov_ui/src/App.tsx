@@ -9,6 +9,7 @@ import { TelemetryPage } from './ui/pages/telemetry';
 import { useDisclosure } from '@mantine/hooks';
 import { AppShell, Burger, Group } from '@mantine/core';
 import { Logo } from './ui/components/logo';
+import { ConnectedDevicesChip } from './ui/components/connected_devices_chip';
 
 export function App() {
     const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
@@ -26,10 +27,14 @@ export function App() {
                 }}
             >
                 <AppShell.Header>
-                    <Group h="100%" px="md">
-                        <Burger opened={mobileOpened} onClick={toggleMobile} hiddenFrom="sm" size="sm" />
-                        <Burger opened={desktopOpened} onClick={toggleDesktop} visibleFrom="sm" size="sm" />
-                        <Logo height="50%" style={{paddingTop: "7px"}} />
+                    <Group h="100%" px="md" justify='space-between'>
+                        <Group h="100%" px="md">
+                            <Burger opened={mobileOpened} onClick={toggleMobile} hiddenFrom="sm" size="sm" />
+                            <Burger opened={desktopOpened} onClick={toggleDesktop} visibleFrom="sm" size="sm" />
+                            <Logo height="50%" style={{paddingTop: "7px"}} />
+                        </Group>
+
+                        <ConnectedDevicesChip/>
                     </Group>
                 </AppShell.Header>
                 <AppShell.Navbar p="sm">
