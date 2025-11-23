@@ -10,6 +10,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { AppShell, Burger, Group } from '@mantine/core';
 import { Logo } from './ui/components/logo';
 import { ConnectedDevicesChip } from './ui/components/connected_devices_chip';
+import { DisableOutput } from './ui/components/disable_output';
 
 export function App() {
     const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
@@ -31,10 +32,14 @@ export function App() {
                         <Group h="100%" px="md">
                             <Burger opened={mobileOpened} onClick={toggleMobile} hiddenFrom="sm" size="sm" />
                             <Burger opened={desktopOpened} onClick={toggleDesktop} visibleFrom="sm" size="sm" />
-                            <Logo height="50%" style={{paddingTop: "7px"}} />
+                            <Logo height="50%" style={{ paddingTop: "7px" }} />
                         </Group>
-
-                        <ConnectedDevicesChip/>
+                        <Group>
+                            <Group visibleFrom="sm">
+                                <ConnectedDevicesChip />
+                            </Group>
+                            <DisableOutput />
+                        </Group>
                     </Group>
                 </AppShell.Header>
                 <AppShell.Navbar p="sm">
