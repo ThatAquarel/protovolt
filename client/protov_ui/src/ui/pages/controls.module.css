@@ -11,8 +11,12 @@
 }
 
 .readings {
-  /* font-s */
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 30px;
+  font-weight: 300;
+  padding-left: var(--mantine-spacing-xs);
   font-family: Outfit, var(--mantine-font-family);
+}
+
+.unit {
+  opacity: 0.5;
 }

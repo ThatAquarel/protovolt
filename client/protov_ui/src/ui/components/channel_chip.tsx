@@ -32,7 +32,7 @@ export function ChannelChip({ channel }: ChannelChipProps) {
       checked={checked}
       onChange={(value) => setChecked(value)}
       color={channel.color}
-      variant="light"
+      variant="outline"
     >
       {`CH${channel.identifier} - `}
       <NumberFormatter value={channel.voltage} decimalScale={3} />
