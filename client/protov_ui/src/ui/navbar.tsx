@@ -10,7 +10,6 @@ import { Code, Group } from '@mantine/core';
 
 import classes from './navbar.module.css';
 import { ActionToggle } from './components/theme_toggle';
-import { Logo } from './components/logo';
 import { NavLink } from 'react-router-dom';
 import { DocumentationButton } from './components/footer_buttons';
 
@@ -43,9 +42,9 @@ export function NavbarSimple() {
     return (
         <nav className={classes.navbar}>
             <div className={classes.navbarMain}>
-                <Group className={classes.header} justify="space-between">
+                {/* <Group className={classes.header} justify="space-between">
                     <Logo width="30%" />
-                </Group>
+                </Group> */}
                 {links}
             </div>
 

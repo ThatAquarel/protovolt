@@ -6,27 +6,36 @@ import { ControlsPage } from './ui/pages/controls';
 import { MeasurementsPage } from './ui/pages/measurements';
 import { GraphsPage } from './ui/pages/graphs';
 import { TelemetryPage } from './ui/pages/telemetry';
+import { useDisclosure } from '@mantine/hooks';
+import { AppShell, Burger, Group } from '@mantine/core';
+import { Logo } from './ui/components/logo';
 
 export function App() {
+    const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
+    const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
+
     return (
-        // <BrowserRouter>
-        //     <NavbarSimple />
-
-        //     <Routes>
-        //         <Route path="/" element={<Navigate to="/devices" replace />} />
-
-        //         <Route path="/devices" element={<DevicesPage />} />
-        //         <Route path="/controls" element={<ControlsPage />} />
-        //         <Route path="/measurements" element={<MeasurementsPage />} />
-        //         <Route path="/graphs" element={<GraphsPage />} />
-        //         <Route path="/telemetry" element={<TelemetryPage />} />
-        //     </Routes>
-        // </BrowserRouter>
         <BrowserRouter>
-            <div style={{ display: "flex", height: "100vh" }}>
-                <NavbarSimple />
-
-                <div style={{ flex: 1, overflow: "auto" }}>
+            <AppShell
+                padding="md"
+                header={{ height: 60 }}
+                navbar={{
+                    width: 275,
+                    breakpoint: "sm",
+                    collapsed: { mobile: !mobileOpened, desktop: !desktopOpened }
+                }}
+            >
+                <AppShell.Header>
+                    <Group h="100%" px="md">
+                        <Burger opened={mobileOpened} onClick={toggleMobile} hiddenFrom="sm" size="sm" />
+                        <Burger opened={desktopOpened} onClick={toggleDesktop} visibleFrom="sm" size="sm" />
+                        <Logo height="50%" style={{paddingTop: "7px"}} />
+                    </Group>
+                </AppShell.Header>
+                <AppShell.Navbar p="sm">
+                    <NavbarSimple />
+                </AppShell.Navbar>
+                <AppShell.Main>
                     <Routes>
                         <Route path="/" element={<Navigate to="/devices" replace />} />
                         <Route path="/devices" element={<DevicesPage />} />
@@ -35,8 +44,8 @@ export function App() {
                         <Route path="/graphs" element={<GraphsPage />} />
                         <Route path="/telemetry" element={<TelemetryPage />} />
                     </Routes>
-                </div>
-            </div>
+                </AppShell.Main>
+            </AppShell>
         </BrowserRouter>
     );
 }
