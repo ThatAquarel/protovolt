@@ -4,7 +4,7 @@ use embassy_time::Duration;
 
 use defmt::*;
 
-use crate::app::{DecimalPrecision, SetSelect};
+use crate::{app::{DecimalPrecision, SetSelect}, hal::temperature::TemperatureReading};
 
 #[derive(Debug)]
 pub enum HardwareEvent {
@@ -17,6 +17,7 @@ pub enum HardwareEvent {
     StartMainInterface,
 
     ReadoutAcquired(Channel, Readout),
+    TempAcquired(TemperatureReading),
 }
 
 #[derive(Clone, Copy, Debug)]

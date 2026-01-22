@@ -1,6 +1,9 @@
 use core::cell::RefCell;
 
-use embassy_rp::gpio::AnyPin;
+use embassy_rp::{
+    adc::{self, Adc},
+    gpio::AnyPin,
+};
 use embassy_sync::{
     blocking_mutex::{
         Mutex,
@@ -17,6 +20,7 @@ use crate::{
         converter::{Converter, ConverterDevice},
         event::{Channel as OutputChannel, HardwareEvent},
         measure::{Measure, MeasureDevice},
+        temperature::{Temperature, TemperatureDevice},
     },
 };
 
@@ -30,6 +34,7 @@ mod device;
 pub mod converter;
 pub mod measure;
 pub mod power;
+pub mod temperature;
 
 pub struct Hal<'a, M: RawMutex, BUS: I2c> {
     ch_a: ConverterDevice<'a, M, BUS>,
@@ -96,7 +101,7 @@ where
         &mut self,
         channel: OutputChannel,
         current: f32,
-    ) -> Result<(),()> {
+    ) -> Result<(), ()> {
         let current = (current * 1000.0) as u16;
         match channel {
             OutputChannel::A => self.ch_a.set_current(current),
@@ -164,7 +169,7 @@ pub async fn poll_sense(
             };
 
             let v = ch.read_bus_voltage();
-            let i = ch.read_current();
+            let i: Result<f32, ()> = ch.read_current();
             let p = ch.read_power();
 
             if let (Ok(v), Ok(i), Ok(p)) = (v, i, p) {
@@ -179,6 +184,42 @@ pub async fn poll_sense(
                     ))
                     .await;
             }
+        }
+
+        ticker.next().await;
+    }
+}
+
+pub struct HalTempSense<'a> {
+    temp_devices: TemperatureDevice<'a>,
+}
+
+impl<'a> HalTempSense<'a> {
+    pub fn new(
+        adc: Adc<'a, adc::Async>,
+        ch_a: adc::Channel<'a>,
+        ch_b: adc::Channel<'a>,
+        mcu: adc::Channel<'a>,
+    ) -> Self {
+        Self {
+            temp_devices: TemperatureDevice::new(adc, ch_a, ch_b, mcu),
+        }
+    }
+}
+
+#[embassy_executor::task]
+pub async fn temp_sense(
+    temp_sense: &'static mut HalTempSense<'static>,
+    // sense_channel: Receiver<'static, ThreadModeRawMutex, SenseEvent, 1>,
+    data_channel: Sender<'static, ThreadModeRawMutex, HardwareEvent, 32>,
+) {
+    let mut ticker = Ticker::every(Duration::from_secs(1));
+    loop {
+        let temp = temp_sense.temp_devices.read_temperature().await;
+        if let Ok(reading) = temp {
+            data_channel
+                .send(HardwareEvent::TempAcquired(reading))
+                .await;
         }
 
         ticker.next().await;

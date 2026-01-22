@@ -285,6 +285,16 @@ impl App {
 
                 AppTaskBuilder::display_task(DisplayTask::UpdateReadout(channel, readout))
             }
+            (HardwareState::Standby, HardwareEvent::TempAcquired(temperature)) => {
+                defmt::info!(
+                    "ch_a {} ch_b {} mcu {}",
+                    temperature.ch_a,
+                    temperature.ch_b,
+                    temperature.mcu
+                );
+
+                None
+            }
             _ => None,
         }
     }
@@ -330,8 +340,8 @@ impl App {
                         match self.interface_state.arrows_function {
                             ArrowsFunction::Navigation => ArrowsFunction::SetpointEdit,
                             ArrowsFunction::SetpointEdit => {
-                                converter_task = converter_task
-                                    .extend(self.update_converter_task(channel));
+                                converter_task =
+                                    converter_task.extend(self.update_converter_task(channel));
                                 ArrowsFunction::Navigation
                             }
                         };

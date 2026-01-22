@@ -10,7 +10,7 @@ use core::cell::RefCell;
 
 use defmt::*;
 use embassy_executor::{Executor, Spawner};
-use embassy_rp::gpio::{Output, Pin};
+use embassy_rp::gpio::{Output, Pin, Pull};
 use embassy_rp::i2c::I2c;
 use embassy_rp::multicore::{Stack, spawn_core1};
 use embassy_rp::peripherals::{I2C0, I2C1, PIO0};
@@ -20,6 +20,7 @@ use embassy_rp::spi::{self, Spi};
 use embassy_rp::{bind_interrupts, i2c};
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::{NoopRawMutex, ThreadModeRawMutex};
+use embassy_rp::adc::{self, Adc};
 
 use embassy_sync::blocking_mutex::Mutex as I2cMutex;
 
@@ -36,7 +37,7 @@ use ui::Ui;
 
 use crate::hal::led::LedsInterface;
 use crate::hal::power::{PowerDelivery, PowerDeliveryDevice};
-use crate::hal::{Hal, HalSense, SENSE_CHANNEL, poll_sense};
+use crate::hal::{Hal, HalSense, HalTempSense, SENSE_CHANNEL, poll_sense, temp_sense};
 
 use static_cell::StaticCell;
 
@@ -67,8 +68,13 @@ static I2C1_BUS: StaticCell<StaticI2c1Bus> = StaticCell::new();
 type StaticHalSense = HalSense<'static, NoopRawMutex, StaticI2c1>;
 static HAL_SENSE: StaticCell<StaticHalSense> = StaticCell::new();
 
+type StaticHalTempSense = HalTempSense<'static>;
+static HAL_TEMP_SENSE: StaticCell<StaticHalTempSense> = StaticCell::new();
+
+
 bind_interrupts!(struct Irqs {
     PIO0_IRQ_0 => pio::InterruptHandler<PIO0>;
+    ADC_IRQ_FIFO => adc::InterruptHandler;
 });
 
 #[embassy_executor::main]
@@ -89,6 +95,19 @@ async fn main(spawner: Spawner) {
     unwrap!(spawner.spawn(poll_sense(
         sense,
         SENSE_CHANNEL.receiver(),
+        HARDWARE_CHANNEL.sender()
+    )));
+
+    // Temperature sense loop
+    let adc: Adc<'_, adc::Async> = Adc::new(p.ADC, Irqs, adc::Config::default());
+    let ch_a_temp = adc::Channel::new_pin(p.PIN_26, Pull::None);
+    let ch_b_temp = adc::Channel::new_pin(p.PIN_27, Pull::None);
+    let mcu_temp: adc::Channel<'_> = adc::Channel::new_temp_sensor(p.ADC_TEMP_SENSOR);
+    let hal_temp_sense = HalTempSense::new(adc, ch_a_temp, ch_b_temp, mcu_temp);
+    let hal_temp_sense = HAL_TEMP_SENSE.init(hal_temp_sense);
+
+    unwrap!(spawner.spawn(temp_sense(
+        hal_temp_sense,
         HARDWARE_CHANNEL.sender()
     )));
 
