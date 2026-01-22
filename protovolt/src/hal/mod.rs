@@ -1,8 +1,8 @@
 use core::cell::RefCell;
 
 use embassy_rp::{
-    adc::{self, Adc},
-    gpio::AnyPin,
+    adc::{self, Adc, AdcPin},
+    gpio::{AnyPin, Pull}, peripherals::{ADC, ADC_TEMP_SENSOR},
 };
 use embassy_sync::{
     blocking_mutex::{
@@ -197,10 +197,14 @@ pub struct HalTempSense<'a> {
 impl<'a> HalTempSense<'a> {
     pub fn new(
         adc: Adc<'a, adc::Async>,
-        ch_a: adc::Channel<'a>,
-        ch_b: adc::Channel<'a>,
-        mcu: adc::Channel<'a>,
+        ch_a_pin: impl AdcPin,
+        ch_b_pin: impl AdcPin,
+        mcu_pin: ADC_TEMP_SENSOR,
     ) -> Self {
+        let ch_a = adc::Channel::new_pin(ch_a_pin, Pull::None);
+        let ch_b = adc::Channel::new_pin(ch_b_pin, Pull::None);
+        let mcu: adc::Channel<'_> = adc::Channel::new_temp_sensor(mcu_pin);
+
         Self {
             temp_devices: TemperatureDevice::new(adc, ch_a, ch_b, mcu),
         }

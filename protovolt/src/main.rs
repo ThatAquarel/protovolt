@@ -90,22 +90,19 @@ async fn main(spawner: Spawner) {
     let i2c1_bus: Mutex<NoopRawMutex, _> = I2cMutex::new(RefCell::new(i2c1));
     let i2c1_bus = I2C1_BUS.init(i2c1_bus);
 
-    let sense = HalSense::new(i2c1_bus);
-    let sense = HAL_SENSE.init(sense);
+    // Output measurement loop
+    let hal_sense = HalSense::new(i2c1_bus);
+    let hal_sense = HAL_SENSE.init(hal_sense);
     unwrap!(spawner.spawn(poll_sense(
-        sense,
+        hal_sense,
         SENSE_CHANNEL.receiver(),
         HARDWARE_CHANNEL.sender()
     )));
 
     // Temperature sense loop
     let adc: Adc<'_, adc::Async> = Adc::new(p.ADC, Irqs, adc::Config::default());
-    let ch_a_temp = adc::Channel::new_pin(p.PIN_26, Pull::None);
-    let ch_b_temp = adc::Channel::new_pin(p.PIN_27, Pull::None);
-    let mcu_temp: adc::Channel<'_> = adc::Channel::new_temp_sensor(p.ADC_TEMP_SENSOR);
-    let hal_temp_sense = HalTempSense::new(adc, ch_a_temp, ch_b_temp, mcu_temp);
+    let hal_temp_sense = HalTempSense::new(adc, p.PIN_26, p.PIN_27, p.ADC_TEMP_SENSOR);
     let hal_temp_sense = HAL_TEMP_SENSE.init(hal_temp_sense);
-
     unwrap!(spawner.spawn(temp_sense(
         hal_temp_sense,
         HARDWARE_CHANNEL.sender()
