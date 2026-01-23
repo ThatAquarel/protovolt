@@ -11,7 +11,7 @@ use core::cell::RefCell;
 use defmt::*;
 use embassy_executor::{Executor, Spawner};
 use embassy_rp::adc::{self, Adc};
-use embassy_rp::gpio::{Output, Pin, Pull};
+use embassy_rp::gpio::{Output, Pin};
 use embassy_rp::i2c::I2c;
 use embassy_rp::multicore::{Stack, spawn_core1};
 use embassy_rp::peripherals::{I2C0, I2C1, PIO0};
@@ -35,7 +35,7 @@ use app::App;
 use task::{handle_display_task, handle_hardware_task};
 use ui::Ui;
 
-use crate::hal::event::{AppTask, AppTaskBuilder, HardwareTask};
+use crate::hal::event::{AppTaskBuilder, HardwareTask};
 use crate::hal::led::LedsInterface;
 use crate::hal::power::{PowerDelivery, PowerDeliveryDevice};
 use crate::hal::{Hal, HalSense, HalTempSense, SENSE_CHANNEL, poll_sense, temp_sense};

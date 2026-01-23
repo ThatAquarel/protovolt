@@ -2,7 +2,7 @@ use core::cell::RefCell;
 
 use embassy_rp::{
     adc::{self, Adc, AdcPin},
-    gpio::{AnyPin, Pull}, peripherals::{ADC, ADC_TEMP_SENSOR},
+    gpio::{AnyPin, Pull}, peripherals::ADC_TEMP_SENSOR,
 };
 use embassy_sync::{
     blocking_mutex::{
