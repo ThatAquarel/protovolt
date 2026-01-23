@@ -84,6 +84,8 @@ pub enum HardwareTask {
     // Idle
     EnableReadoutLoop,
 
+    PollConverterStatus,
+
     // Updates
     UpdateConverterState(Channel, bool),
     UpdateConverterVoltage(Channel, f32),

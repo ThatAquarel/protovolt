@@ -28,7 +28,52 @@ mod tps55289 {
     }
 
     #[cfg(feature = "calibrated")]
-    pub const VOLTAGE_OFFSET: u16 = 20; // shift down by 20mV
+    pub const VOLTAGE_OFFSET: u16 = 0; // shift down by 20mV
+
+    pub enum OperatingMode {
+        Buck,
+        Boost,
+        BuckBoost,
+        Reserved,
+    }
+
+    pub struct StatusReg {
+        scp: bool,
+        ocp: bool,
+        ovp: bool,
+        status: OperatingMode,
+    }
+
+    impl StatusReg {
+        pub fn new(reg: u8) -> Self {
+            Self {
+                scp: (reg & 0b1000_0000) != 0,
+                ocp: (reg & 0b0100_0000) != 0,
+                ovp: (reg & 0b0010_0000) != 0,
+                status: match reg & 0b0000_0011 {
+                    0b00 => OperatingMode::Boost,
+                    0b01 => OperatingMode::Buck,
+                    0b10 => OperatingMode::BuckBoost,
+                    _ => OperatingMode::Reserved,
+                },
+            }
+        }
+
+        pub fn debug_print(&self) {
+            defmt::info!(
+                "{}{}{}{}",
+                if self.scp { "SCP " } else { "" },
+                if self.ocp { "OCP " } else { "" },
+                if self.ovp { "OVP " } else { "" },
+                match self.status {
+                    OperatingMode::Boost => "BOOST",
+                    OperatingMode::Buck => "BUCK",
+                    OperatingMode::BuckBoost => "BUCK-BOOST",
+                    OperatingMode::Reserved => "RESERVED",
+                }
+            );
+        }
+    }
 }
 
 use tps55289::*;
@@ -44,6 +89,8 @@ pub trait Converter {
 
     fn get_enabled(&mut self) -> Result<bool, ()>;
     fn get_voltage(&mut self) -> Result<u16, ()>;
+
+    fn get_status(&mut self) -> Result<(), ()>;
 
     async fn set_voltage(&mut self, voltage: u16) -> Result<(), ()>;
     fn set_current(&mut self, current: u16) -> Result<(), ()>;
@@ -111,12 +158,12 @@ where
     }
 
     fn enable(&mut self) -> Result<(), ()> {
-        self.i2c.write(&[MODE, 0b1011_0000]).map_err(|_| ())
+        self.i2c.write(&[MODE, 0b1011_0010]).map_err(|_| ())
     }
 
     fn disable(&mut self) -> Result<(), ()> {
         // self.set_voltage(0)?;
-        self.i2c.write(&[MODE, 0b0011_0000]).map_err(|_| ())
+        self.i2c.write(&[MODE, 0b0011_0010]).map_err(|_| ())
     }
 
     fn get_enabled(&mut self) -> Result<bool, ()> {
@@ -149,6 +196,14 @@ where
         } else {
             conv as u16
         })
+    }
+
+    fn get_status(&mut self) -> Result<(), ()> {
+        let status = self.i2c.read_reg_byte(STATUS).map_err(|_| ())?;
+        let status = StatusReg::new(status);
+        status.debug_print();
+
+        Ok(())
     }
 
     /// Set TPS55289 output voltage
@@ -207,7 +262,9 @@ where
     /// * current: mA
     fn set_current(&mut self, current: u16) -> Result<(), ()> {
         let enable = 1u8 << 7;
-        let current_limit_setting = (current / 50) as u8 & !enable;
+        let current_limit_setting = (current as f32 / 41.15f32) as u8 & !enable;
+        // let current_limit_setting = (current as f32 / 38.299625f32) as u8 & !enable;
+        // let current_limit_setting = (current / 40) as u8 & !enable;
         let reg = enable | current_limit_setting;
 
         self.i2c.write(&[IOUT_LIMIT, reg]).map_err(|_| ())?;

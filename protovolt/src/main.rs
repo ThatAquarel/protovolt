@@ -10,6 +10,7 @@ use core::cell::RefCell;
 
 use defmt::*;
 use embassy_executor::{Executor, Spawner};
+use embassy_rp::adc::{self, Adc};
 use embassy_rp::gpio::{Output, Pin, Pull};
 use embassy_rp::i2c::I2c;
 use embassy_rp::multicore::{Stack, spawn_core1};
@@ -20,7 +21,6 @@ use embassy_rp::spi::{self, Spi};
 use embassy_rp::{bind_interrupts, i2c};
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::{NoopRawMutex, ThreadModeRawMutex};
-use embassy_rp::adc::{self, Adc};
 
 use embassy_sync::blocking_mutex::Mutex as I2cMutex;
 
@@ -35,6 +35,7 @@ use app::App;
 use task::{handle_display_task, handle_hardware_task};
 use ui::Ui;
 
+use crate::hal::event::{AppTask, AppTaskBuilder, HardwareTask};
 use crate::hal::led::LedsInterface;
 use crate::hal::power::{PowerDelivery, PowerDeliveryDevice};
 use crate::hal::{Hal, HalSense, HalTempSense, SENSE_CHANNEL, poll_sense, temp_sense};
@@ -71,7 +72,6 @@ static HAL_SENSE: StaticCell<StaticHalSense> = StaticCell::new();
 type StaticHalTempSense = HalTempSense<'static>;
 static HAL_TEMP_SENSE: StaticCell<StaticHalTempSense> = StaticCell::new();
 
-
 bind_interrupts!(struct Irqs {
     PIO0_IRQ_0 => pio::InterruptHandler<PIO0>;
     ADC_IRQ_FIFO => adc::InterruptHandler;
@@ -103,10 +103,7 @@ async fn main(spawner: Spawner) {
     let adc: Adc<'_, adc::Async> = Adc::new(p.ADC, Irqs, adc::Config::default());
     let hal_temp_sense = HalTempSense::new(adc, p.PIN_26, p.PIN_27, p.ADC_TEMP_SENSOR);
     let hal_temp_sense = HAL_TEMP_SENSE.init(hal_temp_sense);
-    unwrap!(spawner.spawn(temp_sense(
-        hal_temp_sense,
-        HARDWARE_CHANNEL.sender()
-    )));
+    unwrap!(spawner.spawn(temp_sense(hal_temp_sense, HARDWARE_CHANNEL.sender())));
 
     let mut hal = Hal::new(i2c0_bus, p.PIN_24.degrade(), p.PIN_25.degrade());
 
@@ -115,9 +112,17 @@ async fn main(spawner: Spawner) {
 
     for pdo in 1..4u8 {
         info!("({}) voltage (V) {}", pdo, pd_dev.get_voltage(pdo));
-        info!("({}) current (A) {}", pdo, pd_dev.get_current(pdo, ));
-        info!("({}) lower voltage tolerance (%) {}", pdo, pd_dev.get_lower_voltage_limit(pdo));
-        info!("({}) upper voltage tolerance (%) {}", pdo, pd_dev.get_upper_voltage_limit(pdo));
+        info!("({}) current (A) {}", pdo, pd_dev.get_current(pdo,));
+        info!(
+            "({}) lower voltage tolerance (%) {}",
+            pdo,
+            pd_dev.get_lower_voltage_limit(pdo)
+        );
+        info!(
+            "({}) upper voltage tolerance (%) {}",
+            pdo,
+            pd_dev.get_upper_voltage_limit(pdo)
+        );
     }
     info!("pdo number {}", pd_dev.get_pdo_number());
     info!("flex current {}", pd_dev.get_flex_current());
@@ -176,13 +181,22 @@ async fn main(spawner: Spawner) {
     let int_sender = INTERFACE_CHANNEL.sender();
 
     let mut ticker = Ticker::every(Duration::from_hz(100));
+    let mut i = 0;
     loop {
         let mut next_app_task = None;
         if let Ok(hw_event) = HARDWARE_CHANNEL.try_receive() {
             next_app_task = app.handle_event(AppEvent::Hardware(hw_event));
         } else if let Ok(ui_event) = INTERFACE_CHANNEL.try_receive() {
             next_app_task = app.handle_event(AppEvent::Interface(ui_event));
+        } else if i > 100 {
+            next_app_task = AppTaskBuilder::new()
+                .hardware(HardwareTask::PollConverterStatus)
+                .build();
+
+            i = 0;
         }
+
+        i = i + 1;
 
         if let Some(app_task) = next_app_task {
             for task in app_task {

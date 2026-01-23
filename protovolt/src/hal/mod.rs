@@ -85,6 +85,10 @@ where
         }
     }
 
+    pub fn poll_converter_status(&mut self) -> Result<(), ()> {
+        self.ch_a.get_status()
+    }
+
     pub async fn update_converter_voltage(
         &mut self,
         channel: OutputChannel,
