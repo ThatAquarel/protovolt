@@ -9,7 +9,7 @@ use embedded_graphics::prelude::DrawTarget;
 use embedded_hal::i2c::I2c;
 
 use crate::hal::event::{
-    Channel, ChannelFocus, ConfirmState, DisplayTask, HardwareEvent, HardwareTask, InterfaceEvent, Limits, PowerType, SetState
+    Channel, ChannelFocus, ChannelHardwareState, ConfirmState, DisplayTask, HardwareEvent, HardwareTask, InterfaceEvent, Limits, PowerType, SetState
 };
 use crate::hal::Hal;
 use crate::ui::{labels, Ui, SCREEN_HOLD_TIME};
@@ -131,8 +131,10 @@ pub async fn handle_display_task<D, PIO>(
                     Channel::A => ch_a_limits,
                     Channel::B => ch_b_limits,
                 };
-
-                ui.controls_channel_box(*channel, ChannelFocus::UnselectedInactive).await.unwrap();
+                
+                let initial_focus = ChannelFocus::UnselectedInactive;
+                ui.controls_channel_box(*channel, initial_focus).await.unwrap();
+                ui.controls_header_chip(*channel, initial_focus, ChannelHardwareState::Off).unwrap();
                 ui.controls_channel_units(*channel).unwrap();
 
                 ui.controls_submeasurement(*channel, None, limits, ConfirmState::AwaitModify, None).unwrap();
@@ -145,14 +147,15 @@ pub async fn handle_display_task<D, PIO>(
         DisplayTask::UpdateSetpoint(channel,  limits, set_select, confirm_state, precision) => {
             ui.controls_submeasurement(channel, set_select, limits, confirm_state, precision).unwrap();
         }
-        DisplayTask::UpdateChannelFocus(focus_a, focus_b) => {
+        DisplayTask::UpdateChannelFocus(focus_a, focus_b, hw_state_a, hw_state_b) => {
             let focuses = [focus_a, focus_b];
             for (i, focus) in focuses.iter().enumerate() {
-                let channel = match i {
-                    0 => Channel::A,
-                    _ => Channel::B,
+                let (channel, hw_state) = match i {
+                    0 => (Channel::A, hw_state_a),
+                    _ => (Channel::B, hw_state_b),
                 };
                 ui.controls_channel_box(channel, *focus).await.unwrap();
+                ui.controls_header_chip(channel, *focus, hw_state).unwrap();
             }
         }
         DisplayTask::UpdateButton(confirm_state, function_button_state) => {
@@ -160,6 +163,9 @@ pub async fn handle_display_task<D, PIO>(
         }
         DisplayTask::UpdateSetState(channel, set_state, set_select, confirm_state) => {
             ui.controls_submeasurement_tag(channel, set_state, set_select, confirm_state).unwrap();
+        }
+        DisplayTask::UpdateChannelHardwareState(channel, focus, hw_state) => {
+            ui.controls_header_chip(channel, focus, hw_state).unwrap();      
         }
     }
 }

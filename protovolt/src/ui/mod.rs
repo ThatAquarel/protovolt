@@ -23,8 +23,8 @@ use crate::{
     hal::{
         display::st7789,
         event::{
-            Channel, ChannelFocus, ConfirmState, FunctionButton, Limits, PowerType, Readout,
-            SetState,
+            Channel, ChannelFocus, ChannelHardwareState, ConfirmState, FunctionButton, Limits,
+            PowerType, Readout, SetState,
         },
         led::{LedsColor, LedsInterface},
     },
@@ -76,7 +76,8 @@ where
 
     #[cfg(feature = "demo")]
     pub fn boot_demo_mode(&mut self) -> Result<(), ()> {
-        self.boot.draw_demo_screen(&mut *self.target, &mut self.layout, &self.fonts)
+        self.boot
+            .draw_demo_screen(&mut *self.target, &mut self.layout, &self.fonts)
     }
 
     pub fn boot_splash_screen(&mut self) -> Result<(), ()> {
@@ -102,12 +103,8 @@ where
         )
     }
 
-    pub async fn controls_channel_box(
-        &mut self,
-        channel: Channel,
-        focus: ChannelFocus,
-    ) -> Result<(), ()> {
-        let color = match focus {
+    fn channel_color(channel: Channel, focus: ChannelFocus) -> Rgb565 {
+        match focus {
             ChannelFocus::SelectedInactive => color_scheme::SELECTED,
             ChannelFocus::UnselectedInactive => color_scheme::UNSELECTED,
             ChannelFocus::SelectedActive => match channel {
@@ -118,7 +115,15 @@ where
                 Channel::A => color_scheme::CH_A_UNSELECTED,
                 Channel::B => color_scheme::CH_B_UNSELECTED,
             },
-        };
+        }
+    }
+
+    pub async fn controls_channel_box(
+        &mut self,
+        channel: Channel,
+        focus: ChannelFocus,
+    ) -> Result<(), ()> {
+        let color = Self::channel_color(channel, focus);
 
         let text = match channel {
             Channel::A => labels::CHANNEL_A,
@@ -143,6 +148,32 @@ where
         };
 
         self.led_interface.update_refresh(led_color).await;
+
+        Ok(())
+    }
+
+    pub fn controls_header_chip(
+        &mut self,
+        channel: Channel,
+        focus: ChannelFocus,
+        channel_hardware_state: ChannelHardwareState,
+    ) -> Result<(), ()> {
+        let mut target = self.layout.channel_section(&mut *self.target, channel);
+        let color = Self::channel_color(channel, focus);
+        let (invert, text) = match channel_hardware_state {
+            ChannelHardwareState::Off => (false, ""),
+
+            ChannelHardwareState::ConstantVoltage => (false, labels::CONSTANT_VOLTAGE),
+            ChannelHardwareState::ConstantCurrent => (false, labels::CONSTANT_CURRENT),
+
+            ChannelHardwareState::ShortCircuit => (true, labels::SHORT_CIRCUIT),
+            ChannelHardwareState::OverTemperature => (true, labels::OVER_TEMPERATURE),
+            ChannelHardwareState::OverCurrent => (true, labels::OVER_CURRENT),
+            ChannelHardwareState::OverVoltage => (true, labels::OVER_VOLTAGE),
+        };
+
+        self.controls
+            .draw_header_chip(&mut target, &self.fonts, invert, color, text)?;
 
         Ok(())
     }
@@ -389,6 +420,15 @@ pub mod labels {
     pub const SET: &'static str = "SET";
     pub const OVP: &'static str = "OVP";
     pub const OCP: &'static str = "OCP";
+
+    // Channel Hardware State
+    pub const CONSTANT_VOLTAGE: &'static str = "CV";
+    pub const CONSTANT_CURRENT: &'static str = "CC";
+
+    pub const SHORT_CIRCUIT: &'static str = "SHORT";
+    pub const OVER_TEMPERATURE: &'static str = "TEMP";
+    pub const OVER_CURRENT: &'static str = "OCP";
+    pub const OVER_VOLTAGE: &'static str = "OVP";
 }
 
 #[cfg(feature = "demo")]

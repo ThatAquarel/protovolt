@@ -3,6 +3,7 @@ use embedded_graphics::{
     prelude::*,
     primitives::{
         CornerRadii, PrimitiveStyleBuilder, Rectangle, RoundedRectangle, StrokeAlignment,
+        StyledDrawable,
     },
 };
 
@@ -97,6 +98,81 @@ impl ControlsScreen {
             target,
         )
         .map_err(|_| ())?;
+
+        Ok(())
+    }
+
+    const HEADER_WIDTH: usize = 64;
+    const HEADER_HEIGHT: usize = 8;
+    const HEADER_BOX_WIDTH: usize = (ControlsScreen::HEADER_WIDTH + 2);
+    const HEADER_BOX_HEIGHT: usize = (ControlsScreen::HEADER_HEIGHT + 2);
+    const HEADER_FB_SIZE: usize =
+        ControlsScreen::HEADER_BOX_WIDTH * ControlsScreen::HEADER_BOX_HEIGHT;
+
+    pub fn draw_header_chip<D>(
+        &mut self,
+        target: &mut D,
+        fonts: &Fonts,
+        invert: bool,
+        color: Rgb565,
+        text: &'static str,
+    ) -> Result<(), ()>
+    where
+        D: Display,
+    {
+        let (fg_color, bg_color) = match invert {
+            false => (color, Rgb565::BLACK),
+            true => (Rgb565::BLACK, color),
+        };
+
+        let mut fbuf_data = [color_scheme::BACKGROUND; ControlsScreen::HEADER_FB_SIZE];
+        let mut fbuf = FrameBuf::new(
+            &mut fbuf_data,
+            ControlsScreen::HEADER_BOX_WIDTH,
+            ControlsScreen::HEADER_BOX_HEIGHT,
+        );
+
+        let mode_font = &fonts.info_small;
+
+        let (pos, vpos, halign) = (
+            Point::new(ControlsScreen::HEADER_WIDTH as i32, 0),
+            VerticalPosition::Top,
+            HorizontalAlignment::Right,
+        );
+
+        let bbox = mode_font.get_rendered_dimensions_aligned(text, pos, vpos, halign);
+
+        if let Ok(Some(rect)) = bbox {
+            let style = PrimitiveStyleBuilder::new()
+                .stroke_alignment(StrokeAlignment::Inside)
+                .stroke_width(1)
+                .stroke_color(bg_color)
+                .fill_color(bg_color)
+                .build();
+
+            rect.offset(1).draw_styled(&style, &mut fbuf);
+        }
+
+        mode_font
+            .render_aligned(
+                text,
+                pos,
+                vpos,
+                halign,
+                FontColor::Transparent(fg_color),
+                &mut fbuf,
+            )
+            .map_err(|_| ())?;
+
+        let rect = Rectangle::new(
+            Point::new(83, 9),
+            Size::new(
+                ControlsScreen::HEADER_BOX_WIDTH as u32,
+                ControlsScreen::HEADER_BOX_HEIGHT as u32,
+            ),
+        );
+
+        target.fill_contiguous(&rect, fbuf_data).map_err(|_| ())?;
 
         Ok(())
     }

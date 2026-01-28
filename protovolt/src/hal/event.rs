@@ -48,6 +48,20 @@ pub enum PowerType {
     Standard(Limits),
 }
 
+#[derive(Default, Clone, Copy, Debug, PartialEq)]
+pub enum ChannelHardwareState {
+    #[default]
+    Off,
+
+    ConstantVoltage,
+    ConstantCurrent,
+
+    ShortCircuit,
+    OverTemperature,
+    OverCurrent,
+    OverVoltage,
+}
+
 impl Default for PowerType {
     fn default() -> Self {
         PowerType::Standard(Default::default())
@@ -151,8 +165,9 @@ pub enum DisplayTask {
     // Updates
     UpdateReadout(Channel, Readout),
     UpdateSetpoint(Channel, Limits, Option<SetSelect>, ConfirmState, Option<DecimalPrecision>),
-    UpdateChannelFocus(ChannelFocus, ChannelFocus),
+    UpdateChannelFocus(ChannelFocus, ChannelFocus, ChannelHardwareState, ChannelHardwareState),
     UpdateSetState(Channel, SetState, Option<SetSelect>, ConfirmState),
+    UpdateChannelHardwareState(Channel, ChannelFocus, ChannelHardwareState),
 
     // Navbar
     UpdateButton(ConfirmState, Option<FunctionButton>),

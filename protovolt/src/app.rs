@@ -2,9 +2,9 @@ use embassy_time::Duration;
 use micromath::F32Ext;
 
 use crate::hal::event::{
-    AppEvent, AppTask, AppTaskBuilder, Change, Channel, ChannelFocus, ConfirmState, DisplayTask,
-    FunctionButton, HardwareEvent, HardwareTask, InterfaceEvent, Limits, PowerType, Readout,
-    SetState,
+    AppEvent, AppTask, AppTaskBuilder, Change, Channel, ChannelFocus, ChannelHardwareState,
+    ConfirmState, DisplayTask, FunctionButton, HardwareEvent, HardwareTask, InterfaceEvent, Limits,
+    PowerType, Readout, SetState,
 };
 
 #[derive(Default)]
@@ -145,6 +145,8 @@ pub enum SetSelect {
 struct ChannelState {
     pub enable: bool,
 
+    pub hw_state: ChannelHardwareState,
+
     pub set_select: SetSelect,
 
     pub target: VoltageCurrentWithSetter,
@@ -166,6 +168,7 @@ impl Default for ChannelState {
 
         Self {
             enable: false,
+            hw_state: Default::default(),
             target: VoltageCurrentWithSetter::new(
                 target_limits,
                 (0.2, 20.0), // voltage range
@@ -570,7 +573,12 @@ impl App {
         };
 
         self.setpoints_task()
-            .display(DisplayTask::UpdateChannelFocus(focus_a, focus_b))
+            .display(DisplayTask::UpdateChannelFocus(
+                focus_a,
+                focus_b,
+                self.ch_a.hw_state,
+                self.ch_b.hw_state,
+            ))
     }
 
     pub fn current_confirm_state_button_task(
