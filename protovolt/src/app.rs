@@ -6,6 +6,13 @@ use crate::hal::event::{
     ConfirmState, DisplayTask, FunctionButton, HardwareEvent, HardwareTask, InterfaceEvent, Limits,
     PowerType, Readout, SetState,
 };
+use crate::scpi::parser::{
+    ChannelParam, MeasKind, ScpiCommand,
+};
+use crate::scpi::state::{normalize_color, ChannelSnapshot, ScpiState};
+use crate::scpi::telemetry;
+use crate::scpi::{ScpiChannel, ScpiContext, ScpiHandleResult, ScpiResponse, RESPONSE_BUF};
+use crate::ui::fmt::format_f32;
 
 #[derive(Default)]
 pub struct App {
@@ -91,6 +98,13 @@ impl WithPrecision {
 
     pub fn value(&self) -> f32 {
         return self.value;
+    }
+
+    pub fn set_value(&mut self, value: f32) {
+        self.value = match self.init_range {
+            Some((min, max)) => value.clamp(min, max),
+            None => value,
+        };
     }
 
     // pub fn exponent(&self) -> i8 {
@@ -638,5 +652,411 @@ impl App {
         }
 
         None
+    }
+
+    pub fn is_standby(&self) -> bool {
+        matches!(self.hardware_state, HardwareState::Standby)
+    }
+
+    fn channel_mut(&mut self, ch: Channel) -> &mut ChannelState {
+        match ch {
+            Channel::A => &mut self.ch_a,
+            Channel::B => &mut self.ch_b,
+        }
+    }
+
+    fn channel_ref(&self, ch: Channel) -> &ChannelState {
+        match ch {
+            Channel::A => &self.ch_a,
+            Channel::B => &self.ch_b,
+        }
+    }
+
+    fn scpi_channel_mut(&mut self, ch: ScpiChannel) -> &mut ChannelState {
+        self.channel_mut(ch.to_hal())
+    }
+
+    fn scpi_channel_ref(&self, ch: ScpiChannel) -> &ChannelState {
+        self.channel_ref(ch.to_hal())
+    }
+
+    fn snapshot_channel(&self, ch: ScpiChannel, scpi: &ScpiState) -> ChannelSnapshot {
+        let state = self.scpi_channel_ref(ch);
+        let mut snap = ChannelSnapshot {
+            voltage_set: state.target.voltage.value(),
+            current_set: state.target.current.value(),
+            ovp: state.limits.voltage.value(),
+            ocp: state.limits.current.value(),
+            output_on: state.enable,
+            prot_latched: scpi.prot_latched(ch),
+            color: [0; 8],
+            color_len: 0,
+        };
+        snap.set_color(scpi.color(ch));
+        snap
+    }
+
+    fn restore_channel(&mut self, ch: ScpiChannel, snap: &ChannelSnapshot) {
+        let state = self.scpi_channel_mut(ch);
+        state.target.voltage.set_value(snap.voltage_set);
+        state.target.current.set_value(snap.current_set);
+        state.limits.voltage.set_value(snap.ovp);
+        state.limits.current.set_value(snap.ocp);
+        state.enable = snap.output_on;
+    }
+
+    fn default_reset_channels(&mut self) {
+        // TODO: override defaults.
+        let defaults = [
+            (ScpiChannel::Ch1, 3.3, 0.5, 18.0, 1.0),
+            (ScpiChannel::Ch2, 5.0, 2.0, 6.0, 3.0),
+        ];
+        for (ch, v, i, ovp, ocp) in defaults {
+            let state = self.scpi_channel_mut(ch);
+            state.target.voltage.set_value(v);
+            state.target.current.set_value(i);
+            state.limits.voltage.set_value(ovp);
+            state.limits.current.set_value(ocp);
+            state.enable = false;
+            state.hw_state = ChannelHardwareState::Off;
+        }
+    }
+
+    fn format_f32_3(value: f32) -> heapless::String<16> {
+        format_f32::<16>(value, 3)
+    }
+
+    fn push_response_text(text: &str) -> ScpiResponse {
+        let mut buf = heapless::String::<RESPONSE_BUF>::new();
+        let _ = buf.push_str(text);
+        ScpiResponse::with_text(buf)
+    }
+
+    fn push_response_f32(value: f32) -> ScpiResponse {
+        let s = Self::format_f32_3(value);
+        Self::push_response_text(s.as_str())
+    }
+
+    pub fn handle_scpi(
+        &mut self,
+        cmd: ScpiCommand,
+        scpi: &mut ScpiState,
+        ctx: &ScpiContext,
+    ) -> ScpiHandleResult {
+        use core::fmt::Write;
+
+        if crate::scpi::parser::is_mutation(&cmd) && !self.is_standby() {
+            scpi.push_error(-221, "Not in Standby; mutating command rejected");
+            return ScpiHandleResult {
+                response: ScpiResponse::none(),
+                tasks: None,
+            };
+        }
+
+        match cmd {
+            ScpiCommand::Unknown { command, command_len } => {
+                let cmd_text =
+                    core::str::from_utf8(&command[..command_len as usize]).unwrap_or("");
+                let mut msg = heapless::String::<64>::new();
+                let _ = write!(msg, "Unknown command: {}", cmd_text);
+                scpi.push_error(-113, msg.as_str());
+                ScpiHandleResult {
+                    response: ScpiResponse::none(),
+                    tasks: None,
+                }
+            }
+            ScpiCommand::IdnQuery => ScpiHandleResult {
+                response: Self::push_response_text(concat!(
+                    "FBRD Inc.,ProtoV-MINI,00000000,",
+                    env!("CARGO_PKG_VERSION"),
+                    ",A.1"
+                )),
+                tasks: None,
+            },
+            ScpiCommand::SystVersQuery => ScpiHandleResult {
+                response: Self::push_response_text("1999.0"),
+                tasks: None,
+            },
+            ScpiCommand::SystErrQuery => {
+                let (code, msg) = scpi.pop_error();
+                let mut buf = heapless::String::<RESPONSE_BUF>::new();
+                let _ = write!(buf, "{},\"{}\"", code, msg.as_str());
+                ScpiHandleResult {
+                    response: ScpiResponse::with_text(buf),
+                    tasks: None,
+                }
+            }
+            ScpiCommand::SystLoc => {
+                scpi.remote = false;
+                ScpiHandleResult {
+                    response: ScpiResponse::none(),
+                    tasks: None,
+                }
+            }
+            ScpiCommand::SystRem => {
+                scpi.remote = true;
+                ScpiHandleResult {
+                    response: ScpiResponse::none(),
+                    tasks: None,
+                }
+            }
+            ScpiCommand::TelemQuery => {
+                let mut buf = heapless::String::<RESPONSE_BUF>::new();
+                telemetry::format_telemetry(ctx, &mut buf);
+                ScpiHandleResult {
+                    response: ScpiResponse::with_text(buf),
+                    tasks: None,
+                }
+            }
+            ScpiCommand::TempQuery { slot } => {
+                let mut buf = heapless::String::<RESPONSE_BUF>::new();
+                telemetry::format_temp(ctx, slot, &mut buf);
+                ScpiHandleResult {
+                    response: ScpiResponse::with_text(buf),
+                    tasks: None,
+                }
+            }
+            ScpiCommand::InpQuery => {
+                let mut buf = heapless::String::<RESPONSE_BUF>::new();
+                telemetry::format_inp(ctx, &mut buf);
+                ScpiHandleResult {
+                    response: ScpiResponse::with_text(buf),
+                    tasks: None,
+                }
+            }
+            ScpiCommand::DiagQuery => {
+                let mut buf = heapless::String::<RESPONSE_BUF>::new();
+                telemetry::format_diag(ctx, &mut buf);
+                ScpiHandleResult {
+                    response: ScpiResponse::with_text(buf),
+                    tasks: None,
+                }
+            }
+            ScpiCommand::Ina226RegQuery { .. } | ScpiCommand::Tps55289RegQuery { .. } => {
+                unreachable!("register dumps are handled in main")
+            }
+            ScpiCommand::MeasQuery { kind, channel } => {
+                let state = self.scpi_channel_ref(channel);
+                let value = if state.enable {
+                    match state.readout {
+                        Some(r) => match kind {
+                            MeasKind::Volt => r.voltage,
+                            MeasKind::Curr => r.current,
+                            MeasKind::Pow => r.power,
+                        },
+                        None => 0.0,
+                    }
+                } else {
+                    0.0
+                };
+                ScpiHandleResult {
+                    response: Self::push_response_f32(value),
+                    tasks: None,
+                }
+            }
+            ScpiCommand::ChannelQuery { channel, param } => {
+                let state = self.scpi_channel_ref(channel);
+                let value = match param {
+                    ChannelParam::Volt => state.target.voltage.value(),
+                    ChannelParam::Curr => state.target.current.value(),
+                    ChannelParam::Ovp => state.limits.voltage.value(),
+                    ChannelParam::Ocp => state.limits.current.value(),
+                    ChannelParam::Colr => {
+                        return ScpiHandleResult {
+                            response: Self::push_response_text(scpi.color(channel)),
+                            tasks: None,
+                        };
+                    }
+                };
+                ScpiHandleResult {
+                    response: Self::push_response_f32(value),
+                    tasks: None,
+                }
+            }
+            ScpiCommand::OutputQuery { channel } => {
+                let on = self.scpi_channel_ref(channel).enable;
+                ScpiHandleResult {
+                    response: Self::push_response_text(if on { "ON" } else { "OFF" }),
+                    tasks: None,
+                }
+            }
+            ScpiCommand::Rst => {
+                self.default_reset_channels();
+                scpi.remote = true;
+                scpi.set_prot_latched(None, false);
+                let tasks = self
+                    .update_converter_task(Channel::A)
+                    .extend(self.update_converter_task(Channel::B))
+                    .hardware(HardwareTask::UpdateConverterState(Channel::A, false))
+                    .hardware(HardwareTask::UpdateConverterState(Channel::B, false))
+                    .extend(self.setpoints_task())
+                    .build();
+                ScpiHandleResult {
+                    response: ScpiResponse::none(),
+                    tasks,
+                }
+            }
+            ScpiCommand::Sav { slot } => {
+                if slot < 1 || slot > 9 {
+                    let mut msg = heapless::String::<64>::new();
+                    let _ = write!(msg, "Save slot {} out of range (1-9)", slot);
+                    scpi.push_error(-222, msg.as_str());
+                    return ScpiHandleResult {
+                        response: ScpiResponse::none(),
+                        tasks: None,
+                    };
+                }
+                let ch1 = self.snapshot_channel(ScpiChannel::Ch1, scpi);
+                let ch2 = self.snapshot_channel(ScpiChannel::Ch2, scpi);
+                scpi.save_slot(slot, ch1, ch2);
+                ScpiHandleResult {
+                    response: ScpiResponse::none(),
+                    tasks: None,
+                }
+            }
+            ScpiCommand::Rcl { slot } => {
+                if slot < 1 || slot > 9 {
+                    let mut msg = heapless::String::<64>::new();
+                    let _ = write!(msg, "Recall slot {} out of range (1-9)", slot);
+                    scpi.push_error(-222, msg.as_str());
+                    return ScpiHandleResult {
+                        response: ScpiResponse::none(),
+                        tasks: None,
+                    };
+                }
+                if let Some((ch1, ch2)) = scpi.recall_slot(slot) {
+                    self.restore_channel(ScpiChannel::Ch1, &ch1);
+                    self.restore_channel(ScpiChannel::Ch2, &ch2);
+                    scpi.set_prot_latched(None, ch1.prot_latched || ch2.prot_latched);
+                    let tasks = self
+                        .update_converter_task(Channel::A)
+                        .extend(self.update_converter_task(Channel::B))
+                        .hardware(HardwareTask::UpdateConverterState(
+                            Channel::A,
+                            self.ch_a.enable,
+                        ))
+                        .hardware(HardwareTask::UpdateConverterState(
+                            Channel::B,
+                            self.ch_b.enable,
+                        ))
+                        .extend(self.setpoints_task())
+                        .build();
+                    ScpiHandleResult {
+                        response: ScpiResponse::none(),
+                        tasks,
+                    }
+                } else {
+                    let mut msg = heapless::String::<64>::new();
+                    let _ = write!(msg, "Empty save slot {}", slot);
+                    scpi.push_error(-222, msg.as_str());
+                    ScpiHandleResult {
+                        response: ScpiResponse::none(),
+                        tasks: None,
+                    }
+                }
+            }
+            ScpiCommand::Del { slot } => {
+                if slot < 1 || slot > 9 {
+                    let mut msg = heapless::String::<64>::new();
+                    let _ = write!(msg, "Delete slot {} out of range (1-9)", slot);
+                    scpi.push_error(-222, msg.as_str());
+                    return ScpiHandleResult {
+                        response: ScpiResponse::none(),
+                        tasks: None,
+                    };
+                }
+                scpi.delete_slot(slot);
+                ScpiHandleResult {
+                    response: ScpiResponse::none(),
+                    tasks: None,
+                }
+            }
+            ScpiCommand::ChannelSet {
+                channel,
+                param,
+                value,
+            } => {
+                let hal_ch = channel.to_hal();
+                let mut tasks = AppTaskBuilder::new();
+                {
+                    let state = self.scpi_channel_mut(channel);
+                    match param {
+                        ChannelParam::Volt => state.target.voltage.set_value(value),
+                        ChannelParam::Curr => state.target.current.set_value(value),
+                        ChannelParam::Ovp => state.limits.voltage.set_value(value),
+                        ChannelParam::Ocp => state.limits.current.set_value(value),
+                        ChannelParam::Colr => unreachable!(),
+                    }
+                }
+                if matches!(param, ChannelParam::Volt | ChannelParam::Curr) {
+                    tasks = tasks.extend(self.update_converter_task(hal_ch));
+                }
+                ScpiHandleResult {
+                    response: ScpiResponse::none(),
+                    tasks: tasks.extend(self.setpoints_task()).build(),
+                }
+            }
+            ScpiCommand::ColorSet {
+                channel,
+                name,
+                name_len,
+            } => {
+                let name_str =
+                    core::str::from_utf8(&name[..name_len as usize]).unwrap_or("");
+                match normalize_color(name_str) {
+                    Ok(color) => {
+                        let _ = scpi.set_color(channel, color);
+                        ScpiHandleResult {
+                            response: ScpiResponse::none(),
+                            tasks: None,
+                        }
+                    }
+                    Err(()) => {
+                        let mut msg = heapless::String::<64>::new();
+                        let _ = write!(msg, "Invalid color name: {}", name_str);
+                        scpi.push_error(-224, msg.as_str());
+                        ScpiHandleResult {
+                            response: ScpiResponse::none(),
+                            tasks: None,
+                        }
+                    }
+                }
+            }
+            ScpiCommand::OutputSet { channel, on } => {
+                let hal_ch = channel.to_hal();
+                self.scpi_channel_mut(channel).enable = on;
+                let tasks = AppTaskBuilder::new()
+                    .hardware(HardwareTask::UpdateConverterState(hal_ch, on))
+                    .extend(self.shift_channel_focus_task(hal_ch))
+                    .build();
+                ScpiHandleResult {
+                    response: ScpiResponse::none(),
+                    tasks,
+                }
+            }
+            ScpiCommand::ResetProt { channel } => {
+                scpi.set_prot_latched(channel, false);
+                for ch in [Channel::A, Channel::B] {
+                    if channel.map(|c| c.to_hal()) == Some(ch) || channel.is_none() {
+                        let state = self.channel_mut(ch);
+                        if matches!(
+                            state.hw_state,
+                            ChannelHardwareState::OverCurrent
+                                | ChannelHardwareState::OverVoltage
+                        ) {
+                            state.hw_state = if state.enable {
+                                ChannelHardwareState::ConstantVoltage
+                            } else {
+                                ChannelHardwareState::Off
+                            };
+                        }
+                    }
+                }
+                ScpiHandleResult {
+                    response: ScpiResponse::none(),
+                    tasks: None,
+                }
+            }
+        }
     }
 }

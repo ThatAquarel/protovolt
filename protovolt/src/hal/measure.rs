@@ -53,6 +53,8 @@ pub trait Measure {
     fn read_bus_voltage(&mut self) -> Result<f32, ()>;
     fn read_current(&mut self) -> Result<f32, ()>;
     fn read_power(&mut self) -> Result<f32, ()>;
+
+    fn dump_registers<const N: usize>(&mut self, buf: &mut heapless::String<N>) -> Result<(), ()>;
 }
 
 pub struct MeasureDevice<'a, M: RawMutex, BUS: I2c> {
@@ -128,4 +130,65 @@ where
         Ok((reg as f32) * POWER_LSB)
         // TODO: move 1.25mV LSB out into INA226 constants
     }
+
+    fn dump_registers<const N: usize>(&mut self, buf: &mut heapless::String<N>) -> Result<(), ()> {
+        let addr = self.i2c.address();
+        let _ = buf.push_str("INA226 @ 0x");
+        push_hex_u8(buf, addr);
+        let _ = buf.push_str(" (I2C1)|");
+
+        let regs: [(u8, &str); 10] = [
+            (CONFIG, "CONFIG"),
+            (SHUNT_VOLTAGE, "SHUNT_V"),
+            (BUS_VOLTAGE, "BUS_V"),
+            (POWER, "POWER"),
+            (CURRENT, "CURRENT"),
+            (CALIBRATION, "CALIBRATION"),
+            (ENABLE, "ENABLE"),
+            (ALERT_LIMIT, "ALERT_LIMIT"),
+            (MANUFACTURER_ID, "MANUF_ID"),
+            (DIE_ID, "DIE_ID"),
+        ];
+
+        for (i, (reg, name)) in regs.iter().enumerate() {
+            if i > 0 {
+                let _ = buf.push('|');
+            }
+            let value = self.i2c.read_reg_word(*reg).map_err(|_| ())?;
+            push_reg_line(buf, *reg, name, value);
+        }
+
+        Ok(())
+    }
+}
+
+fn push_hex_u8<const N: usize>(buf: &mut heapless::String<N>, value: u8) {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+    let _ = buf.push(HEX[(value >> 4) as usize] as char);
+    let _ = buf.push(HEX[(value & 0x0F) as usize] as char);
+}
+
+fn push_reg_line<const N: usize>(
+    buf: &mut heapless::String<N>,
+    reg: u8,
+    name: &str,
+    value: u16,
+) {
+    push_hex_u8(buf, reg);
+    let _ = buf.push(' ');
+    let _ = buf.push_str(name);
+    let pad = name.len().max(12);
+    for _ in name.len()..pad {
+        let _ = buf.push(' ');
+    }
+    let _ = buf.push(' ');
+    push_hex_u16(buf, value);
+}
+
+fn push_hex_u16<const N: usize>(buf: &mut heapless::String<N>, value: u16) {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+    let _ = buf.push(HEX[((value >> 12) & 0xF) as usize] as char);
+    let _ = buf.push(HEX[((value >> 8) & 0xF) as usize] as char);
+    let _ = buf.push(HEX[((value >> 4) & 0xF) as usize] as char);
+    let _ = buf.push(HEX[(value & 0xF) as usize] as char);
 }

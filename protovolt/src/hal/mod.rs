@@ -11,7 +11,7 @@ use embassy_sync::{
     },
     channel::{Channel, Receiver, Sender},
 };
-use embassy_time::{Duration, Ticker};
+use embassy_time::{Duration, Timer, Ticker};
 use embedded_hal::i2c::I2c;
 
 use crate::{
@@ -112,6 +112,17 @@ where
             OutputChannel::B => self.ch_b.set_current(current),
         }
     }
+
+    pub fn dump_tps55289<const N: usize>(
+        &mut self,
+        channel: OutputChannel,
+        buf: &mut heapless::String<N>,
+    ) -> Result<(), ()> {
+        match channel {
+            OutputChannel::A => self.ch_a.dump_registers(buf),
+            OutputChannel::B => self.ch_b.dump_registers(buf),
+        }
+    }
 }
 
 pub struct HalSense<'a, M: RawMutex, BUS: I2c> {
@@ -130,6 +141,17 @@ where
             ch_b: MeasureDevice::new(measure_bus, OutputChannel::B),
         }
     }
+
+    pub fn dump_ina226<const N: usize>(
+        &mut self,
+        channel: OutputChannel,
+        buf: &mut heapless::String<N>,
+    ) -> Result<(), ()> {
+        match channel {
+            OutputChannel::A => self.ch_a.dump_registers(buf),
+            OutputChannel::B => self.ch_b.dump_registers(buf),
+        }
+    }
 }
 
 pub enum SenseEvent {
@@ -138,6 +160,21 @@ pub enum SenseEvent {
 }
 
 pub static SENSE_CHANNEL: Channel<ThreadModeRawMutex, SenseEvent, 1> = Channel::new();
+
+pub static INA226_DUMP_REQ: Channel<ThreadModeRawMutex, OutputChannel, 2> = Channel::new();
+pub static INA226_DUMP_RESP: Channel<
+    ThreadModeRawMutex,
+    Result<heapless::String<{ crate::scpi::RESPONSE_BUF }>, ()>,
+    2,
+> = Channel::new();
+
+async fn service_ina226_dump(sense: &mut HalSense<'static, NoopRawMutex, StaticI2c1>) {
+    if let Ok(channel) = INA226_DUMP_REQ.try_receive() {
+        let mut buf = heapless::String::<{ crate::scpi::RESPONSE_BUF }>::new();
+        let result = sense.dump_ina226(channel, &mut buf).map(|_| buf);
+        INA226_DUMP_RESP.send(result).await;
+    }
+}
 
 #[embassy_executor::task]
 pub async fn poll_sense(
@@ -158,13 +195,19 @@ pub async fn poll_sense(
         return;
     };
 
-    match sense_channel.receive().await {
-        SenseEvent::StartReadoutLoop => {}
-        _ => return,
-    };
+    loop {
+        service_ina226_dump(sense).await;
+        match sense_channel.try_receive() {
+            Ok(SenseEvent::StartReadoutLoop) => break,
+            Ok(_) => {}
+            Err(_) => Timer::after_millis(1).await,
+        }
+    }
 
     let mut ticker = Ticker::every(Duration::from_hz(5)); // 100ms
     loop {
+        service_ina226_dump(sense).await;
+
         let channels = [OutputChannel::A, OutputChannel::B];
         for event_ch in channels.iter() {
             let ch = match event_ch {

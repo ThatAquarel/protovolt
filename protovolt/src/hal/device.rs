@@ -17,6 +17,10 @@ impl<'a, M: RawMutex, BUS: I2c> I2cDeviceWithAddr<'a, M, BUS> {
         }
     }
 
+    pub fn address(&self) -> u8 {
+        self.address
+    }
+
     pub fn read_reg_word(&mut self, reg: u8) -> Result<u16, I2cDeviceError<BUS::Error>> {
         let mut word = [0u8; 2];
         self.bus.write_read(self.address, &[reg], &mut word)?;

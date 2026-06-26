@@ -3,6 +3,7 @@
 
 mod app;
 mod hal;
+mod scpi;
 mod task;
 mod ui;
 
@@ -14,10 +15,11 @@ use embassy_rp::adc::{self, Adc};
 use embassy_rp::gpio::{Output, Pin};
 use embassy_rp::i2c::I2c;
 use embassy_rp::multicore::{Stack, spawn_core1};
-use embassy_rp::peripherals::{I2C0, I2C1, PIO0};
+use embassy_rp::peripherals::{I2C0, I2C1, PIO0, USB};
 use embassy_rp::pio;
 use embassy_rp::pio::Pio;
 use embassy_rp::spi::{self, Spi};
+use embassy_rp::usb::{Driver, InterruptHandler};
 use embassy_rp::{bind_interrupts, i2c};
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::{NoopRawMutex, ThreadModeRawMutex};
@@ -25,7 +27,7 @@ use embassy_sync::blocking_mutex::raw::{NoopRawMutex, ThreadModeRawMutex};
 use embassy_sync::blocking_mutex::Mutex as I2cMutex;
 
 use embassy_sync::channel::{Channel, Sender};
-use embassy_time::{Duration, Ticker};
+use embassy_time::{Duration, Timer, Ticker};
 
 use hal::display::DisplayInterface;
 use hal::event::{AppEvent, HardwareEvent, InterfaceEvent, Task};
@@ -35,10 +37,17 @@ use app::App;
 use task::{handle_display_task, handle_hardware_task};
 use ui::Ui;
 
-use crate::hal::event::{AppTaskBuilder, HardwareTask};
+use crate::hal::event::{AppTaskBuilder, Channel as OutputChannel, HardwareTask};
 use crate::hal::led::LedsInterface;
-use crate::hal::power::{PowerDelivery, PowerDeliveryDevice};
-use crate::hal::{Hal, HalSense, HalTempSense, SENSE_CHANNEL, poll_sense, temp_sense};
+use crate::hal::temperature::TemperatureReading;
+use crate::hal::{
+    Hal, HalSense, HalTempSense, INA226_DUMP_REQ, INA226_DUMP_RESP, SENSE_CHANNEL, poll_sense,
+    temp_sense,
+};
+use crate::scpi::parser::ScpiCommand;
+use crate::scpi::state::ScpiState;
+use crate::scpi::usb::{build_usb_cdc, spawn_usb_tasks, USB_ENUM_GRACE_MS};
+use crate::scpi::{ScpiContext, ScpiResponse, RESPONSE_BUF, SCPI_CMD, SCPI_RESP};
 
 use static_cell::StaticCell;
 
@@ -72,14 +81,26 @@ static HAL_SENSE: StaticCell<StaticHalSense> = StaticCell::new();
 type StaticHalTempSense = HalTempSense<'static>;
 static HAL_TEMP_SENSE: StaticCell<StaticHalTempSense> = StaticCell::new();
 
+static SCPI_STATE: StaticCell<ScpiState> = StaticCell::new();
+
 bind_interrupts!(struct Irqs {
     PIO0_IRQ_0 => pio::InterruptHandler<PIO0>;
     ADC_IRQ_FIFO => adc::InterruptHandler;
+    USBCTRL_IRQ => InterruptHandler<USB>;
 });
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
+
+    // USB must start before any lengthy blocking init — the host will enumerate
+    // and SET_CONFIGURATION while we are still booting otherwise (error -110).
+    let usb_driver = Driver::new(p.USB, Irqs);
+    let usb_resources = build_usb_cdc(usb_driver);
+    spawn_usb_tasks(&spawner, usb_resources);
+    // Blocking init below starves the executor; give the host time to finish
+    // SET_CONFIGURATION while only usb_task is runnable.
+    // Timer::after_millis(USB_ENUM_GRACE_MS).await;
 
     // Power hardware initialization
     let i2c0 = I2c::new_blocking(p.I2C0, p.PIN_1, p.PIN_0, i2c::Config::default());
@@ -107,33 +128,15 @@ async fn main(spawner: Spawner) {
 
     let mut hal = Hal::new(i2c0_bus, p.PIN_24.degrade(), p.PIN_25.degrade());
 
-    // let pd = I2cDevice::new(&i2c0_bus);
-    let mut pd_dev = PowerDeliveryDevice::new(&i2c0_bus);
-
-    for pdo in 1..4u8 {
-        info!("({}) voltage (V) {}", pdo, pd_dev.get_voltage(pdo));
-        info!("({}) current (A) {}", pdo, pd_dev.get_current(pdo,));
-        info!(
-            "({}) lower voltage tolerance (%) {}",
-            pdo,
-            pd_dev.get_lower_voltage_limit(pdo)
-        );
-        info!(
-            "({}) upper voltage tolerance (%) {}",
-            pdo,
-            pd_dev.get_upper_voltage_limit(pdo)
-        );
-    }
-    info!("pdo number {}", pd_dev.get_pdo_number());
-    info!("flex current {}", pd_dev.get_flex_current());
-    info!("external power {}", pd_dev.get_external_power());
-    info!("usb comm capable {}", pd_dev.get_usb_comm_capable());
-    info!("configuration ok gpio {}", pd_dev.get_config_ok_gpio());
-    info!("extra gpio pin config {}", pd_dev.get_gpio_ctrl());
-    info!("power out >5V only {}", pd_dev.get_power_above_5v_only());
-    info!("operating current {}", pd_dev.get_req_src_current());
-
-    // let hal = Hal::new(i2c0_bus, &i2c1_bus, p.PIN_25.degrade(), p.PIN_24.degrade());
+    let scpi_state = SCPI_STATE.init(ScpiState::default());
+    let mut last_temp = TemperatureReading {
+        ch_a: 28.0,
+        ch_b: 27.5,
+        mcu: 34.0,
+    };
+    let mut input_voltage = 20.0f32;
+    let mut input_current = 0.35f32;
+    let mut input_type_pd = true;
 
     // Buttons (moved to static so Core 1 owns them)
     let buttons = ButtonsInterface::new(
@@ -183,8 +186,76 @@ async fn main(spawner: Spawner) {
     let mut ticker = Ticker::every(Duration::from_hz(100));
     let mut i = 0;
     loop {
+        if let Ok(cmd) = SCPI_CMD.try_receive() {
+            let ctx = build_scpi_context(
+                &app,
+                &last_temp,
+                input_type_pd,
+                input_voltage,
+                input_current,
+                scpi_state,
+            );
+            let (response, tasks) = match cmd {
+                ScpiCommand::Ina226RegQuery { channel } => {
+                    INA226_DUMP_REQ.send(channel.to_hal()).await;
+                    let response = match INA226_DUMP_RESP.receive().await {
+                        Ok(text) => ScpiResponse::with_text(text),
+                        Err(()) => {
+                            scpi_state.push_error(-200, "Register dump unavailable");
+                            ScpiResponse::none()
+                        }
+                    };
+                    (response, None)
+                }
+                ScpiCommand::Tps55289RegQuery { channel } => {
+                    let mut buf = heapless::String::<RESPONSE_BUF>::new();
+                    let response = if hal.dump_tps55289(channel.to_hal(), &mut buf).is_ok() {
+                        ScpiResponse::with_text(buf)
+                    } else {
+                        scpi_state.push_error(-200, "Register dump unavailable");
+                        ScpiResponse::none()
+                    };
+                    (response, None)
+                }
+                _ => {
+                    let result = app.handle_scpi(cmd, scpi_state, &ctx);
+                    (result.response, result.tasks)
+                }
+            };
+            SCPI_RESP.send(response).await;
+            if let Some(tasks) = tasks {
+                for task in tasks {
+                    match task {
+                        Task::Hardware(hw_task) => {
+                            handle_hardware_task(hw_task, &mut hal, &hw_sender, &int_sender).await;
+                        }
+                        Task::Display(disp_task) => {
+                            handle_display_task(disp_task, &mut ui, &hw_sender, &int_sender).await
+                        }
+                    }
+                }
+            }
+        }
+
         let mut next_app_task = None;
         if let Ok(hw_event) = HARDWARE_CHANNEL.try_receive() {
+            if let HardwareEvent::TempAcquired(temp) = hw_event {
+                last_temp = temp;
+            }
+            if let HardwareEvent::PowerDeliveryReady(power_type) = hw_event {
+                match power_type {
+                    hal::event::PowerType::PowerDelivery(limits) => {
+                        input_type_pd = true;
+                        input_voltage = limits.voltage;
+                        input_current = limits.current;
+                    }
+                    hal::event::PowerType::Standard(limits) => {
+                        input_type_pd = false;
+                        input_voltage = limits.voltage;
+                        input_current = limits.current;
+                    }
+                }
+            }
             next_app_task = app.handle_event(AppEvent::Hardware(hw_event));
         } else if let Ok(ui_event) = INTERFACE_CHANNEL.try_receive() {
             next_app_task = app.handle_event(AppEvent::Interface(ui_event));
@@ -212,6 +283,31 @@ async fn main(spawner: Spawner) {
         }
 
         ticker.next().await;
+    }
+}
+
+fn build_scpi_context(
+    _app: &App,
+    temp: &TemperatureReading,
+    input_type_pd: bool,
+    input_voltage: f32,
+    input_current: f32,
+    scpi_state: &ScpiState,
+) -> ScpiContext {
+    let prot_a = scpi_state.prot_latched(scpi::ScpiChannel::Ch1);
+    let prot_b = scpi_state.prot_latched(scpi::ScpiChannel::Ch2);
+    let sense_ok = !prot_a && !prot_b;
+    ScpiContext {
+        temp_ch_a: temp.ch_a,
+        temp_ch_b: temp.ch_b,
+        temp_mcu: temp.mcu,
+        input_type_pd,
+        input_voltage,
+        input_current,
+        sense_ok,
+        converter_ok: sense_ok,
+        prot_latched_a: prot_a,
+        prot_latched_b: prot_b,
     }
 }
 

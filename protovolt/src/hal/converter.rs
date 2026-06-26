@@ -94,6 +94,8 @@ pub trait Converter {
 
     async fn set_voltage(&mut self, voltage: u16) -> Result<(), ()>;
     fn set_current(&mut self, current: u16) -> Result<(), ()>;
+
+    fn dump_registers<const N: usize>(&mut self, buf: &mut heapless::String<N>) -> Result<(), ()>;
 }
 
 pub struct ConverterDevice<'a, M: RawMutex, BUS: I2c> {
@@ -273,4 +275,40 @@ where
 
         Ok(())
     }
+
+    fn dump_registers<const N: usize>(&mut self, buf: &mut heapless::String<N>) -> Result<(), ()> {
+        let addr = self.i2c.address();
+        let _ = buf.push_str("TPS55289 @ 0x");
+        push_hex_u8(buf, addr);
+        let _ = buf.push_str(" (I2C0)|");
+
+        let names = [
+            "REF_LSB", "REF_MSB", "IOUT_LIMIT", "VOUT_SR", "VOUT_FS", "CDC", "MODE", "STATUS",
+        ];
+
+        let mut regs = [0u8; 8];
+        self.i2c.write_read(&[REF_LSB], &mut regs).map_err(|_| ())?;
+
+        for (i, name) in names.iter().enumerate() {
+            if i > 0 {
+                let _ = buf.push('|');
+            }
+            push_hex_u8(buf, i as u8);
+            let _ = buf.push(' ');
+            let _ = buf.push_str(name);
+            for _ in name.len()..12 {
+                let _ = buf.push(' ');
+            }
+            let _ = buf.push(' ');
+            push_hex_u8(buf, regs[i]);
+        }
+
+        Ok(())
+    }
+}
+
+fn push_hex_u8<const N: usize>(buf: &mut heapless::String<N>, value: u8) {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+    let _ = buf.push(HEX[(value >> 4) as usize] as char);
+    let _ = buf.push(HEX[(value & 0x0F) as usize] as char);
 }

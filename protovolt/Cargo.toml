@@ -24,11 +24,12 @@ embedded-storage = "0.3.1"
 cortex-m-rt = "0.7.3"
 
 embassy-embedded-hal = { version = "0.3.0", features = ["defmt"] }
-embassy-executor = { version = "0.7", features = ["task-arena-size-2048", "arch-cortex-m", "executor-thread", "defmt", "executor-interrupt"] }
+embassy-executor = { version = "0.7", features = ["task-arena-size-8192", "arch-cortex-m", "executor-thread", "defmt", "executor-interrupt"] }
 embassy-sync = { version = "0.6" }
 embassy-time = { version = "0.4", features = ["defmt", "defmt-timestamp-uptime"] }
 cortex-m = { version = "0.7.6" }
 embassy-rp = { version = "0.4", features = ["defmt", "unstable-pac", "time-driver", "critical-section-impl", "rp2040"] }
+embassy-usb = { version = "0.4", features = ["defmt"] }
 
 portable-atomic = { version = "1.5", features = ["critical-section"] }
 critical-section = "1.1"
