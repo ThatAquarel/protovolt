@@ -767,7 +767,7 @@ impl App {
             }
             ScpiCommand::IdnQuery => ScpiHandleResult {
                 response: Self::push_response_text(concat!(
-                    "FBRD Inc.,ProtoV-MINI,00000000,",
+                    "FBRD Inc.,ProtoV MINI,00000000,",
                     env!("CARGO_PKG_VERSION"),
                     ",A.1"
                 )),
