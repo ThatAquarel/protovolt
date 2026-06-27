@@ -38,6 +38,7 @@ pub mod measure;
 pub mod power;
 pub mod temperature;
 
+use crate::hal::converter::ConverterFlags;
 use event::Channel as ConverterChannel;
 
 pub struct Hal<'a, M: RawMutex, BUS: I2c> {
@@ -89,10 +90,13 @@ where
         }
     }
 
-    pub fn poll_converter_status(&mut self, channel: OutputChannel) -> Result<ChannelHardwareState, ()> {
+    pub fn poll_converter_status(
+        &mut self,
+        channel: OutputChannel,
+    ) -> Result<ConverterFlags, ()> {
         match channel {
-            OutputChannel::A => self.ch_a.get_status(),
-            OutputChannel::B => self.ch_b.get_status(),
+            OutputChannel::A => self.ch_a.read_flags(),
+            OutputChannel::B => self.ch_b.read_flags(),
         }
     }
 
@@ -298,7 +302,7 @@ macro_rules! converter_irq_task {
                     .wait_for_falling_edge()
                     .await;
 
-                defmt::warn!("converter IRQ triggered");
+                // defmt::warn!("converter IRQ triggered");
 
                 data_channel
                     .send(HardwareEvent::PollConverterStatusInterrupt($channel))

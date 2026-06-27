@@ -18,7 +18,7 @@ pub enum HardwareEvent {
 
     ReadoutAcquired(Channel, Readout),
     TempAcquired(TemperatureReading),
-    ConverterStatusAcquired(Channel, ChannelHardwareState),
+    ConverterStatusAcquired(Channel, crate::hal::converter::ConverterFlags),
 
     PollConverterStatusInterrupt(Channel),
 }
@@ -63,6 +63,30 @@ pub enum ChannelHardwareState {
     OverTemperature,    //                                          || temp sensors
     OverCurrent,        //                                          || Isense
     OverVoltage,        // OVP flag, converter                      || Vsense
+}
+
+impl ChannelHardwareState {
+    pub fn is_fault(self) -> bool {
+        matches!(
+            self,
+            ChannelHardwareState::ShortCircuit
+                | ChannelHardwareState::OverTemperature
+                | ChannelHardwareState::OverCurrent
+                | ChannelHardwareState::OverVoltage
+        )
+    }
+
+    pub fn mode_str(self) -> &'static str {
+        match self {
+            ChannelHardwareState::Off => "OFF",
+            ChannelHardwareState::ConstantVoltage => "CV",
+            ChannelHardwareState::ConstantCurrent => "CC",
+            ChannelHardwareState::ShortCircuit => "SHORT",
+            ChannelHardwareState::OverTemperature => "TEMP",
+            ChannelHardwareState::OverCurrent => "OCP",
+            ChannelHardwareState::OverVoltage => "OVP",
+        }
+    }
 }
 
 impl Default for PowerType {
@@ -189,7 +213,7 @@ pub enum Task {
     Display(DisplayTask),
 }
 
-const APP_TASK_SIZE_LIMIT: usize = 8;
+const APP_TASK_SIZE_LIMIT: usize = 12;
 
 pub struct AppTask {
     pub tasks: [Option<Task>; APP_TASK_SIZE_LIMIT],
@@ -242,7 +266,7 @@ impl AppTaskBuilder {
             self.inner.tasks[self.inner.count] = Some(task);
             self.inner.count += 1;
         } else {
-            warn!("AppTaskBuilder tasks overflow");
+            error!("AppTaskBuilder tasks overflow");
         };
 
         self

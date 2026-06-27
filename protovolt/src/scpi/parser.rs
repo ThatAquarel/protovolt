@@ -52,6 +52,7 @@ pub enum ChannelParam {
     Ovp,
     Ocp,
     Colr,
+    Mode,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -259,6 +260,7 @@ fn parse_channel_query(s: &str) -> Option<(ScpiChannel, ChannelParam)> {
             (":OVP?", ChannelParam::Ovp),
             (":OCP?", ChannelParam::Ocp),
             (":COLR?", ChannelParam::Colr),
+            (":MODE?", ChannelParam::Mode),
         ] {
             if ch_prefix_matches(s, ch_str, suffix) {
                 return Some((ch, param));

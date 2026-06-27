@@ -274,7 +274,7 @@ async fn main(spawner: Spawner) {
             match hw_event {
                 HardwareEvent::TempAcquired(temp) => {
                     last_temp = temp;
-                    tasks = append_app_event(tasks, &mut app, AppEvent::Hardware(hw_event));
+                    tasks = append_app_event(tasks, &mut app, scpi_state, AppEvent::Hardware(hw_event));
                 }
                 HardwareEvent::PowerDeliveryReady(power_type) => {
                     match power_type {
@@ -292,6 +292,7 @@ async fn main(spawner: Spawner) {
                     tasks = append_app_event(
                         tasks,
                         &mut app,
+                        scpi_state,
                         AppEvent::Hardware(HardwareEvent::PowerDeliveryReady(power_type)),
                     );
                 }
@@ -300,7 +301,7 @@ async fn main(spawner: Spawner) {
                     OutputChannel::B => pending_readout_b = Some(readout),
                 },
                 other => {
-                    tasks = append_app_event(tasks, &mut app, AppEvent::Hardware(other));
+                    tasks = append_app_event(tasks, &mut app, scpi_state, AppEvent::Hardware(other));
                 }
             }
         }
@@ -309,6 +310,7 @@ async fn main(spawner: Spawner) {
             tasks = append_app_event(
                 tasks,
                 &mut app,
+                scpi_state,
                 AppEvent::Hardware(HardwareEvent::ReadoutAcquired(OutputChannel::A, readout)),
             );
         }
@@ -316,6 +318,7 @@ async fn main(spawner: Spawner) {
             tasks = append_app_event(
                 tasks,
                 &mut app,
+                scpi_state,
                 AppEvent::Hardware(HardwareEvent::ReadoutAcquired(OutputChannel::B, readout)),
             );
         }
@@ -325,11 +328,11 @@ async fn main(spawner: Spawner) {
             last_ui_event = Some(ui_event);
         }
         if let Some(ui_event) = last_ui_event {
-            tasks = append_app_event(tasks, &mut app, AppEvent::Interface(ui_event));
+            tasks = append_app_event(tasks, &mut app, scpi_state, AppEvent::Interface(ui_event));
         }
 
         poll_counter = poll_counter.wrapping_add(1);
-        if app.is_standby() && poll_counter >= 100 {
+        if app.is_standby() && poll_counter >= 20 {
             poll_counter = 0;
             tasks = tasks
                 .hardware(HardwareTask::PollConverterStatus(OutputChannel::A))
@@ -363,9 +366,10 @@ async fn main(spawner: Spawner) {
 fn append_app_event(
     mut tasks: AppTaskBuilder,
     app: &mut App,
+    scpi: &mut ScpiState,
     event: AppEvent,
 ) -> AppTaskBuilder {
-    if let Some(produced) = app.handle_event(event) {
+    if let Some(produced) = app.handle_event(event, scpi) {
         tasks = tasks.extend(app_task_into_builder(produced));
     }
     tasks

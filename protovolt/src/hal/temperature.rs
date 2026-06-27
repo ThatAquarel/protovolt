@@ -11,7 +11,7 @@ mod temp_ntc {
     pub const T0: f32 = 298.15;        // 25C in Kelvin
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct TemperatureReading {
     pub ch_a: f32,
     pub ch_b: f32,

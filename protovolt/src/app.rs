@@ -1,11 +1,13 @@
 use embassy_time::Duration;
 use micromath::F32Ext;
 
+use crate::hal::converter::ConverterFlags;
 use crate::hal::event::{
     AppEvent, AppTask, AppTaskBuilder, Change, Channel, ChannelFocus, ChannelHardwareState,
     ConfirmState, DisplayTask, FunctionButton, HardwareEvent, HardwareTask, InterfaceEvent, Limits,
     PowerType, Readout, SetState,
 };
+use crate::hal::temperature::TemperatureReading;
 use crate::scpi::parser::{
     ChannelParam, MeasKind, ScpiCommand,
 };
@@ -15,6 +17,9 @@ use crate::scpi::telemetry;
 use crate::scpi::{ScpiChannel, ScpiContext, ScpiHandleResult, ScpiResponse, RESPONSE_BUF};
 use crate::ui::fmt::format_f32;
 
+#[path = "app/protection.rs"]
+mod protection;
+
 #[derive(Default)]
 pub struct App {
     power_type: PowerType,
@@ -22,6 +27,8 @@ pub struct App {
 
     interface_state: InterfaceState,
     hardware_state: HardwareState,
+
+    last_temp: TemperatureReading,
 
     ch_a: ChannelState,
     ch_b: ChannelState,
@@ -161,6 +168,7 @@ struct ChannelState {
     pub enable: bool,
 
     pub hw_state: ChannelHardwareState,
+    pub converter_flags: Option<ConverterFlags>,
 
     pub set_select: SetSelect,
 
@@ -184,6 +192,7 @@ impl Default for ChannelState {
         Self {
             enable: false,
             hw_state: Default::default(),
+            converter_flags: None,
             target: VoltageCurrentWithSetter::new(
                 target_limits,
                 (0.2, 20.0), // voltage range
@@ -234,14 +243,18 @@ enum Screen {
 }
 
 impl App {
-    pub fn handle_event(&mut self, event: AppEvent) -> Option<AppTask> {
+    pub fn handle_event(&mut self, event: AppEvent, scpi: &mut ScpiState) -> Option<AppTask> {
         match event {
-            AppEvent::Hardware(hw) => self.handle_hardware_event(hw),
-            AppEvent::Interface(ui) => self.handle_interface_event(ui),
+            AppEvent::Hardware(hw) => self.handle_hardware_event(hw, scpi),
+            AppEvent::Interface(ui) => self.handle_interface_event(ui, scpi),
         }
     }
 
-    fn handle_hardware_event(&mut self, event: HardwareEvent) -> Option<AppTask> {
+    fn handle_hardware_event(
+        &mut self,
+        event: HardwareEvent,
+        scpi: &mut ScpiState,
+    ) -> Option<AppTask> {
         match (&self.hardware_state, event) {
             (HardwareState::PowerOn, HardwareEvent::PowerOn) => {
                 self.hardware_state = HardwareState::WaitingForPowerDelivery;
@@ -301,9 +314,12 @@ impl App {
                 };
                 *current_readout = Some(readout);
 
-                AppTaskBuilder::display_task(DisplayTask::UpdateReadout(channel, readout))
+                self.update_hw_state(scpi, channel)
+                    .display(DisplayTask::UpdateReadout(channel, readout))
+                    .build()
             }
             (HardwareState::Standby, HardwareEvent::TempAcquired(temperature)) => {
+                self.last_temp = temperature;
                 defmt::info!(
                     "ch_a {} ch_b {} mcu {}",
                     temperature.ch_a,
@@ -311,23 +327,17 @@ impl App {
                     temperature.mcu
                 );
 
-                None
+                self.update_all_hw_states(scpi).build()
             }
             (
                 HardwareState::Standby,
-                HardwareEvent::ConverterStatusAcquired(channel, new_hw_state),
+                HardwareEvent::ConverterStatusAcquired(channel, flags),
             ) => {
                 match channel {
-                    Channel::A => self.ch_a.hw_state = new_hw_state,
-                    Channel::B => self.ch_b.hw_state = new_hw_state,
-                };
-
-                let focus = self.focus_for(channel);
-                AppTaskBuilder::display_task(DisplayTask::UpdateChannelHardwareState(
-                    channel,
-                    focus,
-                    new_hw_state,
-                ))
+                    Channel::A => self.ch_a.converter_flags = Some(flags),
+                    Channel::B => self.ch_b.converter_flags = Some(flags),
+                }
+                self.update_hw_state(scpi, channel).build()
             }
             (HardwareState::Standby, HardwareEvent::PollConverterStatusInterrupt(channel)) => {
                 AppTaskBuilder::new()
@@ -338,7 +348,11 @@ impl App {
         }
     }
 
-    fn handle_interface_event(&mut self, event: InterfaceEvent) -> Option<AppTask> {
+    fn handle_interface_event(
+        &mut self,
+        event: InterfaceEvent,
+        _scpi: &mut ScpiState,
+    ) -> Option<AppTask> {
         match event {
             InterfaceEvent::ButtonSettings(change) => match change {
                 Change::Pressed => self
@@ -463,6 +477,11 @@ impl App {
                 let mut set_value_override = false;
                 if selected_channel.as_ref() == Some(&event_channel) {
                     current_state.enable = !current_state.enable;
+                    current_state.hw_state = if current_state.enable {
+                        ChannelHardwareState::ConstantVoltage
+                    } else {
+                        ChannelHardwareState::Off
+                    };
                     converter_update_task = converter_update_task
                         .hardware(HardwareTask::UpdateConverterState(
                             event_channel,
@@ -479,8 +498,7 @@ impl App {
                     self.shift_channel_focus_task(event_channel)
                         .extend(self.current_confirm_state_button_task(None))
                 } else {
-                    self.shift_channel_focus_task(event_channel)
-                        .extend(converter_update_task)
+                    converter_update_task.extend(self.shift_channel_focus_task(event_channel))
                 }
                 .build()
             }
@@ -587,6 +605,138 @@ impl App {
                 confirm_state,
                 select_precision,
             ))
+    }
+
+    fn scpi_channel(channel: Channel) -> ScpiChannel {
+        match channel {
+            Channel::A => ScpiChannel::Ch1,
+            Channel::B => ScpiChannel::Ch2,
+        }
+    }
+
+    fn header_chip_task(&self, channel: Channel) -> AppTaskBuilder {
+        let hw_state = self.channel_ref(channel).hw_state;
+        AppTaskBuilder::new().display(DisplayTask::UpdateChannelHardwareState(
+            channel,
+            self.focus_for(channel),
+            hw_state,
+        ))
+    }
+
+    fn refresh_channels_display(&self) -> AppTaskBuilder {
+        let (focus_a, focus_b) = self.channel_focuses();
+        let function_button = match self.interface_state.arrows_function {
+            ArrowsFunction::Navigation => None,
+            ArrowsFunction::SetpointEdit => Some(FunctionButton::Enter),
+        };
+        AppTaskBuilder::new()
+            .display(DisplayTask::UpdateChannelFocus(
+                focus_a,
+                focus_b,
+                self.ch_a.hw_state,
+                self.ch_b.hw_state,
+            ))
+            .display(DisplayTask::UpdateButton(
+                self.get_confirm_state(),
+                function_button,
+            ))
+    }
+
+    fn derive_channel_hw_state(&self, channel: Channel, scpi: &ScpiState) -> ChannelHardwareState {
+        let ch = self.channel_ref(channel);
+        protection::derive_hw_state(
+            channel,
+            ch.enable,
+            ch.converter_flags,
+            ch.readout,
+            ch.limits.get_limits(),
+            &self.last_temp,
+            scpi.prot_latched(Self::scpi_channel(channel)),
+            ch.hw_state,
+        )
+    }
+
+    fn trip_channel(
+        &mut self,
+        scpi: &mut ScpiState,
+        channel: Channel,
+        fault: ChannelHardwareState,
+    ) -> AppTaskBuilder {
+        let state = self.channel_mut(channel);
+        state.enable = false;
+        state.hw_state = fault;
+        scpi.set_prot_latched(Some(Self::scpi_channel(channel)), true);
+
+        AppTaskBuilder::new()
+            .hardware(HardwareTask::UpdateConverterState(channel, false))
+            .extend(self.refresh_channels_display())
+    }
+
+    fn trip_both_channels(
+        &mut self,
+        scpi: &mut ScpiState,
+        fault: ChannelHardwareState,
+    ) -> AppTaskBuilder {
+        for ch in [Channel::A, Channel::B] {
+            let state = self.channel_mut(ch);
+            state.enable = false;
+            state.hw_state = fault;
+        }
+        scpi.set_prot_latched(None, true);
+
+        AppTaskBuilder::new()
+            .hardware(HardwareTask::UpdateConverterState(Channel::A, false))
+            .hardware(HardwareTask::UpdateConverterState(Channel::B, false))
+            .extend(self.refresh_channels_display())
+    }
+
+    pub fn update_hw_state(&mut self, scpi: &mut ScpiState, channel: Channel) -> AppTaskBuilder {
+        if protection::mcu_overtemp(&self.last_temp) {
+            if self.ch_a.enable || self.ch_b.enable {
+                return self.trip_both_channels(scpi, ChannelHardwareState::OverTemperature);
+            }
+            let mut tasks = AppTaskBuilder::new();
+            let mut changed = false;
+            for ch in [Channel::A, Channel::B] {
+                if self.channel_ref(ch).hw_state != ChannelHardwareState::OverTemperature {
+                    self.channel_mut(ch).hw_state = ChannelHardwareState::OverTemperature;
+                    changed = true;
+                }
+            }
+            if changed {
+                tasks = tasks.extend(self.refresh_channels_display());
+            }
+            return tasks;
+        }
+
+        let derived = self.derive_channel_hw_state(channel, scpi);
+        let prev = self.channel_ref(channel).hw_state;
+        let prot = scpi.prot_latched(Self::scpi_channel(channel));
+
+        if protection::is_fault_state(derived) {
+            if !prot || self.channel_ref(channel).enable {
+                return self.trip_channel(scpi, channel, derived);
+            }
+            if derived != prev {
+                self.channel_mut(channel).hw_state = derived;
+                return self.header_chip_task(channel);
+            }
+            return AppTaskBuilder::new();
+        }
+
+        if derived != prev {
+            self.channel_mut(channel).hw_state = derived;
+            return self.header_chip_task(channel);
+        }
+        AppTaskBuilder::new()
+    }
+
+    pub fn update_all_hw_states(&mut self, scpi: &mut ScpiState) -> AppTaskBuilder {
+        if protection::mcu_overtemp(&self.last_temp) {
+            return self.update_hw_state(scpi, Channel::A);
+        }
+        self.update_hw_state(scpi, Channel::A)
+            .extend(self.update_hw_state(scpi, Channel::B))
     }
 
     fn focus_for(&self, channel: Channel) -> ChannelFocus {
@@ -941,22 +1091,34 @@ impl App {
             }
             ScpiCommand::ChannelQuery { channel, param } => {
                 let state = self.scpi_channel_ref(channel);
-                let value = match param {
-                    ChannelParam::Volt => state.target.voltage.value(),
-                    ChannelParam::Curr => state.target.current.value(),
-                    ChannelParam::Ovp => state.limits.voltage.value(),
-                    ChannelParam::Ocp => state.limits.current.value(),
+                match param {
                     ChannelParam::Colr => {
                         let rgb = scpi.color(channel);
-                        return ScpiHandleResult {
+                        ScpiHandleResult {
                             response: Self::push_response_text(colors::format_rgb(rgb).as_str()),
                             tasks: None,
-                        };
+                        }
                     }
-                };
-                ScpiHandleResult {
-                    response: Self::push_response_f32(value),
-                    tasks: None,
+                    ChannelParam::Mode => ScpiHandleResult {
+                        response: Self::push_response_text(state.hw_state.mode_str()),
+                        tasks: None,
+                    },
+                    ChannelParam::Volt => ScpiHandleResult {
+                        response: Self::push_response_f32(state.target.voltage.value()),
+                        tasks: None,
+                    },
+                    ChannelParam::Curr => ScpiHandleResult {
+                        response: Self::push_response_f32(state.target.current.value()),
+                        tasks: None,
+                    },
+                    ChannelParam::Ovp => ScpiHandleResult {
+                        response: Self::push_response_f32(state.limits.voltage.value()),
+                        tasks: None,
+                    },
+                    ChannelParam::Ocp => ScpiHandleResult {
+                        response: Self::push_response_f32(state.limits.current.value()),
+                        tasks: None,
+                    },
                 }
             }
             ScpiCommand::OutputQuery { channel } => {
@@ -1090,7 +1252,7 @@ impl App {
                         ChannelParam::Curr => state.target.current.set_value(value),
                         ChannelParam::Ovp => state.limits.voltage.set_value(value),
                         ChannelParam::Ocp => state.limits.current.set_value(value),
-                        ChannelParam::Colr => unreachable!(),
+                        ChannelParam::Colr | ChannelParam::Mode => unreachable!(),
                     }
                 }
                 if matches!(param, ChannelParam::Volt | ChannelParam::Curr) {
@@ -1132,10 +1294,17 @@ impl App {
             }
             ScpiCommand::OutputSet { channel, on } => {
                 let hal_ch = channel.to_hal();
-                self.scpi_channel_mut(channel).enable = on;
+                let state = self.scpi_channel_mut(channel);
+                state.enable = on;
+                state.hw_state = if on {
+                    ChannelHardwareState::ConstantVoltage
+                } else {
+                    ChannelHardwareState::Off
+                };
                 self.interface_state.selected_channel = Some(hal_ch);
                 let tasks = AppTaskBuilder::new()
                     .hardware(HardwareTask::UpdateConverterState(hal_ch, on))
+                    .hardware(HardwareTask::PollConverterStatus(hal_ch))
                     .extend(self.shift_channel_focus_task(hal_ch))
                     .build();
                 ScpiHandleResult {
@@ -1147,23 +1316,23 @@ impl App {
                 scpi.set_prot_latched(channel, false);
                 for ch in [Channel::A, Channel::B] {
                     if channel.map(|c| c.to_hal()) == Some(ch) || channel.is_none() {
-                        let state = self.channel_mut(ch);
-                        if matches!(
-                            state.hw_state,
-                            ChannelHardwareState::OverCurrent
-                                | ChannelHardwareState::OverVoltage
-                        ) {
-                            state.hw_state = if state.enable {
-                                ChannelHardwareState::ConstantVoltage
-                            } else {
-                                ChannelHardwareState::Off
-                            };
+                        if protection::is_fault_state(self.channel_ref(ch).hw_state) {
+                            self.channel_mut(ch).hw_state = ChannelHardwareState::Off;
                         }
+                    }
+                }
+                let mut tasks = AppTaskBuilder::new();
+                match channel {
+                    None => {
+                        tasks = tasks.extend(self.update_all_hw_states(scpi));
+                    }
+                    Some(ch) => {
+                        tasks = tasks.extend(self.update_hw_state(scpi, ch.to_hal()));
                     }
                 }
                 ScpiHandleResult {
                     response: ScpiResponse::none(),
-                    tasks: None,
+                    tasks: tasks.build(),
                 }
             }
         }
