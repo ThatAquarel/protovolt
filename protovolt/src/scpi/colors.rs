@@ -3,31 +3,10 @@ use core::fmt::Write;
 use embedded_graphics::pixelcolor::Rgb565;
 use smart_leds::RGB8;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct Rgb {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-}
-
-pub const DEFAULT_CH1: Rgb = Rgb {
-    r: 234,
-    g: 67,
-    b: 53,
+pub use crate::config::{
+    DARKEN_DEN, DARKEN_NUM, DEFAULT_CH1, DEFAULT_CH2, DEFAULT_LCD_BRIGHTNESS,
+    DEFAULT_LED_BRIGHTNESS, Rgb,
 };
-
-pub const DEFAULT_CH2: Rgb = Rgb {
-    r: 66,
-    g: 133,
-    b: 244,
-};
-
-pub const DEFAULT_LED_BRIGHTNESS: u8 = 10;
-pub const DEFAULT_LCD_BRIGHTNESS: u8 = 255;
-
-/// CSS #FF0000 → #8B0000 per-channel ratio.
-const DARKEN_NUM: u32 = 139;
-const DARKEN_DEN: u32 = 255;
 
 pub fn darken(rgb: Rgb) -> Rgb {
     Rgb {
@@ -42,11 +21,7 @@ fn scale_channel(c: u8) -> u8 {
 }
 
 pub fn to_rgb565(rgb: Rgb) -> Rgb565 {
-    Rgb565::new(
-        rgb.r >> 3,
-        rgb.g >> 2,
-        rgb.b >> 3,
-    )
+    Rgb565::new(rgb.r >> 3, rgb.g >> 2, rgb.b >> 3)
 }
 
 pub fn scale_led(rgb: Rgb, brightness: u8) -> RGB8 {

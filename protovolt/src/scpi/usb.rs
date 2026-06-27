@@ -6,14 +6,12 @@ use embassy_usb::driver::EndpointError;
 use embassy_usb::UsbDevice;
 use static_cell::StaticCell;
 
+use crate::config::{MANUFACTURER, PRODUCT_NAME, SERIAL_NUMBER, USB_MAX_POWER_MA, USB_PID, USB_VID};
 use crate::scpi::parser::{parse_command, ScpiCommand};
 use crate::scpi::{LINE_BUF, SCPI_CMD, SCPI_RESP};
 
 /// Bus power budget in the configuration descriptor (embassy-usb: milliamps).
 /// ProtoV is PD-powered; keep this modest for the RP2040 USB PHY only.
-const USB_MAX_POWER_MA: u16 = 500;
-
-/// Let the host finish SET_CONFIGURATION before any blocking init runs.
 pub const USB_ENUM_GRACE_MS: u64 = 250;
 
 type MyDriver = Driver<'static, embassy_rp::peripherals::USB>;
@@ -32,10 +30,10 @@ pub fn build_usb_cdc(driver: MyDriver) -> UsbCdcResources {
     static STATE: StaticCell<State> = StaticCell::new();
     static CLASS: StaticCell<MyCdcClass> = StaticCell::new();
 
-    let mut config = embassy_usb::Config::new(0x2E8A, 0x111F);
-    config.manufacturer = Some("FBRD Inc.");
-    config.product = Some("ProtoV MINI");
-    config.serial_number = Some("00000000");
+    let mut config = embassy_usb::Config::new(USB_VID, USB_PID);
+    config.manufacturer = Some(MANUFACTURER);
+    config.product = Some(PRODUCT_NAME);
+    config.serial_number = Some(SERIAL_NUMBER);
     config.max_power = USB_MAX_POWER_MA;
     config.max_packet_size_0 = 64;
 

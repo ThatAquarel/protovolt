@@ -85,10 +85,12 @@ pub struct ScpiContext {
 
 impl Default for ScpiContext {
     fn default() -> Self {
+        use crate::config::{BOOT_TEMP_CH_A, BOOT_TEMP_CH_B, BOOT_TEMP_MCU};
+
         Self {
-            temp_ch_a: 28.0,
-            temp_ch_b: 27.5,
-            temp_mcu: 34.0,
+            temp_ch_a: BOOT_TEMP_CH_A,
+            temp_ch_b: BOOT_TEMP_CH_B,
+            temp_mcu: BOOT_TEMP_MCU,
             input_type_pd: true,
             input_voltage: 20.0,
             input_current: 0.35,

@@ -2,6 +2,7 @@
 #![no_main]
 
 mod app;
+mod config;
 mod hal;
 mod scpi;
 mod task;
@@ -145,9 +146,9 @@ async fn main(spawner: Spawner) {
 
     let scpi_state = SCPI_STATE.init(ScpiState::default());
     let mut last_temp = TemperatureReading {
-        ch_a: 28.0,
-        ch_b: 27.5,
-        mcu: 34.0,
+        ch_a: config::BOOT_TEMP_CH_A,
+        ch_b: config::BOOT_TEMP_CH_B,
+        mcu: config::BOOT_TEMP_MCU,
     };
     let mut input_voltage = 20.0f32;
     let mut input_current = 0.35f32;

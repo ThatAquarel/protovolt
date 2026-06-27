@@ -1,6 +1,10 @@
 use embassy_time::Duration;
 use micromath::F32Ext;
 
+use crate::config::{
+    format_idn, ChannelProfile, CURRENT_EDIT_RANGE, FACTORY, SCPI_SYSTEM_VERSION,
+    VOLTAGE_EDIT_RANGE,
+};
 use crate::hal::converter::ConverterFlags;
 use crate::hal::event::{
     AppEvent, AppTask, AppTaskBuilder, Change, Channel, ChannelFocus, ChannelHardwareState,
@@ -20,7 +24,6 @@ use crate::ui::fmt::format_f32;
 #[path = "app/protection.rs"]
 mod protection;
 
-#[derive(Default)]
 pub struct App {
     power_type: PowerType,
     set_state: SetState,
@@ -178,15 +181,15 @@ struct ChannelState {
     pub readout: Option<Readout>,
 }
 
-impl Default for ChannelState {
-    fn default() -> Self {
+impl ChannelState {
+    fn from_profile(profile: &ChannelProfile) -> Self {
         let target_limits = Limits {
-            voltage: 5.000,
-            current: 1.000,
+            voltage: profile.voltage_set,
+            current: profile.current_set,
         };
         let max_limits = Limits {
-            voltage: 20.000,
-            current: 5.000,
+            voltage: profile.ovp,
+            current: profile.ocp,
         };
 
         Self {
@@ -195,10 +198,14 @@ impl Default for ChannelState {
             converter_flags: None,
             target: VoltageCurrentWithSetter::new(
                 target_limits,
-                (0.2, 20.0), // voltage range
-                (0.0, 5.0),  // current range
+                VOLTAGE_EDIT_RANGE,
+                CURRENT_EDIT_RANGE,
             ),
-            limits: VoltageCurrentWithSetter::new(max_limits, (0.2, 20.0), (0.0, 5.0)),
+            limits: VoltageCurrentWithSetter::new(
+                max_limits,
+                VOLTAGE_EDIT_RANGE,
+                CURRENT_EDIT_RANGE,
+            ),
             set_select: Default::default(),
             readout: None,
         }
@@ -210,6 +217,20 @@ pub enum ArrowsFunction {
     #[default]
     Navigation,
     SetpointEdit,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self {
+            power_type: Default::default(),
+            set_state: Default::default(),
+            interface_state: Default::default(),
+            hardware_state: Default::default(),
+            last_temp: Default::default(),
+            ch_a: ChannelState::from_profile(&FACTORY.ch1),
+            ch_b: ChannelState::from_profile(&FACTORY.ch2),
+        }
+    }
 }
 
 #[derive(Default)]
@@ -933,20 +954,8 @@ impl App {
     }
 
     fn default_reset_channels(&mut self) {
-        // TODO: override defaults.
-        let defaults = [
-            (ScpiChannel::Ch1, 3.3, 0.5, 18.0, 1.0),
-            (ScpiChannel::Ch2, 5.0, 2.0, 6.0, 3.0),
-        ];
-        for (ch, v, i, ovp, ocp) in defaults {
-            let state = self.scpi_channel_mut(ch);
-            state.target.voltage.set_value(v);
-            state.target.current.set_value(i);
-            state.limits.voltage.set_value(ovp);
-            state.limits.current.set_value(ocp);
-            state.enable = false;
-            state.hw_state = ChannelHardwareState::Off;
-        }
+        self.ch_a = ChannelState::from_profile(&FACTORY.ch1);
+        self.ch_b = ChannelState::from_profile(&FACTORY.ch2);
     }
 
     fn format_f32_3(value: f32) -> heapless::String<16> {
@@ -1000,16 +1009,16 @@ impl App {
                     tasks: None,
                 }
             }
-            ScpiCommand::IdnQuery => ScpiHandleResult {
-                response: Self::push_response_text(concat!(
-                    "FBRD Inc.,ProtoV MINI,00000011,",
-                    env!("CARGO_PKG_VERSION"),
-                    ",A.1"
-                )),
-                tasks: None,
-            },
+            ScpiCommand::IdnQuery => {
+                let mut buf = heapless::String::<RESPONSE_BUF>::new();
+                format_idn(&mut buf);
+                ScpiHandleResult {
+                    response: ScpiResponse::with_text(buf),
+                    tasks: None,
+                }
+            }
             ScpiCommand::SystVersQuery => ScpiHandleResult {
-                response: Self::push_response_text("1999.0"),
+                response: Self::push_response_text(SCPI_SYSTEM_VERSION),
                 tasks: None,
             },
             ScpiCommand::SystErrQuery => {

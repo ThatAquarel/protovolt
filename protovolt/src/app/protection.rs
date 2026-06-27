@@ -2,8 +2,7 @@ use crate::hal::converter::ConverterFlags;
 use crate::hal::event::{Channel, ChannelHardwareState, Limits, Readout};
 use crate::hal::temperature::TemperatureReading;
 
-pub const MCU_OTP_C: f32 = 50.0;
-pub const CH_OTP_C: f32 = 55.0;
+pub use crate::config::{CH_OTP_C, MCU_OTP_C};
 
 pub fn is_fault_state(state: ChannelHardwareState) -> bool {
     state.is_fault()

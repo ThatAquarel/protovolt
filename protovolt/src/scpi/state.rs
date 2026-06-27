@@ -1,6 +1,7 @@
 use heapless::Vec;
 
-use crate::scpi::{ScpiChannel, colors::{self, Rgb, DEFAULT_CH1, DEFAULT_CH2, DEFAULT_LCD_BRIGHTNESS, DEFAULT_LED_BRIGHTNESS}};
+use crate::config::FACTORY;
+use crate::scpi::{ScpiChannel, colors::{self, Rgb}};
 
 pub const ERR_QUEUE_SIZE: usize = 8;
 pub const SAVE_SLOTS: usize = 9;
@@ -48,12 +49,13 @@ impl Default for SlotSnapshot {
 
 impl Default for ScpiState {
     fn default() -> Self {
+        let appearance = FACTORY.appearance;
         Self {
             remote: true,
-            ch1_color: DEFAULT_CH1,
-            ch2_color: DEFAULT_CH2,
-            lcd_brightness: DEFAULT_LCD_BRIGHTNESS,
-            led_brightness: DEFAULT_LED_BRIGHTNESS,
+            ch1_color: appearance.ch1,
+            ch2_color: appearance.ch2,
+            lcd_brightness: appearance.lcd_brightness,
+            led_brightness: appearance.led_brightness,
             prot_latched: [false; 2],
             error_queue: Vec::new(),
             save_slots: [SlotSnapshot::default(); SAVE_SLOTS],
@@ -93,10 +95,11 @@ impl ScpiState {
     }
 
     pub fn reset_appearance(&mut self) {
-        self.ch1_color = DEFAULT_CH1;
-        self.ch2_color = DEFAULT_CH2;
-        self.lcd_brightness = DEFAULT_LCD_BRIGHTNESS;
-        self.led_brightness = DEFAULT_LED_BRIGHTNESS;
+        let appearance = FACTORY.appearance;
+        self.ch1_color = appearance.ch1;
+        self.ch2_color = appearance.ch2;
+        self.lcd_brightness = appearance.lcd_brightness;
+        self.led_brightness = appearance.led_brightness;
     }
 
     pub fn color_for_hal(&self, ch: crate::hal::event::Channel) -> Rgb {
