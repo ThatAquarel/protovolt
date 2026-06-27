@@ -1,5 +1,7 @@
 use core::fmt::Write;
 use heapless::String;
+
+#[allow(unused_imports)]
 use micromath::F32Ext;
 
 pub fn format_f32<const N: usize>(value: f32, decimals: u32) -> String<N> {
