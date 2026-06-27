@@ -2,7 +2,8 @@ use core::cell::RefCell;
 
 use embassy_rp::{
     adc::{self, Adc, AdcPin},
-    gpio::{AnyPin, Pull}, peripherals::ADC_TEMP_SENSOR,
+    gpio::{AnyPin, Input, Pull},
+    peripherals::{ADC_TEMP_SENSOR, PIN_14, PIN_15},
 };
 use embassy_sync::{
     blocking_mutex::{
@@ -11,14 +12,14 @@ use embassy_sync::{
     },
     channel::{Channel, Receiver, Sender},
 };
-use embassy_time::{Duration, Timer, Ticker};
+use embassy_time::{Duration, Timer, Ticker, WithTimeout};
 use embedded_hal::i2c::I2c;
 
 use crate::{
-    StaticI2c1,
+    HardwareChannelSender, StaticI2c1,
     hal::{
         converter::{Converter, ConverterDevice},
-        event::{Channel as OutputChannel, HardwareEvent},
+        event::{Channel as OutputChannel, ChannelHardwareState, HardwareEvent},
         measure::{Measure, MeasureDevice},
         temperature::{Temperature, TemperatureDevice},
     },
@@ -35,6 +36,8 @@ pub mod converter;
 pub mod measure;
 pub mod power;
 pub mod temperature;
+
+use event::Channel as ConverterChannel;
 
 pub struct Hal<'a, M: RawMutex, BUS: I2c> {
     ch_a: ConverterDevice<'a, M, BUS>,
@@ -85,8 +88,11 @@ where
         }
     }
 
-    pub fn poll_converter_status(&mut self) -> Result<(), ()> {
-        self.ch_a.get_status()
+    pub fn poll_converter_status(&mut self, channel: OutputChannel) -> Result<ChannelHardwareState, ()> {
+        match channel {
+            OutputChannel::A => self.ch_a.get_status(),
+            OutputChannel::B => self.ch_b.get_status(),
+        }
     }
 
     pub async fn update_converter_voltage(
@@ -180,7 +186,7 @@ async fn service_ina226_dump(sense: &mut HalSense<'static, NoopRawMutex, StaticI
 pub async fn poll_sense(
     sense: &'static mut HalSense<'static, NoopRawMutex, StaticI2c1>,
     sense_channel: Receiver<'static, ThreadModeRawMutex, SenseEvent, 1>,
-    data_channel: Sender<'static, ThreadModeRawMutex, HardwareEvent, 32>,
+    data_channel: HardwareChannelSender,
 ) {
     match sense_channel.receive().await {
         SenseEvent::Enable => {}
@@ -259,8 +265,7 @@ impl<'a> HalTempSense<'a> {
 #[embassy_executor::task]
 pub async fn temp_sense(
     temp_sense: &'static mut HalTempSense<'static>,
-    // sense_channel: Receiver<'static, ThreadModeRawMutex, SenseEvent, 1>,
-    data_channel: Sender<'static, ThreadModeRawMutex, HardwareEvent, 32>,
+    data_channel: HardwareChannelSender,
 ) {
     let mut ticker = Ticker::every(Duration::from_secs(1));
     loop {
@@ -272,3 +277,46 @@ pub async fn temp_sense(
         ticker.next().await;
     }
 }
+
+macro_rules! converter_irq_task {
+    (
+        $task_name:ident,
+        $pin:ty,
+        $channel:expr
+    ) => {
+        #[embassy_executor::task]
+        pub async fn $task_name(
+            data_channel: HardwareChannelSender,
+            irq_pin: $pin,
+        ) {
+            let mut irq_pin = Input::new(irq_pin, Pull::None);
+            let mut ticker = Ticker::every(Duration::from_hz(5)); // 100ms
+
+            loop {
+                let _ = irq_pin
+                    .wait_for_falling_edge()
+                    .await;
+
+                defmt::warn!("converter IRQ triggered");
+
+                data_channel
+                    .send(HardwareEvent::PollConverterStatusInterrupt($channel))
+                    .await;
+
+                ticker.next().await;
+            }
+        }
+    };
+}
+
+converter_irq_task!(
+    converter_a_irq,
+    PIN_15,
+    ConverterChannel::A
+);
+
+converter_irq_task!(
+    converter_b_irq,
+    PIN_14,
+    ConverterChannel::B
+);

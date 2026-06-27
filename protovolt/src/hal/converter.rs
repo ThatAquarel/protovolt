@@ -38,10 +38,10 @@ mod tps55289 {
     }
 
     pub struct StatusReg {
-        scp: bool,
-        ocp: bool,
-        ovp: bool,
-        status: OperatingMode,
+        pub scp: bool,
+        pub ocp: bool,
+        pub ovp: bool,
+        pub status: OperatingMode,
     }
 
     impl StatusReg {
@@ -79,7 +79,7 @@ mod tps55289 {
 use tps55289::*;
 
 use crate::hal::device::I2cDeviceWithAddr;
-use crate::hal::event::Channel;
+use crate::hal::event::{Channel, ChannelHardwareState};
 
 pub trait Converter {
     async fn init(&mut self) -> Result<(), ()>;
@@ -90,7 +90,7 @@ pub trait Converter {
     fn get_enabled(&mut self) -> Result<bool, ()>;
     fn get_voltage(&mut self) -> Result<u16, ()>;
 
-    fn get_status(&mut self) -> Result<(), ()>;
+    fn get_status(&mut self) -> Result<ChannelHardwareState, ()>;
 
     async fn set_voltage(&mut self, voltage: u16) -> Result<(), ()>;
     fn set_current(&mut self, current: u16) -> Result<(), ()>;
@@ -200,12 +200,25 @@ where
         })
     }
 
-    fn get_status(&mut self) -> Result<(), ()> {
+    fn get_status(&mut self) -> Result<ChannelHardwareState, ()> {
         let status = self.i2c.read_reg_byte(STATUS).map_err(|_| ())?;
         let status = StatusReg::new(status);
-        status.debug_print();
 
-        Ok(())
+        if status.scp {
+            return Ok(ChannelHardwareState::ShortCircuit);
+        }
+        if status.ovp {
+            return Ok(ChannelHardwareState::OverVoltage);
+        }
+        if status.ocp {
+            return Ok(ChannelHardwareState::ConstantCurrent);
+        }
+
+        let enable = self.get_enabled()?;
+        match enable {
+            true => Ok(ChannelHardwareState::ConstantVoltage),
+            false => Ok(ChannelHardwareState::Off),
+        }
     }
 
     /// Set TPS55289 output voltage

@@ -18,6 +18,9 @@ pub enum HardwareEvent {
 
     ReadoutAcquired(Channel, Readout),
     TempAcquired(TemperatureReading),
+    ConverterStatusAcquired(Channel, ChannelHardwareState),
+
+    PollConverterStatusInterrupt(Channel),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -51,15 +54,15 @@ pub enum PowerType {
 #[derive(Default, Clone, Copy, Debug, PartialEq)]
 pub enum ChannelHardwareState {
     #[default]
-    Off,
+    Off,                //           converter, get_enabled():false
 
-    ConstantVoltage,
-    ConstantCurrent,
+    ConstantVoltage,    //           converter, get_enabled():true
+    ConstantCurrent,    // OCP flag, converter
 
-    ShortCircuit,
-    OverTemperature,
-    OverCurrent,
-    OverVoltage,
+    ShortCircuit,       // SCP flag, converter
+    OverTemperature,    //                                          || temp sensors
+    OverCurrent,        //                                          || Isense
+    OverVoltage,        // OVP flag, converter                      || Vsense
 }
 
 impl Default for PowerType {
@@ -98,7 +101,7 @@ pub enum HardwareTask {
     // Idle
     EnableReadoutLoop,
 
-    PollConverterStatus,
+    PollConverterStatus(Channel),
 
     // Updates
     UpdateConverterState(Channel, bool),

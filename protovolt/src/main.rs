@@ -41,7 +41,7 @@ use crate::hal::event::{AppTask, AppTaskBuilder, Channel as OutputChannel, Hardw
 use crate::hal::led::LedsInterface;
 use crate::hal::temperature::TemperatureReading;
 use crate::hal::{
-    Hal, HalSense, HalTempSense, INA226_DUMP_REQ, INA226_DUMP_RESP, SENSE_CHANNEL, poll_sense,
+    Hal, HalSense, HalTempSense, INA226_DUMP_REQ, INA226_DUMP_RESP, SENSE_CHANNEL, converter_a_irq, converter_b_irq, poll_sense,
     temp_sense,
 };
 use crate::scpi::parser::ScpiCommand;
@@ -55,7 +55,10 @@ use {defmt_rtt as _, panic_probe as _};
 
 // Static channels
 pub static INTERFACE_CHANNEL: Channel<ThreadModeRawMutex, InterfaceEvent, 32> = Channel::new();
-pub static HARDWARE_CHANNEL: Channel<ThreadModeRawMutex, HardwareEvent, 32> = Channel::new();
+
+const HW_CH_SIZE: usize = 32;
+pub static HARDWARE_CHANNEL: Channel<ThreadModeRawMutex, HardwareEvent, HW_CH_SIZE> = Channel::new();
+pub type HardwareChannelSender = Sender<'static, ThreadModeRawMutex, HardwareEvent, HW_CH_SIZE>;
 
 // Multicore setup
 static mut CORE1_STACK: Stack<8192> = Stack::new();
@@ -110,6 +113,17 @@ async fn main(spawner: Spawner) {
     let i2c1 = I2c::new_blocking(p.I2C1, p.PIN_23, p.PIN_22, i2c::Config::default());
     let i2c1_bus: Mutex<NoopRawMutex, _> = I2cMutex::new(RefCell::new(i2c1));
     let i2c1_bus = I2C1_BUS.init(i2c1_bus);
+
+    // Power hardware interrupts initialization
+    unwrap!(spawner.spawn(converter_a_irq(
+        HARDWARE_CHANNEL.sender(),
+        p.PIN_15,
+    )));
+    unwrap!(spawner.spawn(converter_b_irq(
+        HARDWARE_CHANNEL.sender(),
+        p.PIN_14,
+    )));
+
 
     // Output measurement loop
     let hal_sense = HalSense::new(i2c1_bus);
@@ -184,7 +198,8 @@ async fn main(spawner: Spawner) {
     let int_sender = INTERFACE_CHANNEL.sender();
 
     let mut ticker = Ticker::every(Duration::from_hz(100));
-    let mut i = 0;
+    let mut poll_counter = 0u32;
+
     loop {
         if let Ok(cmd) = SCPI_CMD.try_receive() {
             let ctx = build_scpi_context(
@@ -237,7 +252,7 @@ async fn main(spawner: Spawner) {
             }
         }
 
-        let mut next_app_task = None;
+        let mut tasks = AppTaskBuilder::new();
         let mut pending_readout_a = None;
         let mut pending_readout_b = None;
 
@@ -245,8 +260,7 @@ async fn main(spawner: Spawner) {
             match hw_event {
                 HardwareEvent::TempAcquired(temp) => {
                     last_temp = temp;
-                    next_app_task =
-                        merge_app_task(next_app_task, app.handle_event(AppEvent::Hardware(hw_event)));
+                    tasks = append_app_event(tasks, &mut app, AppEvent::Hardware(hw_event));
                 }
                 HardwareEvent::PowerDeliveryReady(power_type) => {
                     match power_type {
@@ -261,11 +275,10 @@ async fn main(spawner: Spawner) {
                             input_current = limits.current;
                         }
                     }
-                    next_app_task = merge_app_task(
-                        next_app_task,
-                        app.handle_event(AppEvent::Hardware(HardwareEvent::PowerDeliveryReady(
-                            power_type,
-                        ))),
+                    tasks = append_app_event(
+                        tasks,
+                        &mut app,
+                        AppEvent::Hardware(HardwareEvent::PowerDeliveryReady(power_type)),
                     );
                 }
                 HardwareEvent::ReadoutAcquired(channel, readout) => match channel {
@@ -273,28 +286,23 @@ async fn main(spawner: Spawner) {
                     OutputChannel::B => pending_readout_b = Some(readout),
                 },
                 other => {
-                    next_app_task =
-                        merge_app_task(next_app_task, app.handle_event(AppEvent::Hardware(other)));
+                    tasks = append_app_event(tasks, &mut app, AppEvent::Hardware(other));
                 }
             }
         }
 
         if let Some(readout) = pending_readout_a {
-            next_app_task = merge_app_task(
-                next_app_task,
-                app.handle_event(AppEvent::Hardware(HardwareEvent::ReadoutAcquired(
-                    OutputChannel::A,
-                    readout,
-                ))),
+            tasks = append_app_event(
+                tasks,
+                &mut app,
+                AppEvent::Hardware(HardwareEvent::ReadoutAcquired(OutputChannel::A, readout)),
             );
         }
         if let Some(readout) = pending_readout_b {
-            next_app_task = merge_app_task(
-                next_app_task,
-                app.handle_event(AppEvent::Hardware(HardwareEvent::ReadoutAcquired(
-                    OutputChannel::B,
-                    readout,
-                ))),
+            tasks = append_app_event(
+                tasks,
+                &mut app,
+                AppEvent::Hardware(HardwareEvent::ReadoutAcquired(OutputChannel::B, readout)),
             );
         }
 
@@ -303,21 +311,18 @@ async fn main(spawner: Spawner) {
             last_ui_event = Some(ui_event);
         }
         if let Some(ui_event) = last_ui_event {
-            next_app_task =
-                merge_app_task(next_app_task, app.handle_event(AppEvent::Interface(ui_event)));
+            tasks = append_app_event(tasks, &mut app, AppEvent::Interface(ui_event));
         }
 
-        if next_app_task.is_none() && i > 100 {
-            next_app_task = AppTaskBuilder::new()
-                .hardware(HardwareTask::PollConverterStatus)
-                .build();
-
-            i = 0;
+        poll_counter = poll_counter.wrapping_add(1);
+        if app.is_standby() && poll_counter >= 100 {
+            poll_counter = 0;
+            tasks = tasks
+                .hardware(HardwareTask::PollConverterStatus(OutputChannel::A))
+                .hardware(HardwareTask::PollConverterStatus(OutputChannel::B));
         }
 
-        i = i + 1;
-
-        if let Some(app_task) = next_app_task {
+        if let Some(app_task) = tasks.build() {
             for task in app_task {
                 match task {
                     Task::Hardware(hw_task) => {
@@ -334,21 +339,26 @@ async fn main(spawner: Spawner) {
     }
 }
 
-fn merge_app_task(acc: Option<AppTask>, new: Option<AppTask>) -> Option<AppTask> {
-    match (acc, new) {
-        (None, task) => task,
-        (Some(mut acc), Some(new)) => {
-            for task in new.into_iter() {
-                if acc.count >= acc.tasks.len() {
-                    break;
-                }
-                acc.tasks[acc.count] = Some(task);
-                acc.count += 1;
-            }
-            Some(acc)
-        }
-        (acc, None) => acc,
+fn append_app_event(
+    mut tasks: AppTaskBuilder,
+    app: &mut App,
+    event: AppEvent,
+) -> AppTaskBuilder {
+    if let Some(produced) = app.handle_event(event) {
+        tasks = tasks.extend(app_task_into_builder(produced));
     }
+    tasks
+}
+
+fn app_task_into_builder(task: AppTask) -> AppTaskBuilder {
+    let mut builder = AppTaskBuilder::new();
+    for item in task {
+        builder = match item {
+            Task::Hardware(hw) => builder.hardware(hw),
+            Task::Display(disp) => builder.display(disp),
+        };
+    }
+    builder
 }
 
 fn build_scpi_context(

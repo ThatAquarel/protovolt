@@ -51,8 +51,9 @@ where
         //     Timer::after(duration).await;
         //     int_sender.send(event).await;
         // }
-        HardwareTask::PollConverterStatus => {
-            let _ = hal.poll_converter_status();
+        HardwareTask::PollConverterStatus(channel) => {
+            let hw_state = hal.poll_converter_status(channel).unwrap();
+            hw_sender.send(HardwareEvent::ConverterStatusAcquired(channel, hw_state)).await;
         }
         HardwareTask::DelayedHardwareEvent(duration, event) => {
             Timer::after(duration).await;

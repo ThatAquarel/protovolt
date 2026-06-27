@@ -312,6 +312,30 @@ impl App {
 
                 None
             }
+            (
+                HardwareState::Standby,
+                HardwareEvent::ConverterStatusAcquired(channel, new_hw_state),
+            ) => {
+                match channel {
+                    Channel::A => self.ch_a.hw_state = new_hw_state,
+                    Channel::B => self.ch_b.hw_state = new_hw_state,
+                };
+
+                if let Some(focus) = self.get_focus(channel) {
+                    AppTaskBuilder::display_task(DisplayTask::UpdateChannelHardwareState(
+                        channel,
+                        focus,
+                        new_hw_state,
+                    ))
+                } else {
+                    None
+                }
+            }
+            (HardwareState::Standby, HardwareEvent::PollConverterStatusInterrupt(channel)) => {
+                AppTaskBuilder::new()
+                    .hardware(HardwareTask::PollConverterStatus(channel))
+                    .build()
+            }
             _ => None,
         }
     }
@@ -441,9 +465,12 @@ impl App {
                 let mut set_value_override = false;
                 if selected_channel.as_ref() == Some(&event_channel) {
                     current_state.enable = !current_state.enable;
-                    converter_update_task = converter_update_task.hardware(
-                        HardwareTask::UpdateConverterState(event_channel, current_state.enable),
-                    );
+                    converter_update_task = converter_update_task
+                        .hardware(HardwareTask::UpdateConverterState(
+                            event_channel,
+                            current_state.enable,
+                        ))
+                        .hardware(HardwareTask::PollConverterStatus(event_channel));
                 } else {
                     self.interface_state.arrows_function = ArrowsFunction::Navigation;
                     set_value_override = true;
@@ -562,6 +589,29 @@ impl App {
                 confirm_state,
                 select_precision,
             ))
+    }
+
+    fn get_focus(&self, channel: Channel) -> Option<(ChannelFocus)> {
+        let selected_channel = self.interface_state.selected_channel?;
+        let enabled = match channel {
+            Channel::A => self.ch_a.enable,
+            Channel::B => self.ch_b.enable,
+        };
+        Some(Self::channel_focus(selected_channel == channel, enabled))
+    }
+
+    fn channel_focus(selected: bool, active: bool) -> ChannelFocus {
+        if selected {
+            match active {
+                true => ChannelFocus::SelectedActive,
+                false => ChannelFocus::SelectedInactive,
+            }
+        } else {
+            match active {
+                true => ChannelFocus::UnselectedActive,
+                false => ChannelFocus::UnselectedInactive,
+            }
+        }
     }
 
     pub fn shift_channel_focus_task(&mut self, channel: Channel) -> AppTaskBuilder {
