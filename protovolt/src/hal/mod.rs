@@ -220,16 +220,14 @@ pub async fn poll_sense(
             let p = ch.read_power();
 
             if let (Ok(v), Ok(i), Ok(p)) = (v, i, p) {
-                data_channel
-                    .send(HardwareEvent::ReadoutAcquired(
-                        *event_ch,
-                        event::Readout {
-                            voltage: v,
-                            current: i,
-                            power: p,
-                        },
-                    ))
-                    .await;
+                let _ = data_channel.try_send(HardwareEvent::ReadoutAcquired(
+                    *event_ch,
+                    event::Readout {
+                        voltage: v,
+                        current: i,
+                        power: p,
+                    },
+                ));
             }
         }
 
@@ -268,9 +266,7 @@ pub async fn temp_sense(
     loop {
         let temp = temp_sense.temp_devices.read_temperature().await;
         if let Ok(reading) = temp {
-            data_channel
-                .send(HardwareEvent::TempAcquired(reading))
-                .await;
+            let _ = data_channel.try_send(HardwareEvent::TempAcquired(reading));
         }
 
         ticker.next().await;

@@ -37,7 +37,7 @@ use app::App;
 use task::{handle_display_task, handle_hardware_task};
 use ui::Ui;
 
-use crate::hal::event::{AppTaskBuilder, Channel as OutputChannel, HardwareTask};
+use crate::hal::event::{AppTask, AppTaskBuilder, Channel as OutputChannel, HardwareTask};
 use crate::hal::led::LedsInterface;
 use crate::hal::temperature::TemperatureReading;
 use crate::hal::{
@@ -58,7 +58,7 @@ pub static INTERFACE_CHANNEL: Channel<ThreadModeRawMutex, InterfaceEvent, 32> = 
 pub static HARDWARE_CHANNEL: Channel<ThreadModeRawMutex, HardwareEvent, 32> = Channel::new();
 
 // Multicore setup
-static mut CORE1_STACK: Stack<4096> = Stack::new();
+static mut CORE1_STACK: Stack<8192> = Stack::new();
 static EXECUTOR1: StaticCell<Executor> = StaticCell::new();
 
 static BUTTONS_INTERFACE: StaticCell<ButtonsInterface> = StaticCell::new();
@@ -238,28 +238,76 @@ async fn main(spawner: Spawner) {
         }
 
         let mut next_app_task = None;
-        if let Ok(hw_event) = HARDWARE_CHANNEL.try_receive() {
-            if let HardwareEvent::TempAcquired(temp) = hw_event {
-                last_temp = temp;
-            }
-            if let HardwareEvent::PowerDeliveryReady(power_type) = hw_event {
-                match power_type {
-                    hal::event::PowerType::PowerDelivery(limits) => {
-                        input_type_pd = true;
-                        input_voltage = limits.voltage;
-                        input_current = limits.current;
+        let mut pending_readout_a = None;
+        let mut pending_readout_b = None;
+
+        while let Ok(hw_event) = HARDWARE_CHANNEL.try_receive() {
+            match hw_event {
+                HardwareEvent::TempAcquired(temp) => {
+                    last_temp = temp;
+                    next_app_task =
+                        merge_app_task(next_app_task, app.handle_event(AppEvent::Hardware(hw_event)));
+                }
+                HardwareEvent::PowerDeliveryReady(power_type) => {
+                    match power_type {
+                        hal::event::PowerType::PowerDelivery(limits) => {
+                            input_type_pd = true;
+                            input_voltage = limits.voltage;
+                            input_current = limits.current;
+                        }
+                        hal::event::PowerType::Standard(limits) => {
+                            input_type_pd = false;
+                            input_voltage = limits.voltage;
+                            input_current = limits.current;
+                        }
                     }
-                    hal::event::PowerType::Standard(limits) => {
-                        input_type_pd = false;
-                        input_voltage = limits.voltage;
-                        input_current = limits.current;
-                    }
+                    next_app_task = merge_app_task(
+                        next_app_task,
+                        app.handle_event(AppEvent::Hardware(HardwareEvent::PowerDeliveryReady(
+                            power_type,
+                        ))),
+                    );
+                }
+                HardwareEvent::ReadoutAcquired(channel, readout) => match channel {
+                    OutputChannel::A => pending_readout_a = Some(readout),
+                    OutputChannel::B => pending_readout_b = Some(readout),
+                },
+                other => {
+                    next_app_task =
+                        merge_app_task(next_app_task, app.handle_event(AppEvent::Hardware(other)));
                 }
             }
-            next_app_task = app.handle_event(AppEvent::Hardware(hw_event));
-        } else if let Ok(ui_event) = INTERFACE_CHANNEL.try_receive() {
-            next_app_task = app.handle_event(AppEvent::Interface(ui_event));
-        } else if i > 100 {
+        }
+
+        if let Some(readout) = pending_readout_a {
+            next_app_task = merge_app_task(
+                next_app_task,
+                app.handle_event(AppEvent::Hardware(HardwareEvent::ReadoutAcquired(
+                    OutputChannel::A,
+                    readout,
+                ))),
+            );
+        }
+        if let Some(readout) = pending_readout_b {
+            next_app_task = merge_app_task(
+                next_app_task,
+                app.handle_event(AppEvent::Hardware(HardwareEvent::ReadoutAcquired(
+                    OutputChannel::B,
+                    readout,
+                ))),
+            );
+        }
+
+        let mut last_ui_event = None;
+        while let Ok(ui_event) = INTERFACE_CHANNEL.try_receive() {
+            last_ui_event = Some(ui_event);
+        }
+        if let Some(ui_event) = last_ui_event {
+            next_app_task =
+                merge_app_task(next_app_task, app.handle_event(AppEvent::Interface(ui_event)));
+        }
+
+        if next_app_task.is_none() && i > 100 {
             next_app_task = AppTaskBuilder::new()
                 .hardware(HardwareTask::PollConverterStatus)
                 .build();
@@ -283,6 +331,23 @@ async fn main(spawner: Spawner) {
         }
 
         ticker.next().await;
+    }
+}
+
+fn merge_app_task(acc: Option<AppTask>, new: Option<AppTask>) -> Option<AppTask> {
+    match (acc, new) {
+        (None, task) => task,
+        (Some(mut acc), Some(new)) => {
+            for task in new.into_iter() {
+                if acc.count >= acc.tasks.len() {
+                    break;
+                }
+                acc.tasks[acc.count] = Some(task);
+                acc.count += 1;
+            }
+            Some(acc)
+        }
+        (acc, None) => acc,
     }
 }
 
@@ -319,7 +384,7 @@ async fn poll_interface(
     let mut ticker = Ticker::every(Duration::from_millis(matrix::POLL_TIME_MS));
     loop {
         if let Some(event) = buttons.poll() {
-            channel.send(event).await;
+            let _ = channel.try_send(event);
         }
         ticker.next().await;
     }
