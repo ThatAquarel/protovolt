@@ -21,26 +21,17 @@ fn boot_to_standby(app: &mut AppCore, scpi: &mut ScpiState) {
         AppEvent::Hardware(HardwareEvent::PowerDeliveryReady(PowerType::default())),
         scpi,
     );
-    let _ = app.handle_event(
-        AppEvent::Hardware(HardwareEvent::SenseReady(Ok(()))),
-        scpi,
-    );
+    let _ = app.handle_event(AppEvent::Hardware(HardwareEvent::SenseReady(Ok(()))), scpi);
     let _ = app.handle_event(
         AppEvent::Hardware(HardwareEvent::ConverterReady(Ok(()))),
         scpi,
     );
-    let _ = app.handle_event(
-        AppEvent::Hardware(HardwareEvent::StartMainInterface),
-        scpi,
-    );
+    let _ = app.handle_event(AppEvent::Hardware(HardwareEvent::StartMainInterface), scpi);
     assert!(app.is_standby());
 }
 
 fn press_channel(app: &mut AppCore, scpi: &mut ScpiState, ch: Channel) -> Option<AppTask> {
-    app.handle_event(
-        AppEvent::Interface(InterfaceEvent::ButtonChannel(ch)),
-        scpi,
-    )
+    app.handle_event(AppEvent::Interface(InterfaceEvent::ButtonChannel(ch)), scpi)
 }
 
 fn press_interface(
@@ -88,19 +79,27 @@ fn focus_eq(a: ChannelFocus, b: ChannelFocus) -> bool {
     matches!(
         (a, b),
         (ChannelFocus::SelectedActive, ChannelFocus::SelectedActive)
-            | (ChannelFocus::SelectedInactive, ChannelFocus::SelectedInactive)
-            | (ChannelFocus::UnselectedActive, ChannelFocus::UnselectedActive)
-            | (ChannelFocus::UnselectedInactive, ChannelFocus::UnselectedInactive)
+            | (
+                ChannelFocus::SelectedInactive,
+                ChannelFocus::SelectedInactive
+            )
+            | (
+                ChannelFocus::UnselectedActive,
+                ChannelFocus::UnselectedActive
+            )
+            | (
+                ChannelFocus::UnselectedInactive,
+                ChannelFocus::UnselectedInactive
+            )
     )
 }
 
 fn confirm_eq(a: ConfirmState, b: ConfirmState) -> bool {
     match (a, b) {
         (ConfirmState::AwaitModify, ConfirmState::AwaitModify) => true,
-        (
-            ConfirmState::AwaitConfirmModify(ch_a),
-            ConfirmState::AwaitConfirmModify(ch_b),
-        ) => ch_a == ch_b,
+        (ConfirmState::AwaitConfirmModify(ch_a), ConfirmState::AwaitConfirmModify(ch_b)) => {
+            ch_a == ch_b
+        }
         _ => false,
     }
 }
@@ -111,7 +110,10 @@ fn function_eq(a: Option<FunctionButton>, b: Option<FunctionButton>) -> bool {
         (None, None)
             | (Some(FunctionButton::Enter), Some(FunctionButton::Enter))
             | (Some(FunctionButton::Switch), Some(FunctionButton::Switch))
-            | (Some(FunctionButton::Settings), Some(FunctionButton::Settings))
+            | (
+                Some(FunctionButton::Settings),
+                Some(FunctionButton::Settings)
+            )
     )
 }
 
@@ -203,7 +205,10 @@ fn channel_button_second_press_activates() {
 
     assert_eq!(app.selected_channel(), Some(Channel::A));
     assert!(app.channel_enable(Channel::A));
-    assert_eq!(app.hw_state(Channel::A), ChannelHardwareState::ConstantVoltage);
+    assert_eq!(
+        app.hw_state(Channel::A),
+        ChannelHardwareState::ConstantVoltage
+    );
     assert!(has_converter_state_task(&task, Channel::A, true));
 }
 
@@ -282,15 +287,15 @@ fn left_right_navigate_between_selected_channels() {
     press_channel(&mut app, &mut scpi, Channel::A);
     assert_eq!(app.selected_channel(), Some(Channel::A));
 
-    let task = press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonRight)
-        .expect("navigate to B");
+    let task =
+        press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonRight).expect("navigate to B");
     assert_eq!(app.selected_channel(), Some(Channel::B));
     let (fa, fb) = channel_focus(&task).expect("focus update");
     assert!(focus_eq(fa, ChannelFocus::UnselectedInactive));
     assert!(focus_eq(fb, ChannelFocus::SelectedInactive));
 
-    let task = press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonLeft)
-        .expect("navigate to A");
+    let task =
+        press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonLeft).expect("navigate to A");
     assert_eq!(app.selected_channel(), Some(Channel::A));
     let (fa, fb) = channel_focus(&task).expect("focus update");
     assert!(focus_eq(fa, ChannelFocus::SelectedInactive));

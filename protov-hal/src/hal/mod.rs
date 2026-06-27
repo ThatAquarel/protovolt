@@ -33,9 +33,9 @@ pub mod led;
 mod device;
 
 pub mod converter;
+pub mod event;
 pub mod measure;
 pub mod power;
-pub mod event;
 pub mod temperature;
 
 use crate::hal::converter::ConverterFlags;
