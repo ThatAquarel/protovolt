@@ -5,7 +5,7 @@ edition = "2024"
 authors = ["Alex Xia <alex.xia@flakeblade.com>"]
 
 [[bin]]
-name = "protovolt"
+name = "protov"
 path = "src/main.rs"
 test = false
 bench = false
