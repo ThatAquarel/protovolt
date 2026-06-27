@@ -1,6 +1,8 @@
+use crate::config::{CH1_FACTORY, CH2_FACTORY};
 use crate::model::{
-    AppEvent, Channel, ChannelHardwareState, ConverterFlags, HardwareEvent, Readout,
-    TemperatureReading,
+    AppEvent, AppTask, Change, Channel, ChannelFocus, ChannelHardwareState, ConfirmState,
+    ConverterFlags, DisplayTask, FunctionButton, HardwareEvent, HardwareTask, InterfaceEvent,
+    PowerType, Readout, SetSelect, SetState, Task, TemperatureReading,
 };
 use crate::scpi::ScpiChannel;
 use crate::scpi::state::ScpiState;
@@ -11,6 +13,572 @@ fn standby_app() -> (AppCore, ScpiState) {
     let mut app = AppCore::default();
     app.force_standby();
     (app, ScpiState::default())
+}
+
+fn boot_to_standby(app: &mut AppCore, scpi: &mut ScpiState) {
+    let _ = app.handle_event(AppEvent::Hardware(HardwareEvent::PowerOn), scpi);
+    let _ = app.handle_event(
+        AppEvent::Hardware(HardwareEvent::PowerDeliveryReady(PowerType::default())),
+        scpi,
+    );
+    let _ = app.handle_event(
+        AppEvent::Hardware(HardwareEvent::SenseReady(Ok(()))),
+        scpi,
+    );
+    let _ = app.handle_event(
+        AppEvent::Hardware(HardwareEvent::ConverterReady(Ok(()))),
+        scpi,
+    );
+    let _ = app.handle_event(
+        AppEvent::Hardware(HardwareEvent::StartMainInterface),
+        scpi,
+    );
+    assert!(app.is_standby());
+}
+
+fn press_channel(app: &mut AppCore, scpi: &mut ScpiState, ch: Channel) -> Option<AppTask> {
+    app.handle_event(
+        AppEvent::Interface(InterfaceEvent::ButtonChannel(ch)),
+        scpi,
+    )
+}
+
+fn press_interface(
+    app: &mut AppCore,
+    scpi: &mut ScpiState,
+    event: InterfaceEvent,
+) -> Option<AppTask> {
+    app.handle_event(AppEvent::Interface(event), scpi)
+}
+
+fn iter_tasks(task: &AppTask) -> impl Iterator<Item = &Task> {
+    task.tasks.iter().filter_map(|t| t.as_ref())
+}
+
+fn has_converter_state_task(task: &AppTask, ch: Channel, enabled: bool) -> bool {
+    iter_tasks(task).any(|t| {
+        matches!(
+            t,
+            Task::Hardware(HardwareTask::UpdateConverterState(c, on))
+                if *c == ch && *on == enabled
+        )
+    })
+}
+
+fn channel_focus(task: &AppTask) -> Option<(ChannelFocus, ChannelFocus)> {
+    iter_tasks(task).find_map(|t| match t {
+        Task::Display(DisplayTask::UpdateChannelFocus(fa, fb, _, _)) => Some((*fa, *fb)),
+        _ => None,
+    })
+}
+
+fn button_update(task: &AppTask) -> Option<(ConfirmState, Option<FunctionButton>)> {
+    iter_tasks(task).find_map(|t| match t {
+        Task::Display(DisplayTask::UpdateButton(confirm, button)) => match button {
+            Some(FunctionButton::Enter) => Some((*confirm, Some(FunctionButton::Enter))),
+            Some(FunctionButton::Switch) => Some((*confirm, Some(FunctionButton::Switch))),
+            Some(FunctionButton::Settings) => Some((*confirm, Some(FunctionButton::Settings))),
+            None => Some((*confirm, None)),
+        },
+        _ => None,
+    })
+}
+
+fn focus_eq(a: ChannelFocus, b: ChannelFocus) -> bool {
+    matches!(
+        (a, b),
+        (ChannelFocus::SelectedActive, ChannelFocus::SelectedActive)
+            | (ChannelFocus::SelectedInactive, ChannelFocus::SelectedInactive)
+            | (ChannelFocus::UnselectedActive, ChannelFocus::UnselectedActive)
+            | (ChannelFocus::UnselectedInactive, ChannelFocus::UnselectedInactive)
+    )
+}
+
+fn confirm_eq(a: ConfirmState, b: ConfirmState) -> bool {
+    match (a, b) {
+        (ConfirmState::AwaitModify, ConfirmState::AwaitModify) => true,
+        (
+            ConfirmState::AwaitConfirmModify(ch_a),
+            ConfirmState::AwaitConfirmModify(ch_b),
+        ) => ch_a == ch_b,
+        _ => false,
+    }
+}
+
+fn function_eq(a: Option<FunctionButton>, b: Option<FunctionButton>) -> bool {
+    matches!(
+        (a, b),
+        (None, None)
+            | (Some(FunctionButton::Enter), Some(FunctionButton::Enter))
+            | (Some(FunctionButton::Switch), Some(FunctionButton::Switch))
+            | (Some(FunctionButton::Settings), Some(FunctionButton::Settings))
+    )
+}
+
+fn assert_both_channels_off(app: &AppCore) {
+    assert!(!app.channel_enable(Channel::A));
+    assert!(!app.channel_enable(Channel::B));
+    assert_eq!(app.hw_state(Channel::A), ChannelHardwareState::Off);
+    assert_eq!(app.hw_state(Channel::B), ChannelHardwareState::Off);
+}
+
+fn select_and_activate(app: &mut AppCore, scpi: &mut ScpiState, ch: Channel) {
+    press_channel(app, scpi, ch);
+    press_channel(app, scpi, ch);
+    assert!(app.channel_enable(ch));
+}
+
+// --- Startup and channel select/activate ---
+
+#[test]
+fn standby_startup_no_channel_selected_or_enabled() {
+    let (app, _scpi) = standby_app();
+    assert_both_channels_off(&app);
+    assert_eq!(app.selected_channel(), None);
+    assert!(!app.is_setpoint_edit());
+    assert!(matches!(app.set_state(), SetState::Set));
+}
+
+#[test]
+fn boot_sequence_leaves_channels_off() {
+    let mut app = AppCore::default();
+    let mut scpi = ScpiState::default();
+    assert_both_channels_off(&app);
+
+    boot_to_standby(&mut app, &mut scpi);
+
+    assert_both_channels_off(&app);
+    assert_eq!(app.selected_channel(), None);
+}
+
+#[test]
+fn boot_then_first_channel_press_selects_without_enabling() {
+    let mut app = AppCore::default();
+    let mut scpi = ScpiState::default();
+    boot_to_standby(&mut app, &mut scpi);
+
+    let task = press_channel(&mut app, &mut scpi, Channel::A).expect("first channel press");
+
+    assert_eq!(app.selected_channel(), Some(Channel::A));
+    assert_both_channels_off(&app);
+    assert!(!has_converter_state_task(&task, Channel::A, true));
+    let (fa, fb) = channel_focus(&task).expect("focus update");
+    assert!(focus_eq(fa, ChannelFocus::SelectedInactive));
+    assert!(focus_eq(fb, ChannelFocus::UnselectedInactive));
+}
+
+#[test]
+fn channel_button_first_press_selects_without_enabling() {
+    let (mut app, mut scpi) = standby_app();
+
+    for ch in [Channel::A, Channel::B] {
+        let task = press_channel(&mut app, &mut scpi, ch).expect("channel press task");
+        assert_eq!(app.selected_channel(), Some(ch));
+        assert!(!app.channel_enable(ch));
+        assert_eq!(app.hw_state(ch), ChannelHardwareState::Off);
+        assert!(!has_converter_state_task(&task, ch, true));
+
+        let (focus_ch, focus_other) = match ch {
+            Channel::A => (
+                ChannelFocus::SelectedInactive,
+                ChannelFocus::UnselectedInactive,
+            ),
+            Channel::B => (
+                ChannelFocus::UnselectedInactive,
+                ChannelFocus::SelectedInactive,
+            ),
+        };
+        let (fa, fb) = channel_focus(&task).expect("focus update");
+        assert!(focus_eq(fa, focus_ch));
+        assert!(focus_eq(fb, focus_other));
+    }
+}
+
+#[test]
+fn channel_button_second_press_activates() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::A);
+    let task = press_channel(&mut app, &mut scpi, Channel::A).expect("activate task");
+
+    assert_eq!(app.selected_channel(), Some(Channel::A));
+    assert!(app.channel_enable(Channel::A));
+    assert_eq!(app.hw_state(Channel::A), ChannelHardwareState::ConstantVoltage);
+    assert!(has_converter_state_task(&task, Channel::A, true));
+}
+
+#[test]
+fn channel_button_third_press_deactivates() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::A);
+    press_channel(&mut app, &mut scpi, Channel::A);
+    let task = press_channel(&mut app, &mut scpi, Channel::A).expect("deactivate task");
+
+    assert_eq!(app.selected_channel(), Some(Channel::A));
+    assert!(!app.channel_enable(Channel::A));
+    assert_eq!(app.hw_state(Channel::A), ChannelHardwareState::Off);
+    assert!(has_converter_state_task(&task, Channel::A, false));
+}
+
+#[test]
+fn switching_channel_selection_does_not_enable() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::A);
+    let task = press_channel(&mut app, &mut scpi, Channel::B).expect("switch selection");
+
+    assert_eq!(app.selected_channel(), Some(Channel::B));
+    assert_both_channels_off(&app);
+    assert!(!has_converter_state_task(&task, Channel::B, true));
+
+    let (fa, fb) = channel_focus(&task).expect("focus update");
+    assert!(focus_eq(fa, ChannelFocus::UnselectedInactive));
+    assert!(focus_eq(fb, ChannelFocus::SelectedInactive));
+}
+
+#[test]
+fn active_channel_stays_on_when_selecting_other() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::A);
+    press_channel(&mut app, &mut scpi, Channel::A);
+    let task = press_channel(&mut app, &mut scpi, Channel::B).expect("select B while A active");
+
+    assert_eq!(app.selected_channel(), Some(Channel::B));
+    assert!(app.channel_enable(Channel::A));
+    assert!(!app.channel_enable(Channel::B));
+    assert!(!has_converter_state_task(&task, Channel::B, true));
+
+    let (fa, fb) = channel_focus(&task).expect("focus update");
+    assert!(focus_eq(fa, ChannelFocus::UnselectedActive));
+    assert!(focus_eq(fb, ChannelFocus::SelectedInactive));
+}
+
+#[test]
+fn both_channels_can_be_active_independently() {
+    let (mut app, mut scpi) = standby_app();
+
+    select_and_activate(&mut app, &mut scpi, Channel::A);
+    press_channel(&mut app, &mut scpi, Channel::B);
+    let task = press_channel(&mut app, &mut scpi, Channel::B).expect("activate B");
+
+    assert!(app.channel_enable(Channel::A));
+    assert!(app.channel_enable(Channel::B));
+    assert_eq!(app.selected_channel(), Some(Channel::B));
+    assert!(has_converter_state_task(&task, Channel::B, true));
+
+    let (fa, fb) = channel_focus(&task).expect("focus update");
+    assert!(focus_eq(fa, ChannelFocus::UnselectedActive));
+    assert!(focus_eq(fb, ChannelFocus::SelectedActive));
+}
+
+// --- Arrow navigation and set select ---
+
+#[test]
+fn left_right_navigate_between_selected_channels() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::A);
+    assert_eq!(app.selected_channel(), Some(Channel::A));
+
+    let task = press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonRight)
+        .expect("navigate to B");
+    assert_eq!(app.selected_channel(), Some(Channel::B));
+    let (fa, fb) = channel_focus(&task).expect("focus update");
+    assert!(focus_eq(fa, ChannelFocus::UnselectedInactive));
+    assert!(focus_eq(fb, ChannelFocus::SelectedInactive));
+
+    let task = press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonLeft)
+        .expect("navigate to A");
+    assert_eq!(app.selected_channel(), Some(Channel::A));
+    let (fa, fb) = channel_focus(&task).expect("focus update");
+    assert!(focus_eq(fa, ChannelFocus::SelectedInactive));
+    assert!(focus_eq(fb, ChannelFocus::UnselectedInactive));
+}
+
+#[test]
+fn arrow_navigation_no_op_without_selection() {
+    let (mut app, mut scpi) = standby_app();
+
+    assert!(press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonLeft).is_none());
+    assert!(press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonRight).is_none());
+    assert_eq!(app.selected_channel(), None);
+}
+
+#[test]
+fn navigation_copies_set_select_to_newly_selected_channel() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::A);
+    press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonDown);
+    assert!(matches!(app.set_select(Channel::A), SetSelect::Current));
+
+    press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonRight);
+    assert_eq!(app.selected_channel(), Some(Channel::B));
+    assert!(matches!(app.set_select(Channel::B), SetSelect::Current));
+}
+
+#[test]
+fn up_down_toggle_voltage_current_select() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::A);
+    assert!(matches!(app.set_select(Channel::A), SetSelect::Voltage));
+
+    press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonDown);
+    assert!(matches!(app.set_select(Channel::A), SetSelect::Current));
+
+    press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonUp);
+    assert!(matches!(app.set_select(Channel::A), SetSelect::Voltage));
+}
+
+// --- Set / limits switch ---
+
+#[test]
+fn switch_button_toggles_set_limits_mode() {
+    let (mut app, mut scpi) = standby_app();
+
+    assert!(matches!(app.set_state(), SetState::Set));
+
+    press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonSwitch(Change::Pressed),
+    );
+    assert!(matches!(app.set_state(), SetState::Limits));
+
+    press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonSwitch(Change::Pressed),
+    );
+    assert!(matches!(app.set_state(), SetState::Set));
+}
+
+#[test]
+fn switch_during_setpoint_edit_preserves_edit_mode() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::A);
+    press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonEnter(Change::Pressed),
+    );
+    assert!(app.is_setpoint_edit());
+
+    press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonSwitch(Change::Pressed),
+    );
+    assert!(app.is_setpoint_edit());
+    assert!(matches!(app.set_state(), SetState::Limits));
+    assert!(confirm_eq(
+        button_update(
+            &press_interface(
+                &mut app,
+                &mut scpi,
+                InterfaceEvent::ButtonSwitch(Change::Released),
+            )
+            .expect("switch release"),
+        )
+        .expect("button update")
+        .0,
+        ConfirmState::AwaitConfirmModify(Some(Channel::A)),
+    ));
+}
+
+// --- Enter / setpoint edit ---
+
+#[test]
+fn enter_without_selection_does_not_enter_setpoint_edit() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonEnter(Change::Pressed),
+    );
+    assert_eq!(app.selected_channel(), None);
+    assert!(!app.is_setpoint_edit());
+}
+
+#[test]
+fn enter_toggles_setpoint_edit_for_selected_channel() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::B);
+    press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonEnter(Change::Pressed),
+    );
+    assert!(app.is_setpoint_edit());
+
+    let task = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonEnter(Change::Pressed),
+    )
+    .expect("confirm edit");
+    assert!(!app.is_setpoint_edit());
+    assert!(iter_tasks(&task).any(|t| matches!(
+        t,
+        Task::Hardware(HardwareTask::UpdateConverterVoltage(Channel::B, _))
+            | Task::Hardware(HardwareTask::UpdateConverterCurrent(Channel::B, _))
+    )));
+}
+
+#[test]
+fn channel_select_resets_setpoint_edit_mode() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::A);
+    press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonEnter(Change::Pressed),
+    );
+    assert!(app.is_setpoint_edit());
+
+    press_channel(&mut app, &mut scpi, Channel::B);
+    assert!(!app.is_setpoint_edit());
+    assert_eq!(app.selected_channel(), Some(Channel::B));
+}
+
+#[test]
+fn setpoint_edit_while_active_changes_value_and_updates_converter() {
+    let (mut app, mut scpi) = standby_app();
+    let initial = app.target_voltage(Channel::A);
+
+    select_and_activate(&mut app, &mut scpi, Channel::A);
+    press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonEnter(Change::Pressed),
+    );
+    assert!(app.is_setpoint_edit());
+
+    press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonDown);
+    assert!(app.target_voltage(Channel::A) < initial);
+
+    let task = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonEnter(Change::Pressed),
+    )
+    .expect("confirm setpoint");
+    assert!(!app.is_setpoint_edit());
+    assert!(app.channel_enable(Channel::A));
+    assert!(iter_tasks(&task).any(|t| matches!(
+        t,
+        Task::Hardware(HardwareTask::UpdateConverterVoltage(
+            Channel::A,
+            v
+        )) if (*v - app.target_voltage(Channel::A)).abs() < f32::EPSILON
+    )));
+}
+
+// --- Button press / release highlight ---
+
+#[test]
+fn enter_release_restores_confirm_button_in_setpoint_edit() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::A);
+    press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonEnter(Change::Pressed),
+    );
+
+    let task = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonEnter(Change::Released),
+    )
+    .expect("enter release");
+    let (confirm, button) = button_update(&task).expect("button update");
+    assert!(confirm_eq(
+        confirm,
+        ConfirmState::AwaitConfirmModify(Some(Channel::A)),
+    ));
+    assert!(function_eq(button, Some(FunctionButton::Enter)));
+}
+
+#[test]
+fn enter_release_clears_highlight_in_navigation_mode() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::A);
+    let task = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonEnter(Change::Released),
+    )
+    .expect("enter release");
+    let (confirm, button) = button_update(&task).expect("button update");
+    assert!(confirm_eq(confirm, ConfirmState::AwaitModify));
+    assert!(function_eq(button, None));
+}
+
+#[test]
+fn settings_press_and_release_updates_button_highlight() {
+    let (mut app, mut scpi) = standby_app();
+
+    let pressed = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonSettings(Change::Pressed),
+    )
+    .expect("settings press");
+    let (_, button) = button_update(&pressed).expect("button update");
+    assert!(function_eq(button, Some(FunctionButton::Settings)));
+
+    let released = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonSettings(Change::Released),
+    )
+    .expect("settings release");
+    let (_, button) = button_update(&released).expect("button update");
+    assert!(function_eq(button, None));
+}
+
+#[test]
+fn switch_press_and_release_updates_button_highlight() {
+    let (mut app, mut scpi) = standby_app();
+
+    let pressed = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonSwitch(Change::Pressed),
+    )
+    .expect("switch press");
+    let (_, button) = button_update(&pressed).expect("button update");
+    assert!(function_eq(button, Some(FunctionButton::Switch)));
+
+    let released = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonSwitch(Change::Released),
+    )
+    .expect("switch release");
+    let (_, button) = button_update(&released).expect("button update");
+    assert!(function_eq(button, None));
+}
+
+// --- Protection / hardware (existing) ---
+
+#[test]
+fn factory_defaults_match_channel_profiles() {
+    let (app, _scpi) = standby_app();
+    assert!((app.target_voltage(Channel::A) - CH1_FACTORY.voltage_set).abs() < f32::EPSILON);
+    assert!((app.target_current(Channel::A) - CH1_FACTORY.current_set).abs() < f32::EPSILON);
+    assert!((app.target_voltage(Channel::B) - CH2_FACTORY.voltage_set).abs() < f32::EPSILON);
+    assert!((app.target_current(Channel::B) - CH2_FACTORY.current_set).abs() < f32::EPSILON);
 }
 
 #[test]

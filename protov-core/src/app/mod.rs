@@ -1332,6 +1332,42 @@ impl AppCore {
     pub fn set_temp(&mut self, temp: TemperatureReading) {
         self.last_temp = temp;
     }
+
+    pub fn selected_channel(&self) -> Option<Channel> {
+        self.interface_state.selected_channel
+    }
+
+    pub fn set_select(&self, ch: Channel) -> SetSelect {
+        match ch {
+            Channel::A => self.ch_a.set_select,
+            Channel::B => self.ch_b.set_select,
+        }
+    }
+
+    pub fn set_state(&self) -> SetState {
+        self.set_state
+    }
+
+    pub fn is_setpoint_edit(&self) -> bool {
+        matches!(
+            self.interface_state.arrows_function,
+            ArrowsFunction::SetpointEdit
+        )
+    }
+
+    pub fn target_voltage(&self, ch: Channel) -> f32 {
+        match ch {
+            Channel::A => self.ch_a.target.voltage.value(),
+            Channel::B => self.ch_b.target.voltage.value(),
+        }
+    }
+
+    pub fn target_current(&self, ch: Channel) -> f32 {
+        match ch {
+            Channel::A => self.ch_a.target.current.value(),
+            Channel::B => self.ch_b.target.current.value(),
+        }
+    }
 }
 
 #[cfg(test)]
