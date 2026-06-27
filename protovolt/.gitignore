@@ -1,4 +1,0 @@
-# Cargo build artifacts
-/target/
-**/.idea
-*.lock

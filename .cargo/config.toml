@@ -1,0 +1,5 @@
+[target.thumbv6m-none-eabi]
+runner = "probe-rs run --chip RP2040"
+
+[env]
+DEFMT_LOG = "info"

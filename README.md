@@ -56,24 +56,24 @@ The hardware is designed with [`Kicad v9.0`](https://www.kicad.org/), while the 
 
 ```
 protovolt/
-├── docs/ # Documentation and renders
-├── hardware/ # KiCad design files
-├── protovolt/ # Firmware (Rust + Embassy)
-│ ├── src/ # Source tree root
-│ ├── src/assets/ # Embedded assets
-│ ├── hal/ # Hardware abstraction layer
-│ └── ui/ # Display/UI logic
-└── res/ # Logos and marketing assets
+├── Cargo.toml          # workspace (protov-core + protov-hal)
+├── protov-core/        # host-testable logic (config, SCPI, app, protection)
+├── protov-hal/         # RP2040 firmware (Embassy, HAL, UI, main)
+├── docs/               # documentation and renders
+├── hardware/           # KiCad design files
+├── client/             # desktop UI (separate)
+└── res/                # logos and marketing assets
 ```
 
 ## Building
 
 ```bash
-# Clone the Protovolt repository from GitHub
-git clone https://github.com/ThatAquarel/protovolt.git
+# Clone the repository
+git clone https://github.com/flakeblade/protov.git
+cd protov
 
-# Go to firmware directory
-cd protovolt/protovolt
+# Install [just](https://github.com/casey/just) for common commands (optional)
+# cargo install just
 ```
 
 ```bash
@@ -86,6 +86,15 @@ cargo install probe-rs elf2uf2-rs
 rustup target add thumbv6m-none-eabi
 ```
 
+Common tasks (from repo root):
+
+```bash
+just test      # cargo test -p protov-core --all-features
+just clippy    # cargo clippy -p protov-core --all-features
+just build     # cross-build protov-hal for thumbv6m-none-eabi
+just run       # build and flash via probe-rs
+```
+
 ### Flashing with SWD
 
 Connect the three pads next to the crystal oscillator on the PCB with the following pinout to the SWD debugger:
@@ -95,7 +104,8 @@ Connect the three pads next to the crystal oscillator on the PCB with the follow
 
 ```bash
 # Build and flash the firmware to the board using probe-rs
-cargo run
+just run
+# or: cargo run -p protov-hal --target thumbv6m-none-eabi --release
 ```
 
 ### Flashing via USB
@@ -103,7 +113,7 @@ Short the `UBOOT` jumper while connecting the USB cable. Drag-and-drop generated
 
 ```bash
 # Build the firmware
-cargo build --release
+just build
 
 # Convert the output ELF file to UF2 format
 elf2uf2-rs target/thumbv6m-none-eabi/release/protovolt target/thumbv6m-none-eabi/release/protovolt.uf2

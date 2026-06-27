@@ -1,0 +1,18 @@
+{
+  "rust-analyzer.linkedProjects": ["./Cargo.toml"],
+  "rust-analyzer.cargo.buildScripts.enable": true,
+  "rust-analyzer.cargo.allTargets": true,
+  "rust-analyzer.check.allTargets": true,
+  // protov-core tests run on the host; protov-hal is analyzed for thumbv6m-none-eabi.
+  "rust-analyzer.cargo.target": "thumbv6m-none-eabi",
+  "rust-analyzer.cargo.extraEnv": {
+    "DEFMT_LOG": "info"
+  },
+  "rust-analyzer.files.excludeDirs": ["hardware", "docs", "res"],
+  "[rust]": {
+    "editor.formatOnSave": true
+  },
+  "files.watcherExclude": {
+    "**/target/**": true
+  }
+}

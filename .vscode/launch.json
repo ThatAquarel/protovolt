@@ -1,0 +1,41 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "probe-rs-debug",
+      "request": "launch",
+      "name": "Debug RP2040 (protovolt)",
+      "cwd": "${workspaceFolder}",
+      "chip": "RP2040",
+      "connectUnderReset": false,
+      "flashingConfig": {
+        "flashingEnabled": true,
+        "haltAfterReset": true
+      },
+      "coreConfigs": [
+        {
+          "coreIndex": 0,
+          "programBinary": "${workspaceFolder}/target/thumbv6m-none-eabi/debug/protovolt"
+        }
+      ]
+    },
+    {
+      "type": "probe-rs-debug",
+      "request": "launch",
+      "name": "Debug RP2040 (release)",
+      "cwd": "${workspaceFolder}",
+      "chip": "RP2040",
+      "connectUnderReset": false,
+      "flashingConfig": {
+        "flashingEnabled": true,
+        "haltAfterReset": true
+      },
+      "coreConfigs": [
+        {
+          "coreIndex": 0,
+          "programBinary": "${workspaceFolder}/target/thumbv6m-none-eabi/release/protovolt"
+        }
+      ]
+    }
+  ]
+}
