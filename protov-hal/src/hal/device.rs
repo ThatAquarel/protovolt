@@ -37,6 +37,7 @@ impl<'a, M: RawMutex, BUS: I2c> I2cDeviceWithAddr<'a, M, BUS> {
         self.bus.write(self.address, bytes)
     }
 
+    #[allow(dead_code)]
     pub fn read(&mut self, read: &mut [u8]) -> Result<(), I2cDeviceError<BUS::Error>> {
         self.bus.read(self.address, read)
     }

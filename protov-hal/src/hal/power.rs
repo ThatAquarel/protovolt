@@ -43,13 +43,12 @@ mod stusb4500 {
     pub const SECTOR_4: u8 = 0x10;
 }
 
+#[allow(dead_code)]
 pub trait PowerDelivery {
     /// Read the NVM memory from the device
-    #[allow(dead_code)]
     fn read(&mut self) -> Result<(), ()>;
 
     /// Write NVM settings to the device
-    #[allow(dead_code)]
     fn write(&mut self, default_vals: u8) -> Result<(), ()>;
 
     /// Get voltage for given PDO number (1 to 3)

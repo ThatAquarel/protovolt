@@ -10,16 +10,16 @@ use embassy_sync::{
         Mutex,
         raw::{NoopRawMutex, RawMutex, ThreadModeRawMutex},
     },
-    channel::{Channel, Receiver, Sender},
+    channel::{Channel, Receiver},
 };
-use embassy_time::{Duration, Ticker, Timer, WithTimeout};
+use embassy_time::{Duration, Ticker, Timer};
 use embedded_hal::i2c::I2c;
 
 use crate::{
     HardwareChannelSender, StaticI2c1,
     hal::{
         converter::{Converter, ConverterDevice},
-        event::{Channel as OutputChannel, ChannelHardwareState, HardwareEvent},
+        event::{Channel as OutputChannel, HardwareEvent},
         measure::{Measure, MeasureDevice},
         temperature::{Temperature, TemperatureDevice},
     },

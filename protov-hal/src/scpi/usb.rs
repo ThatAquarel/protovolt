@@ -1,4 +1,4 @@
-use defmt::{error, info, unwrap};
+use defmt::{info, unwrap};
 use embassy_executor::Spawner;
 use embassy_rp::usb::Driver;
 use embassy_usb::UsbDevice;
@@ -9,7 +9,7 @@ use static_cell::StaticCell;
 use crate::config::{
     MANUFACTURER, PRODUCT_NAME, SERIAL_NUMBER, USB_MAX_POWER_MA, USB_PID, USB_VID,
 };
-use crate::scpi::parser::{ScpiCommand, parse_command};
+use crate::scpi::parser::parse_command;
 use crate::scpi::{LINE_BUF, SCPI_CMD, SCPI_RESP};
 
 /// Bus power budget in the configuration descriptor (embassy-usb: milliamps).
