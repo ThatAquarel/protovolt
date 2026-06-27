@@ -12,7 +12,7 @@ use core::cell::RefCell;
 use defmt::*;
 use embassy_executor::{Executor, Spawner};
 use embassy_rp::adc::{self, Adc};
-use embassy_rp::gpio::{Output, Pin};
+use embassy_rp::gpio::Pin;
 use embassy_rp::i2c::I2c;
 use embassy_rp::multicore::{Stack, spawn_core1};
 use embassy_rp::peripherals::{I2C0, I2C1, PIO0, USB};
@@ -27,8 +27,9 @@ use embassy_sync::blocking_mutex::raw::{NoopRawMutex, ThreadModeRawMutex};
 use embassy_sync::blocking_mutex::Mutex as I2cMutex;
 
 use embassy_sync::channel::{Channel, Sender};
-use embassy_time::{Duration, Timer, Ticker};
+use embassy_time::{Duration, Ticker};
 
+use hal::backlight::Backlight;
 use hal::display::DisplayInterface;
 use hal::event::{AppEvent, HardwareEvent, InterfaceEvent, Task};
 use hal::interface::{ButtonsInterface, matrix};
@@ -46,7 +47,7 @@ use crate::hal::{
 };
 use crate::scpi::parser::ScpiCommand;
 use crate::scpi::state::ScpiState;
-use crate::scpi::usb::{build_usb_cdc, spawn_usb_tasks, USB_ENUM_GRACE_MS};
+use crate::scpi::usb::{build_usb_cdc, spawn_usb_tasks};
 use crate::scpi::{ScpiContext, ScpiResponse, RESPONSE_BUF, SCPI_CMD, SCPI_RESP};
 
 use static_cell::StaticCell;
@@ -168,7 +169,7 @@ async fn main(spawner: Spawner) {
         p.PIN_21.degrade(),
         p.PIN_28.degrade(),
     );
-    let mut backlight = Output::new(p.PIN_16, embassy_rp::gpio::Level::Low);
+    let mut backlight = Backlight::new(p.PWM_SLICE0, p.PIN_16);
 
     // Interfacing LEDs setup
     let pio = Pio::new(p.PIO0, Irqs);
@@ -178,7 +179,7 @@ async fn main(spawner: Spawner) {
     let mut app = App::default();
     let mut ui = Ui::new(&mut display.target, leds);
     ui.clear().unwrap();
-    backlight.set_high();
+    backlight.set_brightness(scpi_state.lcd_brightness);
 
     // Start core 1 and spawn poll_interface there
     spawn_core1(
@@ -199,8 +200,14 @@ async fn main(spawner: Spawner) {
 
     let mut ticker = Ticker::every(Duration::from_hz(100));
     let mut poll_counter = 0u32;
+    let mut applied_lcd_brightness = scpi_state.lcd_brightness;
 
     loop {
+        if scpi_state.lcd_brightness != applied_lcd_brightness {
+            applied_lcd_brightness = scpi_state.lcd_brightness;
+            backlight.set_brightness(applied_lcd_brightness);
+        }
+
         if let Ok(cmd) = SCPI_CMD.try_receive() {
             let ctx = build_scpi_context(
                 &app,
@@ -245,7 +252,14 @@ async fn main(spawner: Spawner) {
                             handle_hardware_task(hw_task, &mut hal, &hw_sender, &int_sender).await;
                         }
                         Task::Display(disp_task) => {
-                            handle_display_task(disp_task, &mut ui, &hw_sender, &int_sender).await
+                            handle_display_task(
+                                disp_task,
+                                &mut ui,
+                                scpi_state,
+                                &hw_sender,
+                                &int_sender,
+                            )
+                            .await
                         }
                     }
                 }
@@ -329,7 +343,14 @@ async fn main(spawner: Spawner) {
                         handle_hardware_task(hw_task, &mut hal, &hw_sender, &int_sender).await;
                     }
                     Task::Display(disp_task) => {
-                        handle_display_task(disp_task, &mut ui, &hw_sender, &int_sender).await
+                        handle_display_task(
+                            disp_task,
+                            &mut ui,
+                            scpi_state,
+                            &hw_sender,
+                            &int_sender,
+                        )
+                        .await
                     }
                 }
             }

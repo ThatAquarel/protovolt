@@ -9,7 +9,8 @@ use crate::hal::event::{
 use crate::scpi::parser::{
     ChannelParam, MeasKind, ScpiCommand,
 };
-use crate::scpi::state::{normalize_color, ChannelSnapshot, ScpiState};
+use crate::scpi::colors::{self, Rgb};
+use crate::scpi::state::{ChannelSnapshot, ScpiState};
 use crate::scpi::telemetry;
 use crate::scpi::{ScpiChannel, ScpiContext, ScpiHandleResult, ScpiResponse, RESPONSE_BUF};
 use crate::ui::fmt::format_f32;
@@ -321,15 +322,12 @@ impl App {
                     Channel::B => self.ch_b.hw_state = new_hw_state,
                 };
 
-                if let Some(focus) = self.get_focus(channel) {
-                    AppTaskBuilder::display_task(DisplayTask::UpdateChannelHardwareState(
-                        channel,
-                        focus,
-                        new_hw_state,
-                    ))
-                } else {
-                    None
-                }
+                let focus = self.focus_for(channel);
+                AppTaskBuilder::display_task(DisplayTask::UpdateChannelHardwareState(
+                    channel,
+                    focus,
+                    new_hw_state,
+                ))
             }
             (HardwareState::Standby, HardwareEvent::PollConverterStatusInterrupt(channel)) => {
                 AppTaskBuilder::new()
@@ -591,13 +589,20 @@ impl App {
             ))
     }
 
-    fn get_focus(&self, channel: Channel) -> Option<(ChannelFocus)> {
-        let selected_channel = self.interface_state.selected_channel?;
+    fn focus_for(&self, channel: Channel) -> ChannelFocus {
+        let selected = self
+            .interface_state
+            .selected_channel
+            .unwrap_or(Channel::A);
         let enabled = match channel {
             Channel::A => self.ch_a.enable,
             Channel::B => self.ch_b.enable,
         };
-        Some(Self::channel_focus(selected_channel == channel, enabled))
+        Self::channel_focus(selected == channel, enabled)
+    }
+
+    fn channel_focuses(&self) -> (ChannelFocus, ChannelFocus) {
+        (self.focus_for(Channel::A), self.focus_for(Channel::B))
     }
 
     fn channel_focus(selected: bool, active: bool) -> ChannelFocus {
@@ -660,6 +665,27 @@ impl App {
         };
 
         self.current_confirm_state_button_task(function_button)
+    }
+
+    pub fn appearance_refresh_task(&mut self) -> AppTaskBuilder {
+        let (focus_a, focus_b) = self.channel_focuses();
+        let function_button = match self.interface_state.arrows_function {
+            ArrowsFunction::Navigation => None,
+            ArrowsFunction::SetpointEdit => Some(FunctionButton::Enter),
+        };
+
+        AppTaskBuilder::new()
+            .display(DisplayTask::UpdateChannelFocus(
+                focus_a,
+                focus_b,
+                self.ch_a.hw_state,
+                self.ch_b.hw_state,
+            ))
+            .display(DisplayTask::UpdateButton(
+                self.get_confirm_state(),
+                function_button,
+            ))
+            .extend(self.setpoints_task())
     }
 
     pub fn update_converter_task(&self, channel: Channel) -> AppTaskBuilder {
@@ -732,17 +758,18 @@ impl App {
 
     fn snapshot_channel(&self, ch: ScpiChannel, scpi: &ScpiState) -> ChannelSnapshot {
         let state = self.scpi_channel_ref(ch);
-        let mut snap = ChannelSnapshot {
+        let rgb = scpi.color(ch);
+        let snap = ChannelSnapshot {
             voltage_set: state.target.voltage.value(),
             current_set: state.target.current.value(),
             ovp: state.limits.voltage.value(),
             ocp: state.limits.current.value(),
             output_on: state.enable,
             prot_latched: scpi.prot_latched(ch),
-            color: [0; 8],
-            color_len: 0,
+            color_r: rgb.r,
+            color_g: rgb.g,
+            color_b: rgb.b,
         };
-        snap.set_color(scpi.color(ch));
         snap
     }
 
@@ -782,6 +809,14 @@ impl App {
         ScpiResponse::with_text(buf)
     }
 
+    fn push_response_u8(value: u8) -> ScpiResponse {
+        use core::fmt::Write;
+
+        let mut buf = heapless::String::<RESPONSE_BUF>::new();
+        let _ = write!(buf, "{}", value);
+        ScpiResponse::with_text(buf)
+    }
+
     fn push_response_f32(value: f32) -> ScpiResponse {
         let s = Self::format_f32_3(value);
         Self::push_response_text(s.as_str())
@@ -817,7 +852,7 @@ impl App {
             }
             ScpiCommand::IdnQuery => ScpiHandleResult {
                 response: Self::push_response_text(concat!(
-                    "FBRD Inc.,ProtoV MINI,00000000,",
+                    "FBRD Inc.,ProtoV MINI,00000011,",
                     env!("CARGO_PKG_VERSION"),
                     ",A.1"
                 )),
@@ -912,8 +947,9 @@ impl App {
                     ChannelParam::Ovp => state.limits.voltage.value(),
                     ChannelParam::Ocp => state.limits.current.value(),
                     ChannelParam::Colr => {
+                        let rgb = scpi.color(channel);
                         return ScpiHandleResult {
-                            response: Self::push_response_text(scpi.color(channel)),
+                            response: Self::push_response_text(colors::format_rgb(rgb).as_str()),
                             tasks: None,
                         };
                     }
@@ -933,6 +969,7 @@ impl App {
             ScpiCommand::Rst => {
                 self.default_reset_channels();
                 scpi.remote = true;
+                scpi.reset_appearance();
                 scpi.set_prot_latched(None, false);
                 let tasks = self
                     .update_converter_task(Channel::A)
@@ -940,6 +977,7 @@ impl App {
                     .hardware(HardwareTask::UpdateConverterState(Channel::A, false))
                     .hardware(HardwareTask::UpdateConverterState(Channel::B, false))
                     .extend(self.setpoints_task())
+                    .extend(self.appearance_refresh_task())
                     .build();
                 ScpiHandleResult {
                     response: ScpiResponse::none(),
@@ -977,6 +1015,22 @@ impl App {
                 if let Some((ch1, ch2)) = scpi.recall_slot(slot) {
                     self.restore_channel(ScpiChannel::Ch1, &ch1);
                     self.restore_channel(ScpiChannel::Ch2, &ch2);
+                    scpi.set_color(
+                        ScpiChannel::Ch1,
+                        Rgb {
+                            r: ch1.color_r,
+                            g: ch1.color_g,
+                            b: ch1.color_b,
+                        },
+                    );
+                    scpi.set_color(
+                        ScpiChannel::Ch2,
+                        Rgb {
+                            r: ch2.color_r,
+                            g: ch2.color_g,
+                            b: ch2.color_b,
+                        },
+                    );
                     scpi.set_prot_latched(None, ch1.prot_latched || ch2.prot_latched);
                     let tasks = self
                         .update_converter_task(Channel::A)
@@ -990,6 +1044,7 @@ impl App {
                             self.ch_b.enable,
                         ))
                         .extend(self.setpoints_task())
+                        .extend(self.appearance_refresh_task())
                         .build();
                     ScpiHandleResult {
                         response: ScpiResponse::none(),
@@ -1046,35 +1101,39 @@ impl App {
                     tasks: tasks.extend(self.setpoints_task()).build(),
                 }
             }
-            ScpiCommand::ColorSet {
-                channel,
-                name,
-                name_len,
-            } => {
-                let name_str =
-                    core::str::from_utf8(&name[..name_len as usize]).unwrap_or("");
-                match normalize_color(name_str) {
-                    Ok(color) => {
-                        let _ = scpi.set_color(channel, color);
-                        ScpiHandleResult {
-                            response: ScpiResponse::none(),
-                            tasks: None,
-                        }
-                    }
-                    Err(()) => {
-                        let mut msg = heapless::String::<64>::new();
-                        let _ = write!(msg, "Invalid color name: {}", name_str);
-                        scpi.push_error(-224, msg.as_str());
-                        ScpiHandleResult {
-                            response: ScpiResponse::none(),
-                            tasks: None,
-                        }
-                    }
+            ScpiCommand::ColorSet { channel, rgb } => {
+                scpi.set_color(channel, rgb);
+                ScpiHandleResult {
+                    response: ScpiResponse::none(),
+                    tasks: self.appearance_refresh_task().build(),
+                }
+            }
+            ScpiCommand::LcdBrightnessQuery => ScpiHandleResult {
+                response: Self::push_response_u8(scpi.lcd_brightness),
+                tasks: None,
+            },
+            ScpiCommand::LcdBrightnessSet { value } => {
+                scpi.lcd_brightness = value;
+                ScpiHandleResult {
+                    response: ScpiResponse::none(),
+                    tasks: None,
+                }
+            }
+            ScpiCommand::LedBrightnessQuery => ScpiHandleResult {
+                response: Self::push_response_u8(scpi.led_brightness),
+                tasks: None,
+            },
+            ScpiCommand::LedBrightnessSet { value } => {
+                scpi.led_brightness = value;
+                ScpiHandleResult {
+                    response: ScpiResponse::none(),
+                    tasks: self.appearance_refresh_task().build(),
                 }
             }
             ScpiCommand::OutputSet { channel, on } => {
                 let hal_ch = channel.to_hal();
                 self.scpi_channel_mut(channel).enable = on;
+                self.interface_state.selected_channel = Some(hal_ch);
                 let tasks = AppTaskBuilder::new()
                     .hardware(HardwareTask::UpdateConverterState(hal_ch, on))
                     .extend(self.shift_channel_focus_task(hal_ch))

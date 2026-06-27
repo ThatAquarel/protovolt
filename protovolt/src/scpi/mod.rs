@@ -1,3 +1,4 @@
+pub mod colors;
 pub mod parser;
 pub mod state;
 pub mod telemetry;

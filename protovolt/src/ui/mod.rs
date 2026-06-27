@@ -28,6 +28,7 @@ use crate::{
         },
         led::{LedsColor, LedsInterface},
     },
+    scpi::state::ScpiState,
 };
 
 pub trait Display: DrawTarget<Color = Rgb565> {}
@@ -103,27 +104,22 @@ where
         )
     }
 
-    fn channel_color(channel: Channel, focus: ChannelFocus) -> Rgb565 {
+    fn channel_color(scpi: &ScpiState, channel: Channel, focus: ChannelFocus) -> Rgb565 {
         match focus {
             ChannelFocus::SelectedInactive => color_scheme::SELECTED,
             ChannelFocus::UnselectedInactive => color_scheme::UNSELECTED,
-            ChannelFocus::SelectedActive => match channel {
-                Channel::A => color_scheme::CH_A_SELECTED,
-                Channel::B => color_scheme::CH_B_SELECTED,
-            },
-            ChannelFocus::UnselectedActive => match channel {
-                Channel::A => color_scheme::CH_A_UNSELECTED,
-                Channel::B => color_scheme::CH_B_UNSELECTED,
-            },
+            ChannelFocus::SelectedActive => scpi.selected_rgb565(channel),
+            ChannelFocus::UnselectedActive => scpi.unselected_rgb565(channel),
         }
     }
 
     pub async fn controls_channel_box(
         &mut self,
+        scpi: &ScpiState,
         channel: Channel,
         focus: ChannelFocus,
     ) -> Result<(), ()> {
-        let color = Self::channel_color(channel, focus);
+        let color = Self::channel_color(scpi, channel, focus);
 
         let text = match channel {
             Channel::A => labels::CHANNEL_A,
@@ -141,10 +137,13 @@ where
                 Channel::A => LedsColor::ChannelA(color_scheme::LED_OFF, color_scheme::LED_OFF),
                 Channel::B => LedsColor::ChannelB(color_scheme::LED_OFF, color_scheme::LED_OFF),
             },
-            ChannelFocus::SelectedActive | ChannelFocus::UnselectedActive => match channel {
-                Channel::A => LedsColor::ChannelA(color_scheme::LED_CH_A, color_scheme::LED_CH_A),
-                Channel::B => LedsColor::ChannelB(color_scheme::LED_CH_B, color_scheme::LED_CH_B),
-            },
+            ChannelFocus::SelectedActive | ChannelFocus::UnselectedActive => {
+                let led = scpi.channel_led(channel);
+                match channel {
+                    Channel::A => LedsColor::ChannelA(led, led),
+                    Channel::B => LedsColor::ChannelB(led, led),
+                }
+            }
         };
 
         self.led_interface.update_refresh(led_color).await;
@@ -154,12 +153,13 @@ where
 
     pub fn controls_header_chip(
         &mut self,
+        scpi: &ScpiState,
         channel: Channel,
         focus: ChannelFocus,
         channel_hardware_state: ChannelHardwareState,
     ) -> Result<(), ()> {
         let mut target = self.layout.channel_section(&mut *self.target, channel);
-        let color = Self::channel_color(channel, focus);
+        let color = Self::channel_color(scpi, channel, focus);
         let (invert, text) = match channel_hardware_state {
             ChannelHardwareState::Off => (false, ""),
 
@@ -191,6 +191,7 @@ where
 
     pub fn controls_submeasurement(
         &mut self,
+        scpi: &ScpiState,
         channel: Channel,
         set_select: Option<SetSelect>,
         limits: Limits,
@@ -201,9 +202,9 @@ where
         self.controls.draw_submeasurements(
             &mut target,
             &self.fonts,
+            scpi.selected_rgb565(channel),
             set_select,
             limits,
-            channel,
             confirm_state,
             select_precision,
         )
@@ -211,6 +212,7 @@ where
 
     pub fn controls_submeasurement_tag(
         &mut self,
+        scpi: &ScpiState,
         channel: Channel,
         set_state: SetState,
         set_select: Option<SetSelect>,
@@ -226,10 +228,10 @@ where
         self.controls.draw_submeasurements_tag(
             &mut target,
             &self.fonts,
+            scpi.selected_rgb565(channel),
             set_select,
             top_tag,
             bottom_tag,
-            channel,
             confirm_state,
         )
     }
@@ -241,23 +243,22 @@ where
 
     pub async fn nav_buttons(
         &mut self,
+        scpi: &ScpiState,
         confirm_state: ConfirmState,
         button_state: Option<FunctionButton>,
     ) -> Result<(), ()> {
+        let white = scpi.white_led();
         let (switch_color, settings_color) = match &button_state {
             Some(button) => match button {
-                FunctionButton::Switch => (color_scheme::LED_ON, color_scheme::LED_OFF),
-                FunctionButton::Settings => (color_scheme::LED_OFF, color_scheme::LED_ON),
+                FunctionButton::Switch => (white, color_scheme::LED_OFF),
+                FunctionButton::Settings => (color_scheme::LED_OFF, white),
                 _ => (color_scheme::LED_OFF, color_scheme::LED_OFF),
             },
             None => (color_scheme::LED_OFF, color_scheme::LED_OFF),
         };
         let enter_led_color = match confirm_state {
             ConfirmState::AwaitConfirmModify(channel) => match channel {
-                Some(channel) => match channel {
-                    Channel::A => color_scheme::LED_CH_A,
-                    Channel::B => color_scheme::LED_CH_B,
-                },
+                Some(channel) => scpi.channel_led(channel),
                 None => color_scheme::LED_OFF,
             },
             ConfirmState::AwaitModify => color_scheme::LED_OFF,
@@ -383,15 +384,7 @@ pub mod color_scheme {
     pub const SELECTED: Rgb565 = Rgb565::CSS_SILVER;
     pub const UNSELECTED: Rgb565 = Rgb565::CSS_DIM_GRAY;
 
-    pub const CH_A_SELECTED: Rgb565 = Rgb565::CSS_RED;
-    pub const CH_A_UNSELECTED: Rgb565 = Rgb565::CSS_DARK_RED;
-    pub const CH_B_SELECTED: Rgb565 = Rgb565::CSS_BLUE;
-    pub const CH_B_UNSELECTED: Rgb565 = Rgb565::CSS_DARK_BLUE;
-
     pub const LED_OFF: RGB8 = RGB8::new(0, 0, 0);
-    pub const LED_ON: RGB8 = RGB8::new(10, 10, 10);
-    pub const LED_CH_A: RGB8 = RGB8::new(10, 0, 0);
-    pub const LED_CH_B: RGB8 = RGB8::new(0, 0, 10);
 }
 
 pub mod labels {

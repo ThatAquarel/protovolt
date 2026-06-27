@@ -12,6 +12,7 @@ use crate::hal::event::{
     Channel, ChannelFocus, ChannelHardwareState, ConfirmState, DisplayTask, HardwareEvent, HardwareTask, InterfaceEvent, Limits, PowerType, SetState
 };
 use crate::hal::Hal;
+use crate::scpi::state::ScpiState;
 use crate::ui::{labels, Ui, SCREEN_HOLD_TIME};
 
 pub async fn handle_hardware_task<M, BUS>(
@@ -74,6 +75,7 @@ where
 pub async fn handle_display_task<D, PIO>(
     display_task: DisplayTask,
     ui: &mut Ui<'_, D, PIO>,
+    scpi: &ScpiState,
     _hw_sender: &Sender<'_, ThreadModeRawMutex, HardwareEvent, 32>,
     _int_sender: &Sender<'_, ThreadModeRawMutex, InterfaceEvent, 32>,
 ) where
@@ -124,7 +126,9 @@ pub async fn handle_display_task<D, PIO>(
             ui.clear().unwrap();
 
             ui.nav_power_info(power_type).unwrap();
-            ui.nav_buttons(ConfirmState::AwaitModify, None).await.unwrap();
+            ui.nav_buttons(scpi, ConfirmState::AwaitModify, None)
+                .await
+                .unwrap();
 
             let channels = [Channel::A, Channel::B];
             for channel in channels.iter() {
@@ -132,21 +136,47 @@ pub async fn handle_display_task<D, PIO>(
                     Channel::A => ch_a_limits,
                     Channel::B => ch_b_limits,
                 };
-                
+
                 let initial_focus = ChannelFocus::UnselectedInactive;
-                ui.controls_channel_box(*channel, initial_focus).await.unwrap();
-                ui.controls_header_chip(*channel, initial_focus, ChannelHardwareState::Off).unwrap();
+                ui.controls_channel_box(scpi, *channel, initial_focus)
+                    .await
+                    .unwrap();
+                ui.controls_header_chip(scpi, *channel, initial_focus, ChannelHardwareState::Off)
+                    .unwrap();
                 ui.controls_channel_units(*channel).unwrap();
 
-                ui.controls_submeasurement(*channel, None, limits, ConfirmState::AwaitModify, None).unwrap();
-                ui.controls_submeasurement_tag(*channel, SetState::Set, None, ConfirmState::AwaitModify).unwrap();
+                ui.controls_submeasurement(
+                    scpi,
+                    *channel,
+                    None,
+                    limits,
+                    ConfirmState::AwaitModify,
+                    None,
+                )
+                .unwrap();
+                ui.controls_submeasurement_tag(
+                    scpi,
+                    *channel,
+                    SetState::Set,
+                    None,
+                    ConfirmState::AwaitModify,
+                )
+                .unwrap();
             }
         }
         DisplayTask::UpdateReadout(channel, readout) => {
             ui.controls_measurement(channel, readout).unwrap();
         }
-        DisplayTask::UpdateSetpoint(channel,  limits, set_select, confirm_state, precision) => {
-            ui.controls_submeasurement(channel, set_select, limits, confirm_state, precision).unwrap();
+        DisplayTask::UpdateSetpoint(channel, limits, set_select, confirm_state, precision) => {
+            ui.controls_submeasurement(
+                scpi,
+                channel,
+                set_select,
+                limits,
+                confirm_state,
+                precision,
+            )
+            .unwrap();
         }
         DisplayTask::UpdateChannelFocus(focus_a, focus_b, hw_state_a, hw_state_b) => {
             let focuses = [focus_a, focus_b];
@@ -155,18 +185,21 @@ pub async fn handle_display_task<D, PIO>(
                     0 => (Channel::A, hw_state_a),
                     _ => (Channel::B, hw_state_b),
                 };
-                ui.controls_channel_box(channel, *focus).await.unwrap();
-                ui.controls_header_chip(channel, *focus, hw_state).unwrap();
+                ui.controls_channel_box(scpi, channel, *focus).await.unwrap();
+                ui.controls_header_chip(scpi, channel, *focus, hw_state).unwrap();
             }
         }
         DisplayTask::UpdateButton(confirm_state, function_button_state) => {
-            ui.nav_buttons(confirm_state, function_button_state).await.unwrap();
+            ui.nav_buttons(scpi, confirm_state, function_button_state)
+                .await
+                .unwrap();
         }
         DisplayTask::UpdateSetState(channel, set_state, set_select, confirm_state) => {
-            ui.controls_submeasurement_tag(channel, set_state, set_select, confirm_state).unwrap();
+            ui.controls_submeasurement_tag(scpi, channel, set_state, set_select, confirm_state)
+                .unwrap();
         }
         DisplayTask::UpdateChannelHardwareState(channel, focus, hw_state) => {
-            ui.controls_header_chip(channel, focus, hw_state).unwrap();      
+            ui.controls_header_chip(scpi, channel, focus, hw_state).unwrap();
         }
     }
 }

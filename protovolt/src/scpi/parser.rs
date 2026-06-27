@@ -1,4 +1,4 @@
-use crate::scpi::{RegisterChannel, ScpiChannel};
+use crate::scpi::{RegisterChannel, ScpiChannel, colors::Rgb};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ScpiCommand {
@@ -14,7 +14,11 @@ pub enum ScpiCommand {
         param: ChannelParam,
         value: f32,
     },
-    ColorSet { channel: ScpiChannel, name: [u8; 12], name_len: u8 },
+    ColorSet { channel: ScpiChannel, rgb: Rgb },
+    LcdBrightnessSet { value: u8 },
+    LcdBrightnessQuery,
+    LedBrightnessSet { value: u8 },
+    LedBrightnessQuery,
     OutputSet { channel: ScpiChannel, on: bool },
     OutputQuery { channel: ScpiChannel },
     ResetProt { channel: Option<ScpiChannel> },
@@ -127,6 +131,18 @@ pub fn parse_command(raw: &str) -> Option<ScpiCommand> {
     if s == "DIAG?" {
         return Some(ScpiCommand::DiagQuery);
     }
+    if s == "LCD:BRIG?" {
+        return Some(ScpiCommand::LcdBrightnessQuery);
+    }
+    if s == "LED:BRIG?" {
+        return Some(ScpiCommand::LedBrightnessQuery);
+    }
+    if let Some(value) = parse_brightness_set(s, "LCD:BRIG ") {
+        return Some(ScpiCommand::LcdBrightnessSet { value });
+    }
+    if let Some(value) = parse_brightness_set(s, "LED:BRIG ") {
+        return Some(ScpiCommand::LedBrightnessSet { value });
+    }
     if s == "OUTP:RESET:PROT" {
         return Some(ScpiCommand::ResetProt { channel: None });
     }
@@ -159,12 +175,8 @@ pub fn parse_command(raw: &str) -> Option<ScpiCommand> {
     if let Some(ch) = parse_tps55289_reg(s) {
         return Some(ScpiCommand::Tps55289RegQuery { channel: ch });
     }
-    if let Some((ch, name)) = parse_color_set(s) {
-        return Some(ScpiCommand::ColorSet {
-            channel: ch,
-            name: name.0,
-            name_len: name.1,
-        });
+    if let Some((ch, rgb)) = parse_color_set(s) {
+        return Some(ScpiCommand::ColorSet { channel: ch, rgb });
     }
     if let Some((ch, param, value)) = parse_channel_set(s) {
         return Some(ScpiCommand::ChannelSet {
@@ -282,7 +294,7 @@ fn parse_channel_prefix(s: &str) -> Option<(ScpiChannel, ChannelParam)> {
     None
 }
 
-fn parse_color_set(s: &str) -> Option<(ScpiChannel, ([u8; 12], u8))> {
+fn parse_color_set(s: &str) -> Option<(ScpiChannel, Rgb)> {
     let parts: heapless::Vec<&str, 3> = s.split(' ').collect();
     if parts.len() != 2 {
         return None;
@@ -292,11 +304,18 @@ fn parse_color_set(s: &str) -> Option<(ScpiChannel, ([u8; 12], u8))> {
         "CH2:COLR" => ScpiChannel::Ch2,
         _ => return None,
     };
-    let mut name = [0u8; 12];
-    let bytes = parts[1].as_bytes();
-    let len = bytes.len().min(12);
-    name[..len].copy_from_slice(&bytes[..len]);
-    Some((ch, (name, len as u8)))
+    crate::scpi::colors::parse_rgb_triplet(parts[1]).ok().map(|rgb| (ch, rgb))
+}
+
+fn parse_brightness_set(s: &str, prefix: &str) -> Option<u8> {
+    if !s.starts_with(prefix) {
+        return None;
+    }
+    let rest = &s[prefix.len()..];
+    if rest.contains(' ') {
+        return None;
+    }
+    crate::scpi::colors::parse_brightness(rest).ok()
 }
 
 fn parse_output_set(s: &str) -> Option<(ScpiChannel, bool)> {
@@ -415,6 +434,8 @@ pub fn is_mutation(cmd: &ScpiCommand) -> bool {
             | ScpiCommand::MeasQuery { .. }
             | ScpiCommand::ChannelQuery { .. }
             | ScpiCommand::OutputQuery { .. }
+            | ScpiCommand::LcdBrightnessQuery
+            | ScpiCommand::LedBrightnessQuery
             | ScpiCommand::SystErrQuery
             | ScpiCommand::SystVersQuery
             | ScpiCommand::TelemQuery

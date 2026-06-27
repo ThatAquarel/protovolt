@@ -1,6 +1,6 @@
 use heapless::Vec;
 
-use crate::scpi::ScpiChannel;
+use crate::scpi::{ScpiChannel, colors::{self, Rgb, DEFAULT_CH1, DEFAULT_CH2, DEFAULT_LCD_BRIGHTNESS, DEFAULT_LED_BRIGHTNESS}};
 
 pub const ERR_QUEUE_SIZE: usize = 8;
 pub const SAVE_SLOTS: usize = 9;
@@ -13,21 +13,20 @@ pub struct ChannelSnapshot {
     pub ocp: f32,
     pub output_on: bool,
     pub prot_latched: bool,
-    pub color: [u8; 8],
-    pub color_len: u8,
+    pub color_r: u8,
+    pub color_g: u8,
+    pub color_b: u8,
 }
 
-impl ChannelSnapshot {
-    pub fn color_str(&self) -> &str {
-        core::str::from_utf8(&self.color[..self.color_len as usize]).unwrap_or("RED")
-    }
-
-    pub fn set_color(&mut self, name: &str) {
-        let bytes = name.as_bytes();
-        let len = bytes.len().min(self.color.len());
-        self.color[..len].copy_from_slice(&bytes[..len]);
-        self.color_len = len as u8;
-    }
+pub struct ScpiState {
+    pub remote: bool,
+    ch1_color: Rgb,
+    ch2_color: Rgb,
+    pub lcd_brightness: u8,
+    pub led_brightness: u8,
+    pub prot_latched: [bool; 2],
+    error_queue: Vec<(i32, heapless::String<64>), ERR_QUEUE_SIZE>,
+    save_slots: [SlotSnapshot; SAVE_SLOTS],
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -47,30 +46,18 @@ impl Default for SlotSnapshot {
     }
 }
 
-pub struct ScpiState {
-    pub remote: bool,
-    pub ch1_color: [u8; 8],
-    pub ch1_color_len: u8,
-    pub ch2_color: [u8; 8],
-    pub ch2_color_len: u8,
-    pub prot_latched: [bool; 2],
-    error_queue: Vec<(i32, heapless::String<64>), ERR_QUEUE_SIZE>,
-    save_slots: [SlotSnapshot; SAVE_SLOTS],
-}
-
 impl Default for ScpiState {
     fn default() -> Self {
-        let s = Self {
+        Self {
             remote: true,
-            ch1_color: *b"RED\0\0\0\0\0",
-            ch1_color_len: 3,
-            ch2_color: *b"BLUE\0\0\0\0",
-            ch2_color_len: 4,
+            ch1_color: DEFAULT_CH1,
+            ch2_color: DEFAULT_CH2,
+            lcd_brightness: DEFAULT_LCD_BRIGHTNESS,
+            led_brightness: DEFAULT_LED_BRIGHTNESS,
             prot_latched: [false; 2],
             error_queue: Vec::new(),
             save_slots: [SlotSnapshot::default(); SAVE_SLOTS],
-        };
-        s
+        }
     }
 }
 
@@ -91,32 +78,48 @@ impl ScpiState {
         }
     }
 
-    pub fn color(&self, ch: ScpiChannel) -> &str {
+    pub fn color(&self, ch: ScpiChannel) -> Rgb {
         match ch {
-            ScpiChannel::Ch1 => core::str::from_utf8(&self.ch1_color[..self.ch1_color_len as usize])
-                .unwrap_or("RED"),
-            ScpiChannel::Ch2 => core::str::from_utf8(&self.ch2_color[..self.ch2_color_len as usize])
-                .unwrap_or("BLUE"),
+            ScpiChannel::Ch1 => self.ch1_color,
+            ScpiChannel::Ch2 => self.ch2_color,
         }
     }
 
-    pub fn set_color(&mut self, ch: ScpiChannel, name: &str) -> Result<(), ()> {
-        if !is_valid_color(name) {
-            return Err(());
-        }
+    pub fn set_color(&mut self, ch: ScpiChannel, rgb: Rgb) {
         match ch {
-            ScpiChannel::Ch1 => {
-                let len = name.len().min(8);
-                self.ch1_color[..len].copy_from_slice(&name.as_bytes()[..len]);
-                self.ch1_color_len = len as u8;
-            }
-            ScpiChannel::Ch2 => {
-                let len = name.len().min(8);
-                self.ch2_color[..len].copy_from_slice(&name.as_bytes()[..len]);
-                self.ch2_color_len = len as u8;
-            }
+            ScpiChannel::Ch1 => self.ch1_color = rgb,
+            ScpiChannel::Ch2 => self.ch2_color = rgb,
         }
-        Ok(())
+    }
+
+    pub fn reset_appearance(&mut self) {
+        self.ch1_color = DEFAULT_CH1;
+        self.ch2_color = DEFAULT_CH2;
+        self.lcd_brightness = DEFAULT_LCD_BRIGHTNESS;
+        self.led_brightness = DEFAULT_LED_BRIGHTNESS;
+    }
+
+    pub fn color_for_hal(&self, ch: crate::hal::event::Channel) -> Rgb {
+        match ch {
+            crate::hal::event::Channel::A => self.ch1_color,
+            crate::hal::event::Channel::B => self.ch2_color,
+        }
+    }
+
+    pub fn selected_rgb565(&self, ch: crate::hal::event::Channel) -> embedded_graphics::pixelcolor::Rgb565 {
+        colors::to_rgb565(self.color_for_hal(ch))
+    }
+
+    pub fn unselected_rgb565(&self, ch: crate::hal::event::Channel) -> embedded_graphics::pixelcolor::Rgb565 {
+        colors::to_rgb565(colors::darken(self.color_for_hal(ch)))
+    }
+
+    pub fn channel_led(&self, ch: crate::hal::event::Channel) -> smart_leds::RGB8 {
+        colors::scale_led(self.color_for_hal(ch), self.led_brightness)
+    }
+
+    pub fn white_led(&self) -> smart_leds::RGB8 {
+        colors::scale_white(self.led_brightness)
     }
 
     pub fn save_slot(&mut self, slot: u8, ch1: ChannelSnapshot, ch2: ChannelSnapshot) {
@@ -163,25 +166,4 @@ impl ScpiState {
             Some(ScpiChannel::Ch2) => self.prot_latched[1] = latched,
         }
     }
-}
-
-pub fn is_valid_color(name: &str) -> bool {
-    matches!(
-        name,
-        "RED" | "BLUE" | "YELLOW" | "GREEN" | "ORANGE" | "TEAL" | "VIOLET" | "PINK" | "CYAN"
-            | "LIME" | "GRAY"
-    )
-}
-
-pub fn normalize_color(raw: &str) -> Result<&'static str, ()> {
-    let colors = [
-        "RED", "BLUE", "YELLOW", "GREEN", "ORANGE", "TEAL", "VIOLET", "PINK", "CYAN", "LIME",
-        "GRAY",
-    ];
-    for c in colors {
-        if raw.eq_ignore_ascii_case(c) {
-            return Ok(c);
-        }
-    }
-    Err(())
 }

@@ -25,6 +25,7 @@ use crate::{
     },
 };
 
+pub mod backlight;
 pub mod display;
 pub mod event;
 pub mod interface;
