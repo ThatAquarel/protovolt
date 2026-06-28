@@ -15,7 +15,7 @@ fn format_idn_contains_product_fields() {
     assert!(s.contains(MANUFACTURER));
     assert!(s.contains(PRODUCT_NAME));
     assert!(s.contains(SERIAL_NUMBER));
-    assert!(s.contains(SCPI_REVISION));
+    assert!(s.contains(HARDWARE_REVISION));
 }
 
 #[test]
