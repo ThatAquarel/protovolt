@@ -21,6 +21,7 @@ where
     pub(super) sector: [[u8; 8]; 5],
     pub(super) read_sectors: bool,
     source_caps: heapless::Vec<IndexedSourcePdo, 7>,
+    saw_ps_rdy: bool,
 }
 
 impl<'a, M, BUS> PowerDeliveryDevice<'a, M, BUS>
@@ -34,6 +35,7 @@ where
             sector: [[0u8; 8]; 5],
             read_sectors: false,
             source_caps: heapless::Vec::new(),
+            saw_ps_rdy: false,
         }
     }
 
@@ -143,14 +145,35 @@ where
         Ok(Some(limits))
     }
 
+    fn highest_sink_pdo_voltage(&mut self) -> f32 {
+        let mut best = 5.0f32;
+        for slot in 1..=3u8 {
+            if let Ok(v) = self.get_voltage(slot) {
+                if v > best {
+                    best = v;
+                }
+            }
+        }
+        best
+    }
+
+    fn contract_voltage(&mut self, pos: u8) -> f32 {
+        if let Some(v) = IndexedSourcePdo::voltage_for_rdo_pos(&self.source_caps, pos) {
+            return v;
+        }
+        if self.pe_state().ok() == Some(PE_SNK_READY) {
+            return self.highest_sink_pdo_voltage();
+        }
+        5.0
+    }
+
     pub fn read_contract(&mut self) -> Result<(u32, Limits, u8), ()> {
         let mut buf = [0u8; 4];
         self.i2c_read(DPM_REQ_RDO, &mut buf)?;
         let raw = u32::from_le_bytes(buf);
         let (op_a, max_a, pos) = pdo::decode_rdo_currents(raw);
         let current = op_a.max(max_a);
-
-        let voltage = IndexedSourcePdo::voltage_for_rdo_pos(&self.source_caps, pos).unwrap_or(5.0);
+        let voltage = self.contract_voltage(pos);
 
         Ok((raw, Limits { voltage, current }, pos))
     }
@@ -158,6 +181,20 @@ where
     pub fn read_rdo(&mut self) -> Result<(u32, f32, f32, u8), ()> {
         let (raw, limits, pos) = self.read_contract()?;
         Ok((raw, limits.voltage, limits.current, pos))
+    }
+
+    pub fn is_snk_ready(&mut self) -> bool {
+        self.pe_state().ok() == Some(PE_SNK_READY)
+    }
+
+    pub fn saw_ps_rdy(&self) -> bool {
+        self.saw_ps_rdy
+    }
+
+    fn note_control_message(&mut self, msg_type: u8) {
+        if msg_type == PD_MSG_PS_RDY || msg_type == PD_MSG_ACCEPT {
+            self.saw_ps_rdy = true;
+        }
     }
 
     pub fn set_source_caps(&mut self, caps: &[IndexedSourcePdo]) {
@@ -230,6 +267,7 @@ where
         info!("[pd] rx msg type={} objs={}", msg_type, num_obj);
 
         if num_obj == 0 {
+            self.note_control_message(msg_type);
             return Ok(None);
         }
 

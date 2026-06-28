@@ -57,12 +57,15 @@ pub const PE_SNK_READY: u8 = 0x18;
 
 pub const PD_HEADER_SOFTRESET: u16 = 0x000D;
 pub const PD_MSG_SOURCE_CAPABILITIES: u8 = 0x01;
+pub const PD_MSG_ACCEPT: u8 = 0x03;
+pub const PD_MSG_PS_RDY: u8 = 0x06;
 pub const PD_CMD_SEND_MESSAGE: u8 = 0x26;
 
 pub const PRL_MSG_RECEIVED: u8 = 0x04;
 
 pub const TLOAD_MS: u64 = 30;
-pub const ATTACH_TIMEOUT_MS: u64 = 150;
+pub const ATTACH_TIMEOUT_MS: u64 = 3000;
+pub const POST_ATTACH_SETTLE_MS: u64 = 400;
 pub const NEGOTIATE_TIMEOUT_MS: u64 = 5000;
 pub const SRC_CAP_POLL_MS: u32 = 150;
 pub const SRC_CAP_BURST_US: u32 = 200;

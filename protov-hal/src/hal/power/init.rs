@@ -1,13 +1,4 @@
 //! STUSB4500 startup negotiation: attach, source-cap capture, PDO scoring, reprogram, contract verify.
-//!
-//! ## Manual bench validation
-//!
-//! | Adapter | Expected contract | Log tags to verify |
-//! |---|---|---|
-//! | 65 W USB-C PD (20 V) | 20 V at ≤ 5 A | `[pd] select`, `[pd] contract` |
-//! | 9 V / 3 A PD-only | 9 V / 3 A | `[pd] src cap`, `[pd] contract` |
-//! | 5 V / 3 A Type-C (no PD) | 5 V Type-C current | `[pd] fallback: no source caps` or attach-only |
-//! | No cable / open port | Standard 5 V limits | `[pd] fallback: no attach` |
 
 use defmt::{info, warn};
 use embassy_sync::blocking_mutex::raw::RawMutex;
@@ -15,7 +6,6 @@ use embassy_time::{Duration, Timer};
 use embedded_hal::i2c::I2c;
 
 use crate::hal::event::{Limits, PowerType};
-use crate::hal::power::regs::SRC_CAP_POLL_MS;
 
 use super::device::PowerDeliveryDevice;
 use super::diag::{
@@ -23,7 +13,10 @@ use super::diag::{
     log_negotiation_result, log_pe_state, log_programming, log_selection, log_sink_profile,
 };
 use super::pdo::{FixedPdo, INPUT_CURRENT_MAX, build_sink_slots, select_best_indexed_source_pdo};
-use super::regs::{ATTACH_TIMEOUT_MS, NEGOTIATE_TIMEOUT_MS, PE_SNK_READY, TLOAD_MS};
+use super::regs::{
+    ATTACH_TIMEOUT_MS, NEGOTIATE_TIMEOUT_MS, PE_SNK_READY, POST_ATTACH_SETTLE_MS, SRC_CAP_POLL_MS,
+    TLOAD_MS,
+};
 
 impl<M, BUS> PowerDeliveryDevice<'_, M, BUS>
 where
@@ -49,8 +42,23 @@ where
 
         log_sink_profile(self);
 
+        // Let STUSB4500 finish NVM-based negotiation before touching PD.
+        Timer::after(Duration::from_millis(POST_ATTACH_SETTLE_MS)).await;
+
+        if let Some(power_type) = self.try_use_existing_contract(1500).await {
+            return power_type;
+        }
+
         let mut indexed_caps = self.burst_poll_source_capabilities(SRC_CAP_POLL_MS).await;
-        if indexed_caps.is_empty() {
+
+        if indexed_caps.is_empty() && (self.saw_ps_rdy() || self.is_snk_ready()) {
+            info!("[pd] PS_RDY/SNK ready without src caps; skip soft reset");
+            if let Some(power_type) = self.try_use_existing_contract(2000).await {
+                return power_type;
+            }
+        }
+
+        if indexed_caps.is_empty() && !self.is_snk_ready() && !self.saw_ps_rdy() {
             info!("[pd] sending PD soft reset");
             if self.pd_soft_reset().is_err() {
                 warn!("[pd] PD soft reset failed");
@@ -59,10 +67,8 @@ where
         }
 
         if indexed_caps.is_empty() {
-            if let Ok(Some(limits)) = self.read_active_contract() {
-                info!("[pd] using NVM-negotiated contract (no src cap capture)");
-                log_negotiation_result(&limits, 0, 0);
-                return limits_to_power_type(limits, true);
+            if let Some(power_type) = self.try_use_existing_contract(NEGOTIATE_TIMEOUT_MS).await {
+                return power_type;
             }
 
             let limits = self.limits_from_typec();
@@ -74,9 +80,8 @@ where
         log_indexed_source_capabilities(&indexed_caps);
 
         let Some(best_entry) = select_best_indexed_source_pdo(&indexed_caps) else {
-            if let Ok(Some(limits)) = self.read_active_contract() {
-                log_negotiation_result(&limits, 0, 0);
-                return limits_to_power_type(limits, true);
+            if let Some(power_type) = self.try_use_existing_contract(1000).await {
+                return power_type;
             }
             let limits = self.limits_from_typec();
             log_fallback("no valid PDO", &limits);
@@ -94,9 +99,8 @@ where
         log_programming(&slots);
 
         if self.program_sink_slots(&slots).is_err() {
-            if let Ok(Some(limits)) = self.read_active_contract() {
-                log_negotiation_result(&limits, 0, 0);
-                return limits_to_power_type(limits, true);
+            if let Some(power_type) = self.try_use_existing_contract(1000).await {
+                return power_type;
             }
             let limits = self.limits_from_typec();
             log_fallback("program sink failed", &limits);
@@ -109,16 +113,15 @@ where
         }
 
         if !self.wait_snk_ready().await {
-            if let Ok(Some(limits)) = self.read_active_contract() {
-                log_negotiation_result(&limits, 0, 0);
-                return limits_to_power_type(limits, true);
+            if let Some(power_type) = self.try_use_existing_contract(1000).await {
+                return power_type;
             }
             let limits = self.limits_from_typec();
             log_fallback("contract timeout", &limits);
             return limits_to_power_type(limits, false);
         }
 
-        // Timer::after(Duration::from_millis(100)).await;
+        Timer::after(Duration::from_millis(100)).await;
 
         match self.read_contract() {
             Ok((raw, limits, pos)) => {
@@ -142,6 +145,26 @@ where
         }
     }
 
+    async fn try_use_existing_contract(&mut self, timeout_ms: u64) -> Option<PowerType> {
+        if !self.wait_snk_ready_within(timeout_ms).await {
+            return None;
+        }
+
+        Timer::after(Duration::from_millis(50)).await;
+
+        match self.read_contract() {
+            Ok((raw, limits, pos)) if limits.current > 0.0 => {
+                info!(
+                    "[pd] using existing contract V={}V I={}A",
+                    limits.voltage, limits.current
+                );
+                log_negotiation_result(&limits, raw, pos);
+                Some(limits_to_power_type(limits, true))
+            }
+            _ => None,
+        }
+    }
+
     async fn wait_attach(&mut self) -> bool {
         let deadline = Duration::from_millis(ATTACH_TIMEOUT_MS);
         let start = embassy_time::Instant::now();
@@ -160,8 +183,8 @@ where
         }
     }
 
-    async fn wait_snk_ready(&mut self) -> bool {
-        let deadline = Duration::from_millis(NEGOTIATE_TIMEOUT_MS);
+    async fn wait_snk_ready_within(&mut self, timeout_ms: u64) -> bool {
+        let deadline = Duration::from_millis(timeout_ms);
         let start = embassy_time::Instant::now();
         loop {
             if let Ok(state) = self.pe_state() {
@@ -175,5 +198,9 @@ where
             }
             Timer::after(Duration::from_millis(20)).await;
         }
+    }
+
+    async fn wait_snk_ready(&mut self) -> bool {
+        self.wait_snk_ready_within(NEGOTIATE_TIMEOUT_MS).await
     }
 }
