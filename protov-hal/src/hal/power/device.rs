@@ -21,7 +21,6 @@ where
     pub(super) sector: [[u8; 8]; 5],
     pub(super) read_sectors: bool,
     source_caps: heapless::Vec<IndexedSourcePdo, 7>,
-    saw_ps_rdy: bool,
 }
 
 impl<'a, M, BUS> PowerDeliveryDevice<'a, M, BUS>
@@ -35,7 +34,6 @@ where
             sector: [[0u8; 8]; 5],
             read_sectors: false,
             source_caps: heapless::Vec::new(),
-            saw_ps_rdy: false,
         }
     }
 
@@ -187,16 +185,6 @@ where
         self.pe_state().ok() == Some(PE_SNK_READY)
     }
 
-    pub fn saw_ps_rdy(&self) -> bool {
-        self.saw_ps_rdy
-    }
-
-    fn note_control_message(&mut self, msg_type: u8) {
-        if msg_type == PD_MSG_PS_RDY || msg_type == PD_MSG_ACCEPT {
-            self.saw_ps_rdy = true;
-        }
-    }
-
     pub fn set_source_caps(&mut self, caps: &[IndexedSourcePdo]) {
         self.source_caps.clear();
         for cap in caps {
@@ -267,7 +255,6 @@ where
         info!("[pd] rx msg type={} objs={}", msg_type, num_obj);
 
         if num_obj == 0 {
-            self.note_control_message(msg_type);
             return Ok(None);
         }
 
