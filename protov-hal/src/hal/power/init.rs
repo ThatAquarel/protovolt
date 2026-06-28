@@ -15,6 +15,7 @@ use embassy_time::{Duration, Timer};
 use embedded_hal::i2c::I2c;
 
 use crate::hal::event::{Limits, PowerType};
+use crate::hal::power::regs::SRC_CAP_POLL_MS;
 
 use super::device::PowerDeliveryDevice;
 use super::diag::{
@@ -22,9 +23,7 @@ use super::diag::{
     log_negotiation_result, log_pe_state, log_programming, log_selection, log_sink_profile,
 };
 use super::pdo::{FixedPdo, INPUT_CURRENT_MAX, build_sink_slots, select_best_indexed_source_pdo};
-use super::regs::{
-    ATTACH_TIMEOUT_MS, NEGOTIATE_TIMEOUT_MS, PE_SNK_READY, SRC_CAP_BURST_MS, TLOAD_MS,
-};
+use super::regs::{ATTACH_TIMEOUT_MS, NEGOTIATE_TIMEOUT_MS, PE_SNK_READY, TLOAD_MS};
 
 impl<M, BUS> PowerDeliveryDevice<'_, M, BUS>
 where
@@ -50,13 +49,13 @@ where
 
         log_sink_profile(self);
 
-        let mut indexed_caps = self.burst_poll_source_capabilities(150);
+        let mut indexed_caps = self.burst_poll_source_capabilities(SRC_CAP_POLL_MS).await;
         if indexed_caps.is_empty() {
             info!("[pd] sending PD soft reset");
             if self.pd_soft_reset().is_err() {
                 warn!("[pd] PD soft reset failed");
             }
-            indexed_caps = self.burst_poll_source_capabilities(SRC_CAP_BURST_MS);
+            indexed_caps = self.burst_poll_source_capabilities(SRC_CAP_POLL_MS).await;
         }
 
         if indexed_caps.is_empty() {
@@ -119,7 +118,7 @@ where
             return limits_to_power_type(limits, false);
         }
 
-        Timer::after(Duration::from_millis(100)).await;
+        // Timer::after(Duration::from_millis(100)).await;
 
         match self.read_contract() {
             Ok((raw, limits, pos)) => {

@@ -1,4 +1,5 @@
 use defmt::info;
+use embassy_time::{Duration, Ticker, Timer};
 
 use core::cell::RefCell;
 
@@ -171,18 +172,20 @@ where
     }
 
     /// Tight spin-poll for source capabilities (STUSB4500 RX buffer ~3 ms lifetime).
-    pub fn burst_poll_source_capabilities(
+    pub async fn burst_poll_source_capabilities(
         &mut self,
         ms: u32,
     ) -> heapless::Vec<IndexedSourcePdo, 7> {
         let iterations = ms * 1000 / SRC_CAP_BURST_US;
+        let mut ticker = Ticker::every(Duration::from_micros(SRC_CAP_BURST_US as u64));
+
         for _ in 0..iterations {
             match self.try_read_source_capabilities() {
                 Ok(Some(caps)) => return caps,
                 Ok(None) => {}
                 Err(()) => {}
             }
-            cortex_m::asm::delay(25_000);
+            ticker.next().await;
         }
         heapless::Vec::new()
     }

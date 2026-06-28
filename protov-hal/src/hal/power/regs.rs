@@ -64,6 +64,5 @@ pub const PRL_MSG_RECEIVED: u8 = 0x04;
 pub const TLOAD_MS: u64 = 30;
 pub const ATTACH_TIMEOUT_MS: u64 = 150;
 pub const NEGOTIATE_TIMEOUT_MS: u64 = 5000;
-pub const SRC_CAP_POLL_MS: u64 = 500;
-pub const SRC_CAP_BURST_MS: u32 = 500;
+pub const SRC_CAP_POLL_MS: u32 = 150;
 pub const SRC_CAP_BURST_US: u32 = 200;
