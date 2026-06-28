@@ -10,7 +10,8 @@ pub const USB_VID: u16 = 0x2E8A;
 pub const USB_PID: u16 = 0x111F;
 pub const USB_MAX_POWER_MA: u16 = 500;
 
-pub const HARDWARE_REVISION: &str = "A.1";
+pub use super::hardware::PROFILE as HARDWARE_PROFILE;
+pub const HARDWARE_REVISION: &str = HARDWARE_PROFILE.revision;
 pub const FIRMWARE_REVISION: &str = env!("CARGO_PKG_VERSION");
 
 pub const SCPI_SYSTEM_VERSION: &str = "1999.0";

@@ -7,6 +7,8 @@ use embassy_sync::blocking_mutex::raw::RawMutex;
 use embassy_time::Timer;
 use embedded_hal::i2c::I2c;
 
+use crate::config::HARDWARE_PROFILE;
+
 #[allow(dead_code)]
 mod tps55289 {
     pub const ADDR: u8 = 0x74;
@@ -26,9 +28,6 @@ mod tps55289 {
         // + extra
         590 * (v_i as u64 - v_f as u64) / 100 + 20000
     }
-
-    #[cfg(feature = "calibrated")]
-    pub const VOLTAGE_OFFSET: u16 = 0; // shift down by 20mV
 
     pub enum OperatingMode {
         Buck,
@@ -195,11 +194,7 @@ where
         let vref = voltage_reg * 1129 / 2;
         let conv = (vref + 45_000) * feedback_divisor / 141_000;
 
-        Ok(if cfg!(feature = "calibrated") {
-            (conv as u16) + VOLTAGE_OFFSET
-        } else {
-            conv as u16
-        })
+        Ok((conv as u16) + HARDWARE_PROFILE.converter_voltage_offset_mv)
     }
 
     fn read_flags(&mut self) -> Result<ConverterFlags, ()> {
@@ -218,11 +213,7 @@ where
     /// Set TPS55289 output voltage
     /// * voltage: mV
     async fn set_voltage(&mut self, voltage: u16) -> Result<(), ()> {
-        let target_voltage = if cfg!(feature = "calibrated") {
-            voltage - VOLTAGE_OFFSET
-        } else {
-            voltage
-        };
+        let target_voltage = voltage.saturating_sub(HARDWARE_PROFILE.converter_voltage_offset_mv);
 
         let (feedback_divisor, feedback_reg) = match target_voltage {
             200..=5000 => (625u32, 0u8),
@@ -271,9 +262,8 @@ where
     /// * current: mA
     fn set_current(&mut self, current: u16) -> Result<(), ()> {
         let enable = 1u8 << 7;
-        let current_limit_setting = (current as f32 / 41.15f32) as u8 & !enable;
-        // let current_limit_setting = (current as f32 / 38.299625f32) as u8 & !enable;
-        // let current_limit_setting = (current / 40) as u8 & !enable;
+        let current_limit_setting =
+            (current as f32 / HARDWARE_PROFILE.converter_current_scale_ma) as u8 & !enable;
         let reg = enable | current_limit_setting;
 
         self.i2c.write(&[IOUT_LIMIT, reg]).map_err(|_| ())?;

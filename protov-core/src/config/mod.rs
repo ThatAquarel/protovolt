@@ -5,6 +5,7 @@
 
 mod appearance;
 mod channel;
+mod hardware;
 mod product;
 mod protection;
 mod telemetry;
@@ -16,6 +17,7 @@ pub use appearance::{
 pub use channel::{
     CH1_FACTORY, CH2_FACTORY, CURRENT_EDIT_RANGE, ChannelProfile, VOLTAGE_EDIT_RANGE,
 };
+pub use hardware::{HardwareProfile, PROFILE as HARDWARE_PROFILE};
 pub use product::{
     HARDWARE_REVISION, MANUFACTURER, PRODUCT_NAME, SCPI_SYSTEM_VERSION, SERIAL_NUMBER,
     USB_MAX_POWER_MA, USB_PID, USB_VID, format_idn,

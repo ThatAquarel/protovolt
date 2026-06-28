@@ -46,6 +46,8 @@ micromath = "2.1.0"
 smart-leds = "0.4.0"
 
 [features]
-default = ["calibrated"]
-calibrated = []
+default = ["hw-a1"]
+hw-a0 = ["protov-core/hw-a0"]
+hw-a1 = ["protov-core/hw-a1"]
+hw-a2 = ["protov-core/hw-a2"]
 demo = []

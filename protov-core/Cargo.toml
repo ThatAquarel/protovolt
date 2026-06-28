@@ -17,6 +17,9 @@ rstest = "0.23"
 
 [features]
 test-harness = []
+hw-a0 = []
+hw-a1 = []
+hw-a2 = []
 
 [[test]]
 name = "integration"

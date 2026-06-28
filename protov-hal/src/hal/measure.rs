@@ -4,6 +4,8 @@ use defmt::*;
 use embassy_sync::blocking_mutex::{Mutex, raw::RawMutex};
 use embedded_hal::i2c::I2c;
 
+use crate::config::HARDWARE_PROFILE;
+
 #[allow(dead_code)]
 mod ina226 {
     // A0, A1 --> GND: default addr
@@ -25,20 +27,9 @@ mod ina226 {
     pub const DIE_ID: u8 = 0xFF;
 }
 
-const R_SHUNT: f32 = 0.010; // 10mR
-const I_MAX: f32 = 5.00; // 5A limit
-// TODO: move all into hardware file
-
-const CURRENT_LSB: f32 = I_MAX / ((1 << 15) as f32);
-const POWER_LSB: f32 = CURRENT_LSB * 25.0;
-const CAL: [u8; 2] = compute_cal(CURRENT_LSB, R_SHUNT);
-const fn compute_cal(current_lsb: f32, shunt_resistance: f32) -> [u8; 2] {
-    let cal = 0.00512 / (current_lsb * shunt_resistance);
-
-    // TODO: figure out rounding or truncating?
-    // also, uncertainty computation on either method. (currently truncating)
-    (cal as u16).to_be_bytes()
-}
+const CURRENT_LSB: f32 = HARDWARE_PROFILE.ina226_current_lsb();
+const POWER_LSB: f32 = HARDWARE_PROFILE.ina226_power_lsb();
+const CAL: [u8; 2] = HARDWARE_PROFILE.ina226_cal_reg();
 
 use ina226::*;
 
@@ -122,13 +113,11 @@ where
     fn read_current(&mut self) -> Result<f32, ()> {
         let reg = self.i2c.read_reg_word(CURRENT).map_err(|_| ())?;
         Ok((reg as i16 as f32) * CURRENT_LSB)
-        // TODO: move 1.25mV LSB out into INA226 constants
     }
 
     fn read_power(&mut self) -> Result<f32, ()> {
         let reg = self.i2c.read_reg_word(POWER).map_err(|_| ())?;
         Ok((reg as f32) * POWER_LSB)
-        // TODO: move 1.25mV LSB out into INA226 constants
     }
 
     fn dump_registers<const N: usize>(&mut self, buf: &mut heapless::String<N>) -> Result<(), ()> {

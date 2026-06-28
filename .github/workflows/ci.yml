@@ -23,10 +23,19 @@ jobs:
 
   build-firmware:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        profile: [hw-a0, hw-a1, hw-a2]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: thumbv6m-none-eabi
       - uses: extractions/setup-just@v2
-      - run: just build
+      - name: Build ${{ matrix.profile }}
+        run: |
+          case "${{ matrix.profile }}" in
+            hw-a1) just build-a1 ;;
+            hw-a0) just build-a0 ;;
+            hw-a2) just build-a2 ;;
+          esac
