@@ -34,7 +34,9 @@ use app::App;
 use task::{handle_display_task, handle_hardware_task};
 use ui::Ui;
 
-use hal::event::{AppTask, AppTaskBuilder, Channel as OutputChannel, DisplayTask, HardwareTask, PowerType};
+use hal::event::{
+    AppTask, AppTaskBuilder, Channel as OutputChannel, DisplayTask, HardwareTask, PowerType,
+};
 use hal::led::LedsInterface;
 use hal::temperature::TemperatureReading;
 use hal::{
