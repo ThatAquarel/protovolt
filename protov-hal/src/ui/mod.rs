@@ -5,15 +5,13 @@ use embedded_graphics::{
     prelude::{DrawTarget, Point},
 };
 
-pub mod fmt;
-
 pub mod boot;
 pub mod controls;
 pub mod navbar;
 
 use boot::BootScreen;
 use controls::ControlsScreen;
-use navbar::Navbar;
+use navbar::{Navbar, PowerInfoDisplay};
 
 use embedded_graphics::draw_target::DrawTargetExt;
 use u8g2_fonts::{FontRenderer, fonts};
@@ -28,7 +26,7 @@ use crate::{
         },
         led::{LedsColor, LedsInterface},
     },
-    scpi::state::ScpiState,
+    scpi::{self, state::ScpiState},
 };
 
 pub trait Display: DrawTarget<Color = Rgb565> {}
@@ -237,8 +235,9 @@ where
     }
 
     pub fn nav_power_info(&mut self, power_type: PowerType) -> Result<(), ()> {
+        let info = PowerInfoDisplay::new(power_type, scpi::serial_connected());
         self.navbar
-            .draw_power_info(&mut *self.target, &self.fonts, power_type)
+            .draw_power_info(&mut *self.target, &self.fonts, info)
     }
 
     pub async fn nav_buttons(
@@ -281,8 +280,8 @@ where
 pub struct Fonts {
     pub icons_1x: FontRenderer,
     pub icons_2x: FontRenderer,
-    pub icons_4x: FontRenderer,
     pub info_small: FontRenderer,
+    pub info_navbar: FontRenderer,
     pub info_large: FontRenderer,
     pub readout_small: FontRenderer,
     pub readout_large: FontRenderer,
@@ -293,9 +292,8 @@ impl Default for Fonts {
         Self {
             icons_1x: FontRenderer::new::<fonts::u8g2_font_open_iconic_arrow_1x_t>(),
             icons_2x: FontRenderer::new::<fonts::u8g2_font_open_iconic_all_2x_t>(),
-            // icons_4x: FontRenderer::new::<fonts::u8g2_font_open_iconic_all_4x_t>(),
-            icons_4x: FontRenderer::new::<fonts::u8g2_font_open_iconic_other_4x_t>(),
             info_small: FontRenderer::new::<fonts::u8g2_font_helvB08_tf>(),
+            info_navbar: FontRenderer::new::<fonts::u8g2_font_profont11_tr>(),
             info_large: FontRenderer::new::<fonts::u8g2_font_helvR14_tr>(),
             readout_small: FontRenderer::new::<fonts::u8g2_font_logisoso16_tn>(),
             readout_large: FontRenderer::new::<fonts::u8g2_font_logisoso32_tn>(),
@@ -315,10 +313,21 @@ pub mod icons_2x {
     pub const PENCIL: &str = "\u{00E3}";
     pub const SETTINGS: &str = "\u{0081}";
     pub const SWITCH: &str = "\u{00CC}";
+
+    pub const LIGHTNING: &str = "\u{0060}";
+    pub const LINK: &str = "\u{00c6}";
 }
 
-pub mod icons_4x {
-    pub const LIGHTNING: &str = "\u{0040}";
+pub mod navbar_layout {
+    use embedded_graphics::prelude::Point;
+
+    pub const BOX_WIDTH: u32 = 125;
+    pub const BOX_HEIGHT: u32 = 30;
+    pub const ICON_CENTER: Point = Point::new(17, 15);
+    pub const TEXT_X: i32 = 32;
+    pub const TEXT_Y: i32 = 9;
+    pub const TEXT_LINE_GAP: i32 = 12;
+    pub const BOX_STROKE_WIDTH: u32 = 2;
 }
 
 pub struct Layout;
@@ -383,6 +392,7 @@ pub mod color_scheme {
     // pub const ACCENT: Rgb565 = Rgb565::CSS_WHITE;
     pub const SELECTED: Rgb565 = Rgb565::CSS_SILVER;
     pub const UNSELECTED: Rgb565 = Rgb565::CSS_DIM_GRAY;
+    pub const NAVBAR_TEXT: Rgb565 = Rgb565::CSS_DIM_GRAY;
 
     pub const LED_OFF: RGB8 = RGB8::new(0, 0, 0);
 }

@@ -169,6 +169,9 @@ pub async fn handle_display_task<D, PIO>(
                 .unwrap();
             }
         }
+        DisplayTask::UpdatePowerInfo(power_type) => {
+            ui.nav_power_info(power_type).unwrap();
+        }
         DisplayTask::UpdateReadout(channel, readout) => {
             ui.controls_measurement(channel, readout).unwrap();
         }

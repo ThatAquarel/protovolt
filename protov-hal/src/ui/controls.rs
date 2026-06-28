@@ -15,8 +15,9 @@ use u8g2_fonts::{
 use crate::{
     app::{DecimalPrecision, SetSelect},
     hal::event::{ConfirmState, Limits, Readout},
-    ui::{Display, Fonts, color_scheme, fmt::format_f32, icons_1x, labels},
+    ui::{Display, Fonts, color_scheme, icons_1x, labels},
 };
+use protov_core::fmt::format_f32;
 
 use embedded_graphics_framebuf::FrameBuf;
 

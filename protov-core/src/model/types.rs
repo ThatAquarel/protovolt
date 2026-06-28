@@ -208,6 +208,7 @@ pub enum DisplayTask {
     ConfirmSense(Result<(), ()>),
     ConfirmConverter(Result<(), ()>),
     SetupMain(PowerType, Limits, Limits),
+    UpdatePowerInfo(PowerType),
     UpdateReadout(Channel, Readout),
     UpdateSetpoint(
         Channel,

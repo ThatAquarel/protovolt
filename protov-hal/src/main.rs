@@ -34,7 +34,7 @@ use app::App;
 use task::{handle_display_task, handle_hardware_task};
 use ui::Ui;
 
-use hal::event::{AppTask, AppTaskBuilder, Channel as OutputChannel, HardwareTask};
+use hal::event::{AppTask, AppTaskBuilder, Channel as OutputChannel, DisplayTask, HardwareTask, PowerType};
 use hal::led::LedsInterface;
 use hal::temperature::TemperatureReading;
 use hal::{
@@ -142,6 +142,8 @@ async fn main(spawner: Spawner) {
     let mut input_voltage = 20.0f32;
     let mut input_current = 0.35f32;
     let mut input_type_pd = true;
+    let mut power_type = PowerType::default();
+    let mut last_serial_connected = scpi::serial_connected();
 
     // Buttons (moved to static so Core 1 owns them)
     let buttons = ButtonsInterface::new(
@@ -267,8 +269,9 @@ async fn main(spawner: Spawner) {
                     tasks =
                         append_app_event(tasks, &mut app, scpi_state, AppEvent::Hardware(hw_event));
                 }
-                HardwareEvent::PowerDeliveryReady(power_type) => {
-                    match power_type {
+                HardwareEvent::PowerDeliveryReady(pt) => {
+                    power_type = pt;
+                    match pt {
                         hal::event::PowerType::PowerDelivery(limits) => {
                             input_type_pd = true;
                             input_voltage = limits.voltage;
@@ -284,7 +287,7 @@ async fn main(spawner: Spawner) {
                         tasks,
                         &mut app,
                         scpi_state,
-                        AppEvent::Hardware(HardwareEvent::PowerDeliveryReady(power_type)),
+                        AppEvent::Hardware(HardwareEvent::PowerDeliveryReady(pt)),
                     );
                 }
                 HardwareEvent::ReadoutAcquired(channel, readout) => match channel {
@@ -329,6 +332,19 @@ async fn main(spawner: Spawner) {
             tasks = tasks
                 .hardware(HardwareTask::PollConverterStatus(OutputChannel::A))
                 .hardware(HardwareTask::PollConverterStatus(OutputChannel::B));
+        }
+
+        let serial_connected = scpi::serial_connected();
+        if serial_connected != last_serial_connected && app.is_standby() {
+            last_serial_connected = serial_connected;
+            handle_display_task(
+                DisplayTask::UpdatePowerInfo(power_type),
+                &mut ui,
+                scpi_state,
+                &hw_sender,
+                &int_sender,
+            )
+            .await;
         }
 
         if let Some(app_task) = tasks.build() {

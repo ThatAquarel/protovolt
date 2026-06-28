@@ -10,7 +10,7 @@ use crate::config::{
     MANUFACTURER, PRODUCT_NAME, SERIAL_NUMBER, USB_MAX_POWER_MA, USB_PID, USB_VID,
 };
 use crate::scpi::parser::parse_command;
-use crate::scpi::{LINE_BUF, SCPI_CMD, SCPI_RESP};
+use crate::scpi::{LINE_BUF, SCPI_CMD, SCPI_RESP, set_serial_connected};
 
 /// Bus power budget in the configuration descriptor (embassy-usb: milliamps).
 /// ProtoV is PD-powered; keep this modest for the RP2040 USB PHY only.
@@ -82,6 +82,7 @@ async fn scpi_task(class: &'static mut MyCdcClass) -> ! {
 
     loop {
         class.wait_connection().await;
+        set_serial_connected(true);
 
         info!("SCPI USB connected");
         line_buf.clear();
@@ -90,6 +91,7 @@ async fn scpi_task(class: &'static mut MyCdcClass) -> ! {
             match read_scpi_session(class, &mut line_buf).await {
                 Ok(()) => {}
                 Err(Disconnected) => {
+                    set_serial_connected(false);
                     info!("SCPI USB disconnected");
                     break;
                 }
