@@ -26,7 +26,8 @@ jobs:
       - name: Install packaging tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y binutils-arm-none-eabi
+          # arm-none-eabi-objcopy for .bin; libudev-dev/pkg-config for host elf2uf2-rs build
+          sudo apt-get install -y binutils-arm-none-eabi libudev-dev pkg-config
           cargo install elf2uf2-rs --locked
 
       - name: Resolve release version

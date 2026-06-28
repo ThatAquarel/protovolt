@@ -1257,7 +1257,7 @@ dependencies = [
 
 [[package]]
 name = "protov-core"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "embedded-graphics",
  "heapless",
@@ -1268,7 +1268,7 @@ dependencies = [
 
 [[package]]
 name = "protov-hal"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
