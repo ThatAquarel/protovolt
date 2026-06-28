@@ -10,6 +10,9 @@ path = "src/main.rs"
 test = false
 bench = false
 
+[lib]
+path = "src/lib.rs"
+
 [dependencies]
 protov-core = { path = "../protov-core" }
 defmt = "0.3"

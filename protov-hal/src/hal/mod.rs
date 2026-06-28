@@ -10,20 +10,25 @@ use embassy_sync::{
         Mutex,
         raw::{NoopRawMutex, RawMutex, ThreadModeRawMutex},
     },
-    channel::{Channel, Receiver},
+    channel::{Channel, Receiver, Sender},
 };
 use embassy_time::{Duration, Ticker, Timer};
 use embedded_hal::i2c::I2c;
 
-use crate::{
-    HardwareChannelSender, StaticI2c1,
-    hal::{
-        converter::{Converter, ConverterDevice},
-        event::{Channel as OutputChannel, HardwareEvent},
-        measure::{Measure, MeasureDevice},
-        temperature::{Temperature, TemperatureDevice},
-    },
+use embassy_rp::i2c::{self, I2c as RpI2c};
+use embassy_rp::peripherals::I2C1;
+
+use crate::hal::{
+    converter::{Converter, ConverterDevice},
+    event::{Channel as OutputChannel, HardwareEvent},
+    measure::{Measure, MeasureDevice},
+    power::PowerDeliveryDevice,
+    temperature::{Temperature, TemperatureDevice},
 };
+
+pub type StaticI2c1 = RpI2c<'static, I2C1, i2c::Blocking>;
+const HW_CH_SIZE: usize = 32;
+pub type HardwareChannelSender = Sender<'static, ThreadModeRawMutex, HardwareEvent, HW_CH_SIZE>;
 
 pub mod backlight;
 pub mod display;
@@ -41,25 +46,33 @@ pub mod temperature;
 use crate::hal::converter::ConverterFlags;
 use event::Channel as ConverterChannel;
 
-pub struct Hal<'a, M: RawMutex, BUS: I2c> {
-    ch_a: ConverterDevice<'a, M, BUS>,
-    ch_b: ConverterDevice<'a, M, BUS>,
+pub struct Hal<'a, M: RawMutex, PowerBus: I2c, ConverterBus: I2c> {
+    ch_a: ConverterDevice<'a, M, ConverterBus>,
+    ch_b: ConverterDevice<'a, M, ConverterBus>,
+    power: PowerDeliveryDevice<'a, M, PowerBus>,
 }
 
-impl<'a, M, BUS> Hal<'a, M, BUS>
+impl<'a, M, PowerBus, ConverterBus> Hal<'a, M, PowerBus, ConverterBus>
 where
     M: RawMutex,
-    BUS: I2c + 'a,
+    PowerBus: I2c + 'a,
+    ConverterBus: I2c + 'a,
 {
     pub fn new(
-        converter_bus: &'a Mutex<M, RefCell<BUS>>,
+        power_bus: &'a Mutex<M, RefCell<PowerBus>>,
+        converter_bus: &'a Mutex<M, RefCell<ConverterBus>>,
         ch_a_enable: AnyPin,
         ch_b_enable: AnyPin,
     ) -> Self {
         Self {
+            power: PowerDeliveryDevice::new(power_bus),
             ch_a: ConverterDevice::new(ch_a_enable, converter_bus, OutputChannel::A),
             ch_b: ConverterDevice::new(ch_b_enable, converter_bus, OutputChannel::B),
         }
+    }
+
+    pub async fn init_power_delivery(&mut self) -> crate::hal::event::PowerType {
+        self.power.init_and_negotiate().await
     }
 
     pub async fn enable_sense(&mut self) {

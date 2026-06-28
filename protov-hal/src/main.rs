@@ -1,12 +1,7 @@
 #![no_std]
 #![no_main]
 
-mod app;
-mod config;
-mod hal;
-mod scpi;
-mod task;
-mod ui;
+use protov_hal::{app, config, hal, scpi, task, ui};
 
 use core::cell::RefCell;
 
@@ -39,17 +34,17 @@ use app::App;
 use task::{handle_display_task, handle_hardware_task};
 use ui::Ui;
 
-use crate::hal::event::{AppTask, AppTaskBuilder, Channel as OutputChannel, HardwareTask};
-use crate::hal::led::LedsInterface;
-use crate::hal::temperature::TemperatureReading;
-use crate::hal::{
+use hal::event::{AppTask, AppTaskBuilder, Channel as OutputChannel, HardwareTask};
+use hal::led::LedsInterface;
+use hal::temperature::TemperatureReading;
+use hal::{
     Hal, HalSense, HalTempSense, INA226_DUMP_REQ, INA226_DUMP_RESP, SENSE_CHANNEL, converter_a_irq,
     converter_b_irq, poll_sense, temp_sense,
 };
-use crate::scpi::parser::ScpiCommand;
-use crate::scpi::state::ScpiState;
-use crate::scpi::usb::{build_usb_cdc, spawn_usb_tasks};
-use crate::scpi::{RESPONSE_BUF, SCPI_CMD, SCPI_RESP, ScpiContext, ScpiResponse};
+use scpi::parser::ScpiCommand;
+use scpi::state::ScpiState;
+use scpi::usb::{build_usb_cdc, spawn_usb_tasks};
+use scpi::{RESPONSE_BUF, SCPI_CMD, SCPI_RESP, ScpiContext, ScpiResponse};
 
 use static_cell::StaticCell;
 
@@ -61,7 +56,7 @@ pub static INTERFACE_CHANNEL: Channel<ThreadModeRawMutex, InterfaceEvent, 32> = 
 const HW_CH_SIZE: usize = 32;
 pub static HARDWARE_CHANNEL: Channel<ThreadModeRawMutex, HardwareEvent, HW_CH_SIZE> =
     Channel::new();
-pub type HardwareChannelSender = Sender<'static, ThreadModeRawMutex, HardwareEvent, HW_CH_SIZE>;
+pub type HardwareChannelSender = hal::HardwareChannelSender;
 
 // Multicore setup
 static mut CORE1_STACK: Stack<8192> = Stack::new();
@@ -136,7 +131,7 @@ async fn main(spawner: Spawner) {
     let hal_temp_sense = HAL_TEMP_SENSE.init(hal_temp_sense);
     unwrap!(spawner.spawn(temp_sense(hal_temp_sense, HARDWARE_CHANNEL.sender())));
 
-    let mut hal = Hal::new(i2c0_bus, p.PIN_24.degrade(), p.PIN_25.degrade());
+    let mut hal = Hal::new(i2c0_bus, i2c0_bus, p.PIN_24.degrade(), p.PIN_25.degrade());
 
     let scpi_state = SCPI_STATE.init(ScpiState::default());
     let mut last_temp = TemperatureReading {

@@ -9,5 +9,6 @@ pub mod app;
 pub mod config;
 pub mod fmt;
 pub mod model;
+pub mod pd;
 pub mod protection;
 pub mod scpi;

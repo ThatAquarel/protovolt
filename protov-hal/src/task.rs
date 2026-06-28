@@ -11,29 +11,26 @@ use embedded_hal::i2c::I2c;
 use crate::hal::Hal;
 use crate::hal::event::{
     Channel, ChannelFocus, ChannelHardwareState, ConfirmState, DisplayTask, HardwareEvent,
-    HardwareTask, InterfaceEvent, Limits, PowerType, SetState,
+    HardwareTask, InterfaceEvent, PowerType, SetState,
 };
 use crate::scpi::state::ScpiState;
 use crate::ui::{SCREEN_HOLD_TIME, Ui, labels};
 
-pub async fn handle_hardware_task<M, BUS>(
+pub async fn handle_hardware_task<M, PowerBus, ConverterBus>(
     hardware_task: HardwareTask,
-    hal: &mut Hal<'_, M, BUS>,
+    hal: &mut Hal<'_, M, PowerBus, ConverterBus>,
     hw_sender: &Sender<'_, ThreadModeRawMutex, HardwareEvent, 32>,
     _int_sender: &Sender<'_, ThreadModeRawMutex, InterfaceEvent, 32>,
 ) where
     M: RawMutex,
-    BUS: I2c,
+    PowerBus: I2c,
+    ConverterBus: I2c,
 {
     match hardware_task {
         HardwareTask::EnablePowerDelivery => {
+            let power_type = hal.init_power_delivery().await;
             hw_sender
-                .send(HardwareEvent::PowerDeliveryReady(PowerType::PowerDelivery(
-                    Limits {
-                        voltage: 20.00,
-                        current: 5.00,
-                    },
-                )))
+                .send(HardwareEvent::PowerDeliveryReady(power_type))
                 .await;
         }
         HardwareTask::EnableSense => {
@@ -52,12 +49,16 @@ pub async fn handle_hardware_task<M, BUS>(
         //     Timer::after(duration).await;
         //     int_sender.send(event).await;
         // }
-        HardwareTask::PollConverterStatus(channel) => {
-            let flags = hal.poll_converter_status(channel).unwrap();
-            hw_sender
-                .send(HardwareEvent::ConverterStatusAcquired(channel, flags))
-                .await;
-        }
+        HardwareTask::PollConverterStatus(channel) => match hal.poll_converter_status(channel) {
+            Ok(flags) => {
+                hw_sender
+                    .send(HardwareEvent::ConverterStatusAcquired(channel, flags))
+                    .await;
+            }
+            Err(()) => {
+                warn!("poll converter status failed");
+            }
+        },
         HardwareTask::DelayedHardwareEvent(ms, event) => {
             Timer::after(Duration::from_millis(ms)).await;
             hw_sender.send(event).await;
