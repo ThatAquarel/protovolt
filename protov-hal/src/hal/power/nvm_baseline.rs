@@ -12,8 +12,3 @@ pub const MANUFACTURING_SECTORS: [[u8; 8]; 5] = [
     // PDO2 15V, PDO3 20V, REQ_SRC_CURRENT=1 (0x10), flex current
     [0x00, 0x4B, 0x90, 0x21, 0x43, 0x00, 0x50, 0xFB],
 ];
-
-/// Returns true if the loaded NVM sectors already match our manufacturing baseline.
-pub fn sectors_match_baseline(sectors: &[[u8; 8]; 5]) -> bool {
-    sectors == &MANUFACTURING_SECTORS
-}

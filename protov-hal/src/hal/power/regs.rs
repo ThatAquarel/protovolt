@@ -1,4 +1,5 @@
 //! STUSB4500 I2C register map (ST USB_PD_defines_STUSB-GEN1S.h).
+#![allow(dead_code)]
 
 pub const I2C_ADDR: u8 = 0x28;
 

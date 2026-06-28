@@ -1,5 +1,5 @@
 use defmt::info;
-use embassy_time::{Duration, Ticker, Timer};
+use embassy_time::{Duration, Ticker};
 
 use core::cell::RefCell;
 
@@ -9,8 +9,8 @@ use embedded_hal::i2c::I2c;
 use crate::hal::device::I2cDeviceWithAddr;
 use crate::hal::event::Limits;
 
-use super::nvm_baseline::{self, MANUFACTURING_SECTORS};
-use super::pdo::{self, FixedPdo, IndexedSourcePdo, SinkSlots};
+use super::nvm_baseline::MANUFACTURING_SECTORS;
+use super::pdo::{self, IndexedSourcePdo, SinkSlots};
 use super::regs::*;
 
 pub struct PowerDeliveryDevice<'a, M: RawMutex, BUS>

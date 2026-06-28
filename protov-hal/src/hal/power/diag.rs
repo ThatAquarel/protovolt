@@ -16,10 +16,6 @@ pub fn limits_to_power_type(limits: Limits, pd: bool) -> PowerType {
 use super::device::PowerDeliveryDevice;
 use super::pdo::FixedPdo;
 
-pub fn log_rx_message(msg_type: u8, num_obj: u8) {
-    info!("[pd] rx msg type={} objs={}", msg_type, num_obj);
-}
-
 pub fn log_sink_profile<M, BUS>(dev: &mut PowerDeliveryDevice<M, BUS>)
 where
     M: RawMutex,
@@ -49,19 +45,6 @@ where
             dev.get_gpio_ctrl().unwrap_or(0),
             dev.get_power_above_5v_only().unwrap_or(0),
             dev.get_req_src_current().unwrap_or(0),
-        );
-    }
-}
-
-pub fn log_source_capabilities(caps: &[FixedPdo]) {
-    info!("[pd] src cap: {} fixed PDO(s)", caps.len());
-    for (i, pdo) in caps.iter().enumerate() {
-        info!(
-            "[pd] src cap #{}: V={}V I={}A P={}W",
-            i + 1,
-            pdo.voltage_v,
-            pdo.current_a,
-            pdo.power_w()
         );
     }
 }

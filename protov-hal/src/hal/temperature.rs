@@ -13,6 +13,7 @@ mod temp_ntc {
     pub const T0: f32 = 298.15;
 }
 
+#[allow(async_fn_in_trait)]
 pub trait Temperature<'a> {
     async fn read_temperature(&mut self) -> Result<TemperatureReading, ()>;
 }

@@ -82,6 +82,7 @@ use crate::hal::device::I2cDeviceWithAddr;
 use crate::hal::event::Channel;
 pub use protov_core::model::ConverterFlags;
 
+#[allow(async_fn_in_trait)]
 pub trait Converter {
     async fn init(&mut self) -> Result<(), ()>;
 
