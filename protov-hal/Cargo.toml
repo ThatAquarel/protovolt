@@ -1,8 +1,8 @@
 [package]
 name = "protov-hal"
-version = "0.1.0"
-edition = "2024"
-authors = ["Alex Xia <alex.xia@flakeblade.com>"]
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
 
 [[bin]]
 name = "protov"

@@ -9,6 +9,9 @@ host_target := env_var_or_default("HOST_TARGET", "x86_64-unknown-linux-gnu")
 # Embedded target
 embedded_target := "thumbv6m-none-eabi"
 
+elf := "target/" + embedded_target + "/release/protov"
+release_dir := "dist"
+
 # Host unit tests (protov-core, A.1 profile)
 test: test-a1
 
@@ -40,10 +43,62 @@ build-a1:
 build-a2:
     cargo build -p protov-hal --target {{embedded_target}} --release --no-default-features --features hw-a2
 
-# Generate .uf2 file from release build
+# Generate .uf2 from the current release ELF (default A.1 build)
 pkg:
-    elf2uf2-rs target/thumbv6m-none-eabi/release/protov target/protov.uf2
+    elf2uf2-rs {{elf}} target/protov.uf2
 
 # Build and flash via probe-rs (see .cargo/config.toml runner)
 run:
     cargo run -p protov-hal --target {{embedded_target}} --release
+
+# Build + package all hardware profiles (version e.g. 1.0.0, without v prefix)
+release-bundle version:
+    just _release-profile hw-a0 A.0 {{version}}
+    just _release-profile hw-a1 A.1 {{version}}
+    just _release-profile hw-a2 A.2 {{version}}
+    just _release-manifest {{version}}
+    just _release-archive {{version}}
+
+_release-profile feature revision version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    feature="{{feature}}"
+    revision="{{revision}}"
+    version="{{version}}"
+    target="{{embedded_target}}"
+    elf="target/${target}/release/protov"
+    out="dist/${revision}"
+    base="protov-${version}-${revision}"
+    mkdir -p "${out}"
+    export RUSTFLAGS="-C link-arg=-Map=${out}/${base}.map"
+    case "${feature}" in
+      hw-a1)
+        cargo build -p protov-hal --target "${target}" --release --features hw-a1
+        ;;
+      *)
+        cargo build -p protov-hal --target "${target}" --release --no-default-features --features "${feature}"
+        ;;
+    esac
+    cp "${elf}" "${out}/${base}.elf"
+    cp "${elf}.d" "${out}/${base}.d"
+    arm-none-eabi-objcopy -O binary "${elf}" "${out}/${base}.bin"
+    elf2uf2-rs "${elf}" "${out}/${base}.uf2"
+
+_release-manifest version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    version="{{version}}"
+    git_sha="$(git rev-parse HEAD)"
+    git_tag="$(git describe --tags --exact-match 2>/dev/null || true)"
+    {
+      echo "ProtoV MINI firmware release ${version}"
+      echo "git_commit=${git_sha}"
+      echo "git_tag=${git_tag}"
+      echo "target={{embedded_target}}"
+      echo "profiles=A.0,A.1,A.2"
+      echo "artifacts=.elf,.uf2,.bin,.map,.d"
+    } > dist/MANIFEST.txt
+    (cd dist && find A.0 A.1 A.2 -type f | sort | xargs sha256sum) > dist/SHA256SUMS
+
+_release-archive version:
+    tar czf dist/protov-firmware-{{version}}.tar.gz -C dist A.0 A.1 A.2 MANIFEST.txt SHA256SUMS
