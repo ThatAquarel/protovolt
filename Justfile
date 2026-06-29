@@ -61,6 +61,8 @@ run-mock:
 test-mock:
     cargo test -p protov-hal-mock --target {{host_target}} --features hw-a1
 
+checks: test-a0 test-a1 test-a2 test-mock clippy
+
 # Build + package all hardware profiles (version e.g. 1.0.0, without v prefix)
 release-bundle version:
     just _release-profile hw-a0 A.0 {{version}}
