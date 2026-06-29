@@ -51,6 +51,16 @@ pkg:
 run:
     cargo run -p protov-hal --target {{embedded_target}} --release
 
+# Host-only ProtoV MINI WebSocket simulator
+build-mock:
+    cargo build -p protov-hal-mock --target {{host_target}} --release --features hw-a1
+
+run-mock:
+    cargo run -p protov-hal-mock --target {{host_target}} --release --features hw-a1
+
+test-mock:
+    cargo test -p protov-hal-mock --target {{host_target}} --features hw-a1
+
 # Build + package all hardware profiles (version e.g. 1.0.0, without v prefix)
 release-bundle version:
     just _release-profile hw-a0 A.0 {{version}}

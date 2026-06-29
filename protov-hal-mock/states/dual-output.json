@@ -1,0 +1,26 @@
+{
+  "idn": {
+    "serial": "32983fe4",
+    "fw_version": "1.0.0",
+    "hw_version": "B.2"
+  },
+  "remote": true,
+  "channels": {
+    "CH1": {
+      "voltage": 3.3,
+      "current": 0.5,
+      "ovp": 18.0,
+      "ocp": 1.0,
+      "output": true,
+      "measured": { "voltage": 3.3, "current": 0.5, "power": 1.65 }
+    },
+    "CH2": {
+      "voltage": 5.0,
+      "current": 2.0,
+      "ovp": 6.0,
+      "ocp": 3.0,
+      "output": true,
+      "measured": { "voltage": 5.0, "current": 1.2, "power": 6.0 }
+    }
+  }
+}

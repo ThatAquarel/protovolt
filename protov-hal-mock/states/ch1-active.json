@@ -1,0 +1,29 @@
+{
+  "idn": {
+    "serial": "550e8400",
+    "fw_version": "1.2.3",
+    "hw_version": "A.1"
+  },
+  "remote": true,
+  "channels": {
+    "CH1": {
+      "voltage": 3.3,
+      "current": 0.5,
+      "ovp": 18.0,
+      "ocp": 1.0,
+      "output": true,
+      "measured": {
+        "voltage": 3.298,
+        "current": 0.243,
+        "power": 0.801
+      }
+    },
+    "CH2": {
+      "voltage": 5.0,
+      "current": 2.0,
+      "ovp": 6.0,
+      "ocp": 3.0,
+      "output": false
+    }
+  }
+}
