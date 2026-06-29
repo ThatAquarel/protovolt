@@ -68,25 +68,32 @@ impl SettingsScreen {
         let label_color = color_scheme::SELECTED;
         let value_color = color_scheme::FONT_MAIN;
 
-        fonts.info_small.render_aligned(
-            labels::MANAGE_AT,
-            Point::new(x_offset_text, y_offset - 5 * y_skip / 2),
-            VerticalPosition::Center,
-            HorizontalAlignment::Left,
-            FontColor::Transparent(label_color),
-            target,
-        )
-        .map_err(|_| ())?;
+        fonts
+            .info_small
+            .render_aligned(
+                labels::MANAGE_AT,
+                Point::new(x_offset_text, y_offset - 5 * y_skip / 2),
+                VerticalPosition::Center,
+                HorizontalAlignment::Left,
+                FontColor::Transparent(label_color),
+                target,
+            )
+            .map_err(|_| ())?;
 
-        fonts.readout_small.render_aligned(
-            labels::WEBSITE,
-            Point::new(screen_width as i32 - x_offset_text, y_offset - 5 * y_skip / 2),
-            VerticalPosition::Center,
-            HorizontalAlignment::Right,
-            FontColor::Transparent(value_color),
-            target,
-        )
-        .map_err(|_| ())?;
+        fonts
+            .readout_small
+            .render_aligned(
+                labels::WEBSITE,
+                Point::new(
+                    screen_width as i32 - x_offset_text,
+                    y_offset - 5 * y_skip / 2,
+                ),
+                VerticalPosition::Center,
+                HorizontalAlignment::Right,
+                FontColor::Transparent(value_color),
+                target,
+            )
+            .map_err(|_| ())?;
 
         let keys = [
             labels::FW_VERSION,
@@ -99,25 +106,29 @@ impl SettingsScreen {
         for i in 0..values.len() {
             let current_y = i as i32 * y_skip + y_offset;
 
-            fonts.info_small.render_aligned(
-                keys[i],
-                Point::new(x_offset_text, current_y),
-                VerticalPosition::Center,
-                HorizontalAlignment::Left,
-                FontColor::Transparent(label_color),
-                target,
-            )
-            .map_err(|_| ())?;
+            fonts
+                .info_small
+                .render_aligned(
+                    keys[i],
+                    Point::new(x_offset_text, current_y),
+                    VerticalPosition::Center,
+                    HorizontalAlignment::Left,
+                    FontColor::Transparent(label_color),
+                    target,
+                )
+                .map_err(|_| ())?;
 
-            fonts.readout_small.render_aligned(
-                values[i],
-                Point::new(screen_width as i32 - x_offset_text, current_y),
-                VerticalPosition::Center,
-                HorizontalAlignment::Right,
-                FontColor::Transparent(value_color),
-                target,
-            )
-            .map_err(|_| ())?;
+            fonts
+                .readout_small
+                .render_aligned(
+                    values[i],
+                    Point::new(screen_width as i32 - x_offset_text, current_y),
+                    VerticalPosition::Center,
+                    HorizontalAlignment::Right,
+                    FontColor::Transparent(value_color),
+                    target,
+                )
+                .map_err(|_| ())?;
         }
 
         Ok(())

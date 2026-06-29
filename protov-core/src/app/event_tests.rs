@@ -86,16 +86,6 @@ fn has_readout_update(task: &AppTask) -> bool {
     iter_tasks(task).any(|t| matches!(t, Task::Display(DisplayTask::UpdateReadout(_, _))))
 }
 
-fn has_setpoint_update(task: &AppTask) -> bool {
-    iter_tasks(task).any(|t| {
-        matches!(
-            t,
-            Task::Display(DisplayTask::UpdateSetpoint(_, _, _, _, _))
-                | Task::Display(DisplayTask::UpdateSetState(_, _, _, _))
-        )
-    })
-}
-
 fn has_channel_units_update(task: &AppTask, channel: Channel) -> bool {
     iter_tasks(task).any(|t| {
         matches!(
@@ -106,12 +96,8 @@ fn has_channel_units_update(task: &AppTask, channel: Channel) -> bool {
 }
 
 fn open_settings(app: &mut AppCore, scpi: &mut ScpiState) -> AppTask {
-    press_interface(
-        app,
-        scpi,
-        InterfaceEvent::ButtonSettings(Change::Pressed),
-    )
-    .expect("settings open")
+    press_interface(app, scpi, InterfaceEvent::ButtonSettings(Change::Pressed))
+        .expect("settings open")
 }
 
 fn sample_readout() -> Readout {
@@ -124,10 +110,7 @@ fn sample_readout() -> Readout {
 
 fn acquire_readout(app: &mut AppCore, scpi: &mut ScpiState, channel: Channel) -> Option<AppTask> {
     app.handle_event(
-        AppEvent::Hardware(HardwareEvent::ReadoutAcquired(
-            channel,
-            sample_readout(),
-        )),
+        AppEvent::Hardware(HardwareEvent::ReadoutAcquired(channel, sample_readout())),
         scpi,
     )
 }
@@ -639,10 +622,7 @@ fn readout_display_suppressed_while_settings_open() {
 
     let task = acquire_readout(&mut app, &mut scpi, Channel::A).expect("readout handled");
     assert!(!has_readout_update(&task));
-    assert!(!app.allows_display(&DisplayTask::UpdateReadout(
-        Channel::A,
-        sample_readout()
-    )));
+    assert!(!app.allows_display(&DisplayTask::UpdateReadout(Channel::A, sample_readout())));
 }
 
 #[test]
@@ -753,14 +733,10 @@ fn enter_and_setpoint_arrows_blocked_while_settings_open() {
     );
     assert!(!app.is_setpoint_edit());
 
-    assert!(
-        press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonDown).is_none()
-    );
+    assert!(press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonDown).is_none());
     assert!(matches!(app.set_select(Channel::A), SetSelect::Voltage));
 
-    assert!(
-        press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonUp).is_none()
-    );
+    assert!(press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonUp).is_none());
 }
 
 #[test]
@@ -772,12 +748,8 @@ fn channel_and_navigation_blocked_while_settings_open() {
 
     assert!(press_channel(&mut app, &mut scpi, Channel::B).is_none());
     assert_eq!(app.selected_channel(), Some(Channel::A));
-    assert!(
-        press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonRight).is_none()
-    );
-    assert!(!app.interface_event_allowed(&InterfaceEvent::ButtonSwitch(
-        Change::Pressed
-    )));
+    assert!(press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonRight).is_none());
+    assert!(!app.interface_event_allowed(&InterfaceEvent::ButtonSwitch(Change::Pressed)));
 }
 
 #[test]

@@ -303,9 +303,7 @@ impl AppCore {
                 *current_readout = Some(readout);
 
                 self.update_hw_state(scpi, channel)
-                    .extend(self.display_if_allowed(DisplayTask::UpdateReadout(
-                        channel, readout,
-                    )))
+                    .extend(self.display_if_allowed(DisplayTask::UpdateReadout(channel, readout)))
                     .build()
             }
             (HardwareState::Standby, HardwareEvent::TempAcquired(temperature)) => {
@@ -341,13 +339,14 @@ impl AppCore {
                         self.interface_state.arrows_function = ArrowsFunction::Navigation;
                     }
                     self.interface_state.settings_open = !self.interface_state.settings_open;
-                    let mut tasks = AppTaskBuilder::new()
-                        .display(DisplayTask::UpdateSettings(
-                            self.interface_state.settings_open,
-                        ))
-                        .extend(self.current_confirm_state_button_task(
-                            self.navigation_function_button(),
-                        ));
+                    let mut tasks =
+                        AppTaskBuilder::new()
+                            .display(DisplayTask::UpdateSettings(
+                                self.interface_state.settings_open,
+                            ))
+                            .extend(self.current_confirm_state_button_task(
+                                self.navigation_function_button(),
+                            ));
                     if !opening {
                         tasks = tasks.extend(self.settings_close_display_task());
                     }

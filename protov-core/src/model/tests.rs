@@ -32,24 +32,23 @@ fn readout_display_blocked_while_settings_open() {
         power: 1.0,
     };
     assert!(DisplayTask::UpdateReadout(Channel::A, readout).blocked_while_settings_open());
-    assert!(DisplayTask::UpdateSetpoint(
-        Channel::A,
-        Limits {
-            voltage: 1.0,
-            current: 1.0,
-        },
-        None,
-        ConfirmState::AwaitModify,
-        None,
-    )
-    .blocked_while_settings_open());
-    assert!(DisplayTask::UpdateSetState(
-        Channel::A,
-        SetState::Set,
-        None,
-        ConfirmState::AwaitModify,
-    )
-    .blocked_while_settings_open());
+    assert!(
+        DisplayTask::UpdateSetpoint(
+            Channel::A,
+            Limits {
+                voltage: 1.0,
+                current: 1.0,
+            },
+            None,
+            ConfirmState::AwaitModify,
+            None,
+        )
+        .blocked_while_settings_open()
+    );
+    assert!(
+        DisplayTask::UpdateSetState(Channel::A, SetState::Set, None, ConfirmState::AwaitModify,)
+            .blocked_while_settings_open()
+    );
     assert!(!DisplayTask::UpdateSettings(true).blocked_while_settings_open());
     assert!(DisplayTask::UpdateChannelUnits(Channel::A).blocked_while_settings_open());
 }
