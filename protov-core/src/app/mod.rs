@@ -1368,6 +1368,55 @@ impl AppCore {
             Channel::B => self.ch_b.target.current.value(),
         }
     }
+
+    pub fn last_temp(&self) -> TemperatureReading {
+        self.last_temp
+    }
+
+    pub fn limit_voltage(&self, ch: Channel) -> f32 {
+        match ch {
+            Channel::A => self.ch_a.limits.voltage.value(),
+            Channel::B => self.ch_b.limits.voltage.value(),
+        }
+    }
+
+    pub fn limit_current(&self, ch: Channel) -> f32 {
+        match ch {
+            Channel::A => self.ch_a.limits.current.value(),
+            Channel::B => self.ch_b.limits.current.value(),
+        }
+    }
+
+    pub fn channel_readout(&self, ch: Channel) -> Option<Readout> {
+        self.channel_ref(ch).readout
+    }
+
+    pub fn set_channel_setpoints(
+        &mut self,
+        ch: Channel,
+        voltage: f32,
+        current: f32,
+        ovp: f32,
+        ocp: f32,
+    ) {
+        let state = self.channel_mut(ch);
+        state.target.voltage.set_value(voltage);
+        state.target.current.set_value(current);
+        state.limits.voltage.set_value(ovp);
+        state.limits.current.set_value(ocp);
+    }
+
+    pub fn set_channel_hw_state(&mut self, ch: Channel, hw_state: ChannelHardwareState) {
+        self.channel_mut(ch).hw_state = hw_state;
+    }
+
+    pub fn reset_to_factory(&mut self, scpi: &mut ScpiState) {
+        self.default_reset_channels();
+        scpi.remote = true;
+        scpi.reset_appearance();
+        scpi.set_prot_latched(None, false);
+        scpi.clear_error_queue();
+    }
 }
 
 #[cfg(test)]

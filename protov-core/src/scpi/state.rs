@@ -168,6 +168,16 @@ impl ScpiState {
             Some(ScpiChannel::Ch2) => self.prot_latched[1] = latched,
         }
     }
+
+    #[cfg(any(test, feature = "test-harness"))]
+    pub fn clear_error_queue(&mut self) {
+        self.error_queue.clear();
+    }
+
+    #[cfg(any(test, feature = "test-harness"))]
+    pub fn seed_error(&mut self, code: i32, message: &str) {
+        self.push_error(code, message);
+    }
 }
 
 #[cfg(test)]

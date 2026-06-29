@@ -10,6 +10,9 @@ mod product;
 mod protection;
 mod telemetry;
 
+#[cfg(any(test, feature = "simulator"))]
+mod identity;
+
 pub use appearance::{
     AppearanceDefaults, DARKEN_DEN, DARKEN_NUM, DEFAULT as APPEARANCE_DEFAULT, DEFAULT_CH1,
     DEFAULT_CH2, DEFAULT_LCD_BRIGHTNESS, DEFAULT_LED_BRIGHTNESS, Rgb,
@@ -18,6 +21,8 @@ pub use channel::{
     CH1_FACTORY, CH2_FACTORY, CURRENT_EDIT_RANGE, ChannelProfile, VOLTAGE_EDIT_RANGE,
 };
 pub use hardware::{HardwareProfile, PROFILE as HARDWARE_PROFILE};
+#[cfg(any(test, feature = "simulator"))]
+pub use identity::{DeviceIdentity, format_idn_parts, format_idn_with};
 pub use product::{
     HARDWARE_REVISION, MANUFACTURER, PRODUCT_NAME, SCPI_SYSTEM_VERSION, SERIAL_NUMBER,
     USB_MAX_POWER_MA, USB_PID, USB_VID, format_idn,

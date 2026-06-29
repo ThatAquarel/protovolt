@@ -17,6 +17,7 @@ rstest = "0.23"
 
 [features]
 test-harness = []
+simulator = ["test-harness"]
 hw-a0 = []
 hw-a1 = []
 hw-a2 = []
