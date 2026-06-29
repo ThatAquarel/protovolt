@@ -71,16 +71,14 @@ impl PoolInner {
         let was_in_use = self.in_use[index];
         self.in_use[index] = false;
         if was_in_use {
-            self.devices[index]
-                .reset_to_profile(identity_from_profile(SLOT_PROFILES[index]));
+            self.devices[index].reset_to_profile(identity_from_profile(SLOT_PROFILES[index]));
         }
     }
 
     fn release_all(&mut self) {
         for index in 0..MAX_MOCK_DEVICES {
             self.in_use[index] = false;
-            self.devices[index]
-                .reset_to_profile(identity_from_profile(SLOT_PROFILES[index]));
+            self.devices[index].reset_to_profile(identity_from_profile(SLOT_PROFILES[index]));
         }
     }
 
