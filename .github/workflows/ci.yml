@@ -39,3 +39,10 @@ jobs:
             hw-a0) just build-a0 ;;
             hw-a2) just build-a2 ;;
           esac
+
+  test-mock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test -p protov-hal-mock --target x86_64-unknown-linux-gnu --features hw-a1
