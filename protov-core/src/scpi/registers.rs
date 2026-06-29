@@ -27,29 +27,27 @@ pub fn tps55289_dump(channel: RegisterChannel) -> &'static str {
 pub fn format_ina226<const N: usize>(
     channel: RegisterChannel,
     buf: &mut heapless::String<N>,
-) -> Result<(), ()> {
-    buf.push_str(ina226_dump(channel)).map_err(|_| ())
+) -> bool {
+    buf.push_str(ina226_dump(channel)).is_ok()
 }
 
 pub fn format_tps55289<const N: usize>(
     channel: RegisterChannel,
     buf: &mut heapless::String<N>,
-) -> Result<(), ()> {
-    buf.push_str(tps55289_dump(channel)).map_err(|_| ())
+) -> bool {
+    buf.push_str(tps55289_dump(channel)).is_ok()
 }
 
 pub fn format_ina226_response(channel: RegisterChannel) -> Option<heapless::String<RESPONSE_BUF>> {
     let mut buf = heapless::String::<RESPONSE_BUF>::new();
-    format_ina226(channel, &mut buf).ok()?;
-    Some(buf)
+    format_ina226(channel, &mut buf).then_some(buf)
 }
 
 pub fn format_tps55289_response(
     channel: RegisterChannel,
 ) -> Option<heapless::String<RESPONSE_BUF>> {
     let mut buf = heapless::String::<RESPONSE_BUF>::new();
-    format_tps55289(channel, &mut buf).ok()?;
-    Some(buf)
+    format_tps55289(channel, &mut buf).then_some(buf)
 }
 
 #[cfg(test)]
