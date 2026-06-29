@@ -8,6 +8,17 @@ use tracing::{debug, info};
 use crate::dispatch::{POOL_FULL_RESPONSE, handle_command};
 use crate::pool::DevicePool;
 
+struct SlotGuard {
+    pool: Arc<DevicePool>,
+    slot: usize,
+}
+
+impl Drop for SlotGuard {
+    fn drop(&mut self) {
+        self.pool.release(self.slot);
+    }
+}
+
 pub async fn serve_scpi(pool: Arc<DevicePool>, listener: TcpListener) -> std::io::Result<()> {
     let addr = listener.local_addr()?;
     info!("SCPI WebSocket listening on ws://{addr}");
@@ -43,6 +54,10 @@ async fn handle_connection(
     };
 
     info!("SCPI client {peer} assigned slot {slot}");
+    let _guard = SlotGuard {
+        pool: Arc::clone(&pool),
+        slot,
+    };
 
     while let Some(message) = read.next().await {
         let message = message?;
@@ -62,7 +77,6 @@ async fn handle_connection(
         }
     }
 
-    pool.release(slot);
-    info!("Released SCPI slot {slot} ({peer})");
+    info!("SCPI client {peer} closed slot {slot}");
     Ok(())
 }

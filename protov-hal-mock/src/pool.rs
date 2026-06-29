@@ -68,8 +68,20 @@ impl PoolInner {
         if index >= MAX_MOCK_DEVICES {
             return;
         }
+        let was_in_use = self.in_use[index];
         self.in_use[index] = false;
-        self.devices[index].reset_to_profile(identity_from_profile(SLOT_PROFILES[index]));
+        if was_in_use {
+            self.devices[index]
+                .reset_to_profile(identity_from_profile(SLOT_PROFILES[index]));
+        }
+    }
+
+    fn release_all(&mut self) {
+        for index in 0..MAX_MOCK_DEVICES {
+            self.in_use[index] = false;
+            self.devices[index]
+                .reset_to_profile(identity_from_profile(SLOT_PROFILES[index]));
+        }
     }
 
     fn device_mut(&mut self, index: usize) -> Option<&mut MockDevice> {
@@ -95,6 +107,10 @@ impl DevicePool {
 
     pub fn release(&self, index: usize) {
         self.inner.lock().unwrap().release(index);
+    }
+
+    pub fn release_all(&self) {
+        self.inner.lock().unwrap().release_all();
     }
 
     pub fn with_device<F, R>(&self, index: usize, f: F) -> Option<R>

@@ -104,6 +104,8 @@ pub enum ControlRequest {
         slot: u8,
         state: StateSnapshot,
     },
+    #[serde(rename = "release_all")]
+    ReleaseAll,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -146,6 +148,16 @@ impl ControlResponse {
             message: None,
             slot: Some(slot),
             state: Some(state),
+            error: None,
+        }
+    }
+
+    pub fn released_all() -> Self {
+        Self {
+            ok: true,
+            message: Some("released_all".to_owned()),
+            slot: None,
+            state: None,
             error: None,
         }
     }

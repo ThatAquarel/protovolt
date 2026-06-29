@@ -78,6 +78,10 @@ fn handle_request(pool: &DevicePool, request: ControlRequest) -> ControlResponse
                 .unwrap_or_else(|| ControlResponse::err("slot unavailable")),
             Err(error) => ControlResponse::err(error),
         },
+        ControlRequest::ReleaseAll => {
+            pool.release_all();
+            ControlResponse::released_all()
+        }
     }
 }
 

@@ -111,6 +111,68 @@ async fn scpi_websocket_pool_full() {
 
 #[serial_test::serial]
 #[tokio::test]
+async fn scpi_websocket_abrupt_disconnect_releases_slot() {
+    let server = RunningServer::start(ServerConfig {
+        bind: "127.0.0.1".to_owned(),
+        scpi_port: 0,
+        control_port: 0,
+    })
+    .await
+    .unwrap();
+    wait_for_scpi(server.scpi_addr).await;
+
+    {
+        let (ws, _) = connect_async(ws_url(server.scpi_addr)).await.unwrap();
+        drop(ws);
+    }
+    tokio::time::sleep(Duration::from_millis(50)).await;
+
+    let (mut ws, _) = connect_async(ws_url(server.scpi_addr)).await.unwrap();
+    ws.send(Message::Text("*IDN?\n".into())).await.unwrap();
+    let response = ws.next().await.unwrap().unwrap().into_text().unwrap();
+    assert_eq!(response.trim(), "FBRD Inc.,ProtoV MINI,550e8400,1.0.0,A.1");
+    let _ = ws.close(None).await;
+    server.shutdown();
+}
+
+#[serial_test::serial]
+#[tokio::test]
+async fn control_websocket_release_all_frees_pool() {
+    let server = RunningServer::start(ServerConfig {
+        bind: "127.0.0.1".to_owned(),
+        scpi_port: 0,
+        control_port: 0,
+    })
+    .await
+    .unwrap();
+    wait_for_scpi(server.scpi_addr).await;
+
+    let mut sockets = Vec::new();
+    for _ in 0..4 {
+        let (ws, _) = connect_async(ws_url(server.scpi_addr)).await.unwrap();
+        sockets.push(ws);
+    }
+
+    let (mut ctrl, _) = connect_async(ws_url(server.control_addr)).await.unwrap();
+    ctrl.send(Message::Text(r#"{"action":"release_all"}"#.into()))
+        .await
+        .unwrap();
+    let released: ControlResponse =
+        serde_json::from_str(&ctrl.next().await.unwrap().unwrap().into_text().unwrap()).unwrap();
+    assert!(released.ok);
+    assert_eq!(released.message.as_deref(), Some("released_all"));
+
+    let (mut ws, _) = connect_async(ws_url(server.scpi_addr)).await.unwrap();
+    ws.send(Message::Text("*IDN?\n".into())).await.unwrap();
+    let response = ws.next().await.unwrap().unwrap().into_text().unwrap();
+    assert!(!response.contains("All four mock device slots are in use"));
+    let _ = ws.close(None).await;
+    drop(sockets);
+    server.shutdown();
+}
+
+#[serial_test::serial]
+#[tokio::test]
 async fn control_websocket_ping_status_load() {
     let server = RunningServer::start(ServerConfig {
         bind: "127.0.0.1".to_owned(),
