@@ -205,6 +205,7 @@ struct InterfaceState {
     pub selected_channel: Option<Channel>,
 
     pub arrows_function: ArrowsFunction,
+    pub settings_open: bool,
 }
 
 #[derive(Default)]
@@ -302,7 +303,9 @@ impl AppCore {
                 *current_readout = Some(readout);
 
                 self.update_hw_state(scpi, channel)
-                    .display(DisplayTask::UpdateReadout(channel, readout))
+                    .extend(self.display_if_allowed(DisplayTask::UpdateReadout(
+                        channel, readout,
+                    )))
                     .build()
             }
             (HardwareState::Standby, HardwareEvent::TempAcquired(temperature)) => {
@@ -332,11 +335,27 @@ impl AppCore {
     ) -> Option<AppTask> {
         match event {
             InterfaceEvent::ButtonSettings(change) => match change {
-                Change::Pressed => self
-                    .current_confirm_state_button_task(Some(FunctionButton::Settings))
-                    .build(),
-                Change::Released => self.return_current_button_state_task().build(),
+                Change::Pressed => {
+                    let opening = !self.interface_state.settings_open;
+                    if opening {
+                        self.interface_state.arrows_function = ArrowsFunction::Navigation;
+                    }
+                    self.interface_state.settings_open = !self.interface_state.settings_open;
+                    let mut tasks = AppTaskBuilder::new()
+                        .display(DisplayTask::UpdateSettings(
+                            self.interface_state.settings_open,
+                        ))
+                        .extend(self.current_confirm_state_button_task(
+                            self.navigation_function_button(),
+                        ));
+                    if !opening {
+                        tasks = tasks.extend(self.settings_close_display_task());
+                    }
+                    tasks.build()
+                }
+                Change::Released => None,
             },
+            _ if !self.interface_event_allowed(&event) => None,
             InterfaceEvent::ButtonSwitch(change) => match change {
                 Change::Pressed => {
                     self.set_state = match self.set_state {
@@ -783,20 +802,22 @@ impl AppCore {
     }
 
     pub fn return_current_button_state_task(&mut self) -> AppTaskBuilder {
-        let function_button = match self.interface_state.arrows_function {
-            ArrowsFunction::Navigation => None,
-            ArrowsFunction::SetpointEdit => Some(FunctionButton::Enter),
-        };
+        self.current_confirm_state_button_task(self.navigation_function_button())
+    }
 
-        self.current_confirm_state_button_task(function_button)
+    fn navigation_function_button(&self) -> Option<FunctionButton> {
+        if self.interface_state.settings_open {
+            Some(FunctionButton::Settings)
+        } else {
+            match self.interface_state.arrows_function {
+                ArrowsFunction::Navigation => None,
+                ArrowsFunction::SetpointEdit => Some(FunctionButton::Enter),
+            }
+        }
     }
 
     pub fn appearance_refresh_task(&mut self) -> AppTaskBuilder {
         let (focus_a, focus_b) = self.channel_focuses();
-        let function_button = match self.interface_state.arrows_function {
-            ArrowsFunction::Navigation => None,
-            ArrowsFunction::SetpointEdit => Some(FunctionButton::Enter),
-        };
 
         AppTaskBuilder::new()
             .display(DisplayTask::UpdateChannelFocus(
@@ -807,9 +828,36 @@ impl AppCore {
             ))
             .display(DisplayTask::UpdateButton(
                 self.get_confirm_state(),
-                function_button,
+                self.navigation_function_button(),
             ))
             .extend(self.setpoints_task())
+    }
+
+    pub fn settings_close_display_task(&mut self) -> AppTaskBuilder {
+        self.appearance_refresh_task()
+            .extend(self.channel_units_display_task())
+    }
+
+    pub fn channel_units_display_task(&self) -> AppTaskBuilder {
+        AppTaskBuilder::new()
+            .display(DisplayTask::UpdateChannelUnits(Channel::A))
+            .display(DisplayTask::UpdateChannelUnits(Channel::B))
+    }
+
+    pub fn interface_event_allowed(&self, event: &InterfaceEvent) -> bool {
+        !(self.interface_state.settings_open && event.blocked_while_settings_open())
+    }
+
+    pub fn allows_display(&self, task: &DisplayTask) -> bool {
+        !(self.interface_state.settings_open && task.blocked_while_settings_open())
+    }
+
+    pub fn display_if_allowed(&self, task: DisplayTask) -> AppTaskBuilder {
+        if self.allows_display(&task) {
+            AppTaskBuilder::new().display(task)
+        } else {
+            AppTaskBuilder::new()
+        }
     }
 
     pub fn update_converter_task(&self, channel: Channel) -> AppTaskBuilder {
@@ -1416,6 +1464,10 @@ impl AppCore {
         scpi.reset_appearance();
         scpi.set_prot_latched(None, false);
         scpi.clear_error_queue();
+    }
+
+    pub fn settings_open(&self) -> bool {
+        self.interface_state.settings_open
     }
 }
 

@@ -45,10 +45,6 @@ pub async fn handle_hardware_task<M, PowerBus, ConverterBus>(
             hal.enable_readout_loop().await;
             info!("enable readout loop");
         }
-        // HardwareTask::DelayedInterfaceEvent(duration, event) => {
-        //     Timer::after(duration).await;
-        //     int_sender.send(event).await;
-        // }
         HardwareTask::PollConverterStatus(channel) => match hal.poll_converter_status(channel) {
             Ok(flags) => {
                 hw_sender
@@ -85,6 +81,17 @@ pub async fn handle_display_task<D, PIO>(
     D: DrawTarget<Color = Rgb565>,
     PIO: Instance,
 {
+    let skip_settings_redraw = matches!(
+        display_task,
+        DisplayTask::UpdateSettings(_)
+            | DisplayTask::UpdateChannelUnits(_)
+            | DisplayTask::SetupSplash
+            | DisplayTask::ConfirmPowerDelivery(_)
+            | DisplayTask::ConfirmSense(_)
+            | DisplayTask::ConfirmConverter(_)
+            | DisplayTask::SetupMain(_, _, _)
+    );
+
     match display_task {
         DisplayTask::SetupSplash => {
             ui.clear().unwrap();
@@ -206,5 +213,22 @@ pub async fn handle_display_task<D, PIO>(
             ui.controls_header_chip(scpi, channel, focus, hw_state)
                 .unwrap();
         }
+        DisplayTask::UpdateSettings(visible) => {
+            ui.set_settings_visible(visible);
+            if visible {
+                ui.draw_settings_overlay().unwrap();
+            } else {
+                ui.clear_settings_section().unwrap();
+            }
+        }
+        DisplayTask::UpdateChannelUnits(channel) => {
+            if !ui.settings_visible() {
+                ui.controls_channel_units(channel).unwrap();
+            }
+        }
+    }
+
+    if !skip_settings_redraw {
+        ui.redraw_settings_overlay_if_visible().ok();
     }
 }

@@ -75,6 +75,63 @@ fn button_update(task: &AppTask) -> Option<(ConfirmState, Option<FunctionButton>
     })
 }
 
+fn settings_update(task: &AppTask) -> Option<bool> {
+    iter_tasks(task).find_map(|t| match t {
+        Task::Display(DisplayTask::UpdateSettings(visible)) => Some(*visible),
+        _ => None,
+    })
+}
+
+fn has_readout_update(task: &AppTask) -> bool {
+    iter_tasks(task).any(|t| matches!(t, Task::Display(DisplayTask::UpdateReadout(_, _))))
+}
+
+fn has_setpoint_update(task: &AppTask) -> bool {
+    iter_tasks(task).any(|t| {
+        matches!(
+            t,
+            Task::Display(DisplayTask::UpdateSetpoint(_, _, _, _, _))
+                | Task::Display(DisplayTask::UpdateSetState(_, _, _, _))
+        )
+    })
+}
+
+fn has_channel_units_update(task: &AppTask, channel: Channel) -> bool {
+    iter_tasks(task).any(|t| {
+        matches!(
+            t,
+            Task::Display(DisplayTask::UpdateChannelUnits(ch)) if *ch == channel
+        )
+    })
+}
+
+fn open_settings(app: &mut AppCore, scpi: &mut ScpiState) -> AppTask {
+    press_interface(
+        app,
+        scpi,
+        InterfaceEvent::ButtonSettings(Change::Pressed),
+    )
+    .expect("settings open")
+}
+
+fn sample_readout() -> Readout {
+    Readout {
+        voltage: 5.0,
+        current: 1.0,
+        power: 5.0,
+    }
+}
+
+fn acquire_readout(app: &mut AppCore, scpi: &mut ScpiState, channel: Channel) -> Option<AppTask> {
+    app.handle_event(
+        AppEvent::Hardware(HardwareEvent::ReadoutAcquired(
+            channel,
+            sample_readout(),
+        )),
+        scpi,
+    )
+}
+
 fn focus_eq(a: ChannelFocus, b: ChannelFocus) -> bool {
     matches!(
         (a, b),
@@ -530,26 +587,213 @@ fn enter_release_clears_highlight_in_navigation_mode() {
 }
 
 #[test]
-fn settings_press_and_release_updates_button_highlight() {
+fn settings_button_toggles_latched_menu() {
     let (mut app, mut scpi) = standby_app();
 
-    let pressed = press_interface(
+    let opened = press_interface(
         &mut app,
         &mut scpi,
         InterfaceEvent::ButtonSettings(Change::Pressed),
     )
-    .expect("settings press");
-    let (_, button) = button_update(&pressed).expect("button update");
+    .expect("settings press open");
+    assert!(app.settings_open());
+    let (_, button) = button_update(&opened).expect("button update");
     assert!(function_eq(button, Some(FunctionButton::Settings)));
+    assert!(settings_update(&opened) == Some(true));
 
     let released = press_interface(
         &mut app,
         &mut scpi,
         InterfaceEvent::ButtonSettings(Change::Released),
+    );
+    assert!(released.is_none());
+    assert!(app.settings_open());
+    assert!(function_eq(
+        Some(FunctionButton::Settings),
+        Some(FunctionButton::Settings)
+    ));
+
+    let closed = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonSettings(Change::Pressed),
     )
-    .expect("settings release");
-    let (_, button) = button_update(&released).expect("button update");
+    .expect("settings press close");
+    assert!(!app.settings_open());
+    let (_, button) = button_update(&closed).expect("button update");
     assert!(function_eq(button, None));
+    assert!(settings_update(&closed) == Some(false));
+}
+
+#[test]
+fn readout_display_suppressed_while_settings_open() {
+    let (mut app, mut scpi) = standby_app();
+
+    let _ = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonSettings(Change::Pressed),
+    )
+    .expect("settings open");
+    assert!(app.settings_open());
+
+    let task = acquire_readout(&mut app, &mut scpi, Channel::A).expect("readout handled");
+    assert!(!has_readout_update(&task));
+    assert!(!app.allows_display(&DisplayTask::UpdateReadout(
+        Channel::A,
+        sample_readout()
+    )));
+}
+
+#[test]
+fn readout_display_resumes_after_settings_close() {
+    let (mut app, mut scpi) = standby_app();
+
+    let _ = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonSettings(Change::Pressed),
+    )
+    .expect("settings open");
+    let _ = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonSettings(Change::Pressed),
+    )
+    .expect("settings close");
+    assert!(!app.settings_open());
+
+    let task = acquire_readout(&mut app, &mut scpi, Channel::A).expect("readout handled");
+    assert!(has_readout_update(&task));
+}
+
+#[test]
+fn settings_close_refreshes_channel_display() {
+    let (mut app, mut scpi) = standby_app();
+
+    let _ = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonSettings(Change::Pressed),
+    )
+    .expect("settings open");
+
+    let closed = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonSettings(Change::Pressed),
+    )
+    .expect("settings close");
+
+    assert!(settings_update(&closed) == Some(false));
+    assert!(channel_focus(&closed).is_some());
+}
+
+#[test]
+fn settings_open_does_not_draw_channel_units() {
+    let (mut app, mut scpi) = standby_app();
+
+    let opened = open_settings(&mut app, &mut scpi);
+
+    assert!(settings_update(&opened) == Some(true));
+    assert!(!has_channel_units_update(&opened, Channel::A));
+    assert!(!has_channel_units_update(&opened, Channel::B));
+}
+
+#[test]
+fn settings_open_exits_setpoint_edit_mode() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::A);
+    press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonEnter(Change::Pressed),
+    )
+    .expect("enter setpoint edit");
+    assert!(app.is_setpoint_edit());
+
+    let _ = open_settings(&mut app, &mut scpi);
+    assert!(app.settings_open());
+    assert!(!app.is_setpoint_edit());
+}
+
+#[test]
+fn switch_blocked_while_settings_open() {
+    let (mut app, mut scpi) = standby_app();
+
+    let _ = open_settings(&mut app, &mut scpi);
+    assert!(matches!(app.set_state(), SetState::Set));
+
+    assert!(
+        press_interface(
+            &mut app,
+            &mut scpi,
+            InterfaceEvent::ButtonSwitch(Change::Pressed),
+        )
+        .is_none()
+    );
+    assert!(matches!(app.set_state(), SetState::Set));
+}
+
+#[test]
+fn enter_and_setpoint_arrows_blocked_while_settings_open() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::A);
+    let _ = open_settings(&mut app, &mut scpi);
+
+    assert!(
+        press_interface(
+            &mut app,
+            &mut scpi,
+            InterfaceEvent::ButtonEnter(Change::Pressed),
+        )
+        .is_none()
+    );
+    assert!(!app.is_setpoint_edit());
+
+    assert!(
+        press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonDown).is_none()
+    );
+    assert!(matches!(app.set_select(Channel::A), SetSelect::Voltage));
+
+    assert!(
+        press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonUp).is_none()
+    );
+}
+
+#[test]
+fn channel_and_navigation_blocked_while_settings_open() {
+    let (mut app, mut scpi) = standby_app();
+
+    press_channel(&mut app, &mut scpi, Channel::A);
+    let _ = open_settings(&mut app, &mut scpi);
+
+    assert!(press_channel(&mut app, &mut scpi, Channel::B).is_none());
+    assert_eq!(app.selected_channel(), Some(Channel::A));
+    assert!(
+        press_interface(&mut app, &mut scpi, InterfaceEvent::ButtonRight).is_none()
+    );
+    assert!(!app.interface_event_allowed(&InterfaceEvent::ButtonSwitch(
+        Change::Pressed
+    )));
+}
+
+#[test]
+fn settings_close_redraws_channel_units() {
+    let (mut app, mut scpi) = standby_app();
+
+    let _ = open_settings(&mut app, &mut scpi);
+    let closed = press_interface(
+        &mut app,
+        &mut scpi,
+        InterfaceEvent::ButtonSettings(Change::Pressed),
+    )
+    .expect("settings close");
+
+    assert!(has_channel_units_update(&closed, Channel::A));
+    assert!(has_channel_units_update(&closed, Channel::B));
 }
 
 #[test]

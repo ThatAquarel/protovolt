@@ -2,16 +2,19 @@ use embassy_rp::pio::Instance;
 use embedded_graphics::{
     draw_target::Translated,
     pixelcolor::Rgb565,
-    prelude::{DrawTarget, Point},
+    prelude::{DrawTarget, Drawable, Point, Primitive, Size},
+    primitives::{PrimitiveStyle, Rectangle},
 };
 
 pub mod boot;
 pub mod controls;
 pub mod navbar;
+pub mod settings;
 
 use boot::BootScreen;
 use controls::ControlsScreen;
 use navbar::{Navbar, PowerInfoDisplay};
+use settings::SettingsScreen;
 
 use embedded_graphics::draw_target::DrawTargetExt;
 use u8g2_fonts::{FontRenderer, fonts};
@@ -45,8 +48,10 @@ where
 
     boot: BootScreen<'a>,
     controls: ControlsScreen,
+    settings: SettingsScreen,
 
     navbar: Navbar,
+    settings_visible: bool,
 }
 
 impl<'a, D, PIO> Ui<'a, D, PIO>
@@ -64,9 +69,56 @@ where
 
             boot: BootScreen::new(),
             controls: ControlsScreen::new(),
+            settings: SettingsScreen::new(),
 
             navbar: Navbar::new(),
+            settings_visible: false,
         }
+    }
+
+    pub fn set_settings_visible(&mut self, visible: bool) {
+        self.settings_visible = visible;
+    }
+
+    pub fn settings_visible(&self) -> bool {
+        self.settings_visible
+    }
+
+    pub fn clear_settings_section(&mut self) -> Result<(), ()> {
+        let mut target = self.layout.settings_section(&mut *self.target);
+        Rectangle::new(
+            Point::new(0, 0),
+            Size::new(
+                settings_layout::SECTION_WIDTH,
+                settings_layout::SECTION_HEIGHT,
+            ),
+        )
+        .into_styled(PrimitiveStyle::with_fill(color_scheme::BACKGROUND))
+        .draw(&mut target)
+        .map_err(|_| ())
+    }
+
+    pub fn draw_settings_overlay(&mut self) -> Result<(), ()> {
+        self.clear_settings_section()?;
+        self.paint_settings_overlay()
+    }
+
+    pub fn redraw_settings_overlay_if_visible(&mut self) -> Result<(), ()> {
+        if self.settings_visible {
+            self.paint_settings_overlay()?;
+        }
+        Ok(())
+    }
+
+    fn paint_settings_overlay(&mut self) -> Result<(), ()> {
+        let width = self.layout.width() as u32;
+        let mut target = self.layout.settings_section(&mut *self.target);
+        self.settings
+            .draw_background(&mut target, color_scheme::SELECTED)
+            .map_err(|_| ())?;
+        self.controls
+            .draw_header_text(&mut target, labels::SETTINGS)?;
+        self.settings.draw(&mut target, &self.fonts, width)
     }
 
     pub fn clear(&mut self) -> Result<(), ()> {
@@ -295,7 +347,7 @@ impl Default for Fonts {
             info_small: FontRenderer::new::<fonts::u8g2_font_helvB08_tf>(),
             info_navbar: FontRenderer::new::<fonts::u8g2_font_profont11_tr>(),
             info_large: FontRenderer::new::<fonts::u8g2_font_helvR14_tr>(),
-            readout_small: FontRenderer::new::<fonts::u8g2_font_logisoso16_tn>(),
+            readout_small: FontRenderer::new::<fonts::u8g2_font_logisoso16_tr>(),
             readout_large: FontRenderer::new::<fonts::u8g2_font_logisoso32_tn>(),
         }
     }
@@ -330,6 +382,14 @@ pub mod navbar_layout {
     pub const BOX_STROKE_WIDTH: u32 = 2;
 }
 
+pub mod settings_layout {
+    pub const SECTION_WIDTH: u32 = 157 + 163;
+    pub const SECTION_HEIGHT: u32 = 200;
+    pub const Y_OFFSET: i32 = 110;
+    pub const X_OFFSET_TEXT: i32 = 32;
+    pub const Y_SKIP: i32 = 24;
+}
+
 pub struct Layout;
 
 impl Layout {
@@ -361,6 +421,13 @@ impl Layout {
             Channel::A => self.ch_a_section(&mut *target),
             Channel::B => self.ch_b_section(&mut *target),
         }
+    }
+
+    fn settings_section<'a, D>(&'a mut self, target: &'a mut D) -> Translated<'a, D>
+    where
+        D: DrawTarget<Color = Rgb565>,
+    {
+        self.ch_a_section(target)
     }
 
     fn ch_a_section<'a, D>(&'a mut self, target: &'a mut D) -> Translated<'a, D>
@@ -432,6 +499,14 @@ pub mod labels {
     pub const OVER_TEMPERATURE: &'static str = "TEMP";
     pub const OVER_CURRENT: &'static str = "OCP";
     pub const OVER_VOLTAGE: &'static str = "OVP";
+
+    // Settings
+    pub const SETTINGS: &'static str = "SETTINGS";
+    pub const MANAGE_AT: &'static str = "MANAGE AT";
+    pub const WEBSITE: &'static str = "www.protov.app";
+    pub const FW_VERSION: &'static str = "FW VERSION";
+    pub const HW_VERSION: &'static str = "HW VERSION";
+    pub const SERIAL_NUMBER: &'static str = "SERIAL NUMBER";
 }
 
 #[cfg(feature = "demo")]

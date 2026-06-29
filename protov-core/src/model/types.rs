@@ -184,6 +184,12 @@ pub enum InterfaceEvent {
     ButtonChannel(Channel),
 }
 
+impl InterfaceEvent {
+    pub const fn blocked_while_settings_open(&self) -> bool {
+        !matches!(self, Self::ButtonSettings(_))
+    }
+}
+
 pub enum AppEvent {
     Hardware(HardwareEvent),
     Interface(InterfaceEvent),
@@ -226,4 +232,18 @@ pub enum DisplayTask {
     UpdateSetState(Channel, SetState, Option<SetSelect>, ConfirmState),
     UpdateChannelHardwareState(Channel, ChannelFocus, ChannelHardwareState),
     UpdateButton(ConfirmState, Option<FunctionButton>),
+    UpdateSettings(bool),
+    UpdateChannelUnits(Channel),
+}
+
+impl DisplayTask {
+    pub const fn blocked_while_settings_open(&self) -> bool {
+        matches!(
+            self,
+            Self::UpdateReadout(_, _)
+                | Self::UpdateSetpoint(_, _, _, _, _)
+                | Self::UpdateSetState(_, _, _, _)
+                | Self::UpdateChannelUnits(_)
+        )
+    }
 }
