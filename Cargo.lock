@@ -1471,7 +1471,7 @@ dependencies = [
 
 [[package]]
 name = "protov-core"
-version = "1.1.1"
+version = "1.1.2"
 dependencies = [
  "embedded-graphics",
  "heapless",
@@ -1482,7 +1482,7 @@ dependencies = [
 
 [[package]]
 name = "protov-hal"
-version = "1.1.1"
+version = "1.1.2"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -1518,7 +1518,7 @@ dependencies = [
 
 [[package]]
 name = "protov-hal-mock"
-version = "1.1.1"
+version = "1.1.2"
 dependencies = [
  "clap",
  "futures-util",

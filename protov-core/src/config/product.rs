@@ -6,8 +6,11 @@ pub const MANUFACTURER: &str = "FBRD Inc.";
 pub const PRODUCT_NAME: &str = "ProtoV MINI";
 pub const SERIAL_NUMBER: &str = "00000011";
 
+// Raspberry PI assigned PID and VID allocation for USB-IF
+// https://github.com/raspberrypi/usb-pid
+// ProtoV MINI
 pub const USB_VID: u16 = 0x2E8A;
-pub const USB_PID: u16 = 0x111F;
+pub const USB_PID: u16 = 0x112B;
 pub const USB_MAX_POWER_MA: u16 = 500;
 
 pub use super::hardware::PROFILE as HARDWARE_PROFILE;
