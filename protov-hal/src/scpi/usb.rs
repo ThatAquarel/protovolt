@@ -16,21 +16,21 @@ use crate::scpi::{LINE_BUF, SCPI_CMD, SCPI_RESP, set_serial_connected};
 /// ProtoV is PD-powered; keep this modest for the RP2040 USB PHY only.
 pub const USB_ENUM_GRACE_MS: u64 = 250;
 
-type MyDriver = Driver<'static, embassy_rp::peripherals::USB>;
-type MyUsbDevice = UsbDevice<'static, MyDriver>;
-type MyCdcClass = CdcAcmClass<'static, MyDriver>;
+type RpUsbDriver = Driver<'static, embassy_rp::peripherals::USB>;
+type UsbDeviceStack = UsbDevice<'static, RpUsbDriver>;
+type CdcSerialPort = CdcAcmClass<'static, RpUsbDriver>;
 
-pub struct UsbCdcResources {
-    pub class: &'static mut MyCdcClass,
-    pub usb: MyUsbDevice,
+pub struct ScpiUsbStack {
+    pub class: &'static mut CdcSerialPort,
+    pub usb: UsbDeviceStack,
 }
 
-pub fn build_usb_cdc(driver: MyDriver) -> UsbCdcResources {
+pub fn build_usb_cdc(driver: RpUsbDriver) -> ScpiUsbStack {
     static CONFIG_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
     static BOS_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
     static CONTROL_BUF: StaticCell<[u8; 128]> = StaticCell::new();
     static STATE: StaticCell<State> = StaticCell::new();
-    static CLASS: StaticCell<MyCdcClass> = StaticCell::new();
+    static CLASS: StaticCell<CdcSerialPort> = StaticCell::new();
 
     let mut config = embassy_usb::Config::new(USB_VID, USB_PID);
     config.manufacturer = Some(MANUFACTURER);
@@ -52,16 +52,16 @@ pub fn build_usb_cdc(driver: MyDriver) -> UsbCdcResources {
     let class = CLASS.init(class);
     let usb = builder.build();
 
-    UsbCdcResources { class, usb }
+    ScpiUsbStack { class, usb }
 }
 
-pub fn spawn_usb_tasks(spawner: &Spawner, resources: UsbCdcResources) {
+pub fn spawn_usb_tasks(spawner: &Spawner, resources: ScpiUsbStack) {
     spawner.spawn(unwrap!(usb_task(resources.usb)));
     spawner.spawn(unwrap!(scpi_task(resources.class)));
 }
 
 #[embassy_executor::task]
-async fn usb_task(mut usb: MyUsbDevice) -> ! {
+async fn usb_task(mut usb: UsbDeviceStack) -> ! {
     usb.run().await
 }
 
@@ -77,7 +77,7 @@ impl From<EndpointError> for Disconnected {
 }
 
 #[embassy_executor::task]
-async fn scpi_task(class: &'static mut MyCdcClass) -> ! {
+async fn scpi_task(class: &'static mut CdcSerialPort) -> ! {
     let mut line_buf = heapless::String::<LINE_BUF>::new();
 
     loop {
@@ -101,7 +101,7 @@ async fn scpi_task(class: &'static mut MyCdcClass) -> ! {
 }
 
 async fn read_scpi_session(
-    class: &mut MyCdcClass,
+    class: &mut CdcSerialPort,
     line_buf: &mut heapless::String<LINE_BUF>,
 ) -> Result<(), Disconnected> {
     let mut packet = [0u8; 64];
@@ -147,7 +147,7 @@ fn take_complete_line(buf: &mut heapless::String<LINE_BUF>) -> Option<heapless::
     Some(line)
 }
 
-async fn write_response(class: &mut MyCdcClass, text: &[u8]) -> Result<(), Disconnected> {
+async fn write_response(class: &mut CdcSerialPort, text: &[u8]) -> Result<(), Disconnected> {
     const MAX_PACKET: usize = 64;
 
     let mut offset = 0;
