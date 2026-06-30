@@ -56,8 +56,8 @@ pub fn build_usb_cdc(driver: MyDriver) -> UsbCdcResources {
 }
 
 pub fn spawn_usb_tasks(spawner: &Spawner, resources: UsbCdcResources) {
-    unwrap!(spawner.spawn(usb_task(resources.usb)));
-    unwrap!(spawner.spawn(scpi_task(resources.class)));
+    spawner.spawn(unwrap!(usb_task(resources.usb)));
+    spawner.spawn(unwrap!(scpi_task(resources.class)));
 }
 
 #[embassy_executor::task]

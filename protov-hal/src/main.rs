@@ -8,10 +8,9 @@ use core::cell::RefCell;
 use defmt::*;
 use embassy_executor::{Executor, Spawner};
 use embassy_rp::adc::{self, Adc};
-use embassy_rp::gpio::Pin;
 use embassy_rp::i2c::I2c;
 use embassy_rp::multicore::{Stack, spawn_core1};
-use embassy_rp::peripherals::{I2C0, I2C1, PIO0, USB};
+use embassy_rp::peripherals::{DMA_CH0, I2C0, I2C1, PIO0, USB};
 use embassy_rp::pio;
 use embassy_rp::pio::Pio;
 use embassy_rp::spi::{self, Spi};
@@ -88,6 +87,7 @@ static SCPI_STATE: StaticCell<ScpiState> = StaticCell::new();
 
 bind_interrupts!(struct Irqs {
     PIO0_IRQ_0 => pio::InterruptHandler<PIO0>;
+    DMA_IRQ_0 => embassy_rp::dma::InterruptHandler<DMA_CH0>;
     ADC_IRQ_FIFO => adc::InterruptHandler;
     USBCTRL_IRQ => InterruptHandler<USB>;
 });
@@ -115,13 +115,19 @@ async fn main(spawner: Spawner) {
     let i2c1_bus = I2C1_BUS.init(i2c1_bus);
 
     // Power hardware interrupts initialization
-    unwrap!(spawner.spawn(converter_a_irq(HARDWARE_CHANNEL.sender(), p.PIN_15,)));
-    unwrap!(spawner.spawn(converter_b_irq(HARDWARE_CHANNEL.sender(), p.PIN_14,)));
+    spawner.spawn(unwrap!(converter_a_irq(
+        HARDWARE_CHANNEL.sender(),
+        p.PIN_15
+    )));
+    spawner.spawn(unwrap!(converter_b_irq(
+        HARDWARE_CHANNEL.sender(),
+        p.PIN_14
+    )));
 
     // Output measurement loop
     let hal_sense = HalSense::new(i2c1_bus);
     let hal_sense = HAL_SENSE.init(hal_sense);
-    unwrap!(spawner.spawn(poll_sense(
+    spawner.spawn(unwrap!(poll_sense(
         hal_sense,
         SENSE_CHANNEL.receiver(),
         HARDWARE_CHANNEL.sender()
@@ -131,9 +137,12 @@ async fn main(spawner: Spawner) {
     let adc: Adc<'_, adc::Async> = Adc::new(p.ADC, Irqs, adc::Config::default());
     let hal_temp_sense = HalTempSense::new(adc, p.PIN_26, p.PIN_27, p.ADC_TEMP_SENSOR);
     let hal_temp_sense = HAL_TEMP_SENSE.init(hal_temp_sense);
-    unwrap!(spawner.spawn(temp_sense(hal_temp_sense, HARDWARE_CHANNEL.sender())));
+    spawner.spawn(unwrap!(temp_sense(
+        hal_temp_sense,
+        HARDWARE_CHANNEL.sender()
+    )));
 
-    let mut hal = Hal::new(i2c0_bus, i2c0_bus, p.PIN_24.degrade(), p.PIN_25.degrade());
+    let mut hal = Hal::new(i2c0_bus, i2c0_bus, p.PIN_24, p.PIN_25);
 
     let scpi_state = SCPI_STATE.init(ScpiState::default());
     let mut last_temp = TemperatureReading {
@@ -149,25 +158,20 @@ async fn main(spawner: Spawner) {
 
     // Buttons (moved to static so Core 1 owns them)
     let buttons = ButtonsInterface::new(
-        [p.PIN_8.degrade(), p.PIN_9.degrade(), p.PIN_10.degrade()],
-        [p.PIN_5.degrade(), p.PIN_6.degrade(), p.PIN_7.degrade()],
+        [p.PIN_8.into(), p.PIN_9.into(), p.PIN_10.into()],
+        [p.PIN_5.into(), p.PIN_6.into(), p.PIN_7.into()],
     );
     let buttons = BUTTONS_INTERFACE.init(buttons);
 
     // SPI display setup
     let spi = Spi::new_blocking(p.SPI0, p.PIN_18, p.PIN_19, p.PIN_20, spi::Config::default());
     let spi_shared: Mutex<NoopRawMutex, _> = Mutex::new(RefCell::new(spi));
-    let mut display = DisplayInterface::new(
-        &spi_shared,
-        p.PIN_17.degrade(),
-        p.PIN_21.degrade(),
-        p.PIN_28.degrade(),
-    );
+    let mut display = DisplayInterface::new(&spi_shared, p.PIN_17, p.PIN_21, p.PIN_28);
     let mut backlight = Backlight::new(p.PWM_SLICE0, p.PIN_16);
 
     // Interfacing LEDs setup
     let pio = Pio::new(p.PIO0, Irqs);
-    let leds = LedsInterface::new(pio, p.DMA_CH0, p.PIN_11);
+    let leds = LedsInterface::new(pio, p.DMA_CH0, Irqs, p.PIN_11);
 
     // App logic
     let mut app = App::default();
@@ -182,7 +186,7 @@ async fn main(spawner: Spawner) {
         move || {
             let executor1 = EXECUTOR1.init(Executor::new());
             executor1.run(|spawner| {
-                unwrap!(spawner.spawn(poll_interface(buttons, INTERFACE_CHANNEL.sender())));
+                spawner.spawn(unwrap!(poll_interface(buttons, INTERFACE_CHANNEL.sender())));
             });
         },
     );

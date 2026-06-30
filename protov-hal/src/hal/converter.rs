@@ -1,7 +1,8 @@
 use core::cell::RefCell;
 
 use defmt::*;
-use embassy_rp::gpio::{AnyPin, Level, Output};
+use embassy_rp::Peri;
+use embassy_rp::gpio::{Level, Output, Pin};
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::RawMutex;
 use embassy_time::Timer;
@@ -109,7 +110,11 @@ where
     M: RawMutex,
     BUS: I2c + 'a,
 {
-    pub fn new(enable_pin: AnyPin, mutex: &'a Mutex<M, RefCell<BUS>>, channel: Channel) -> Self {
+    pub fn new(
+        enable_pin: Peri<'a, impl Pin>,
+        mutex: &'a Mutex<M, RefCell<BUS>>,
+        channel: Channel,
+    ) -> Self {
         let en = Output::new(enable_pin, Level::Low);
 
         let address = match channel {

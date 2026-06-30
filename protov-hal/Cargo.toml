@@ -24,13 +24,13 @@ embedded-io = "0.6.1"
 embedded-io-async = "0.6.1"
 embedded-storage = "0.3.1"
 cortex-m-rt = "0.7.3"
-embassy-embedded-hal = { version = "0.3.0", features = ["defmt"] }
-embassy-executor = { version = "0.7", features = ["task-arena-size-16384", "arch-cortex-m", "executor-thread", "defmt", "executor-interrupt"] }
-embassy-sync = { version = "0.6" }
-embassy-time = { version = "0.4", features = ["defmt", "defmt-timestamp-uptime"] }
+embassy-embedded-hal = { version = "0.6", features = ["defmt"] }
+embassy-executor = { version = "0.10", features = ["platform-cortex-m", "executor-thread", "defmt", "executor-interrupt"] }
+embassy-sync = { version = "0.8" }
+embassy-time = { version = "0.5", features = ["defmt", "defmt-timestamp-uptime"] }
 cortex-m = { version = "0.7.6" }
-embassy-rp = { version = "0.4", features = ["defmt", "unstable-pac", "time-driver", "critical-section-impl", "rp2040"] }
-embassy-usb = { version = "0.4", features = ["defmt"] }
+embassy-rp = { version = "0.10", features = ["defmt", "unstable-pac", "time-driver", "critical-section-impl", "rp2040"] }
+embassy-usb = { version = "0.6", features = ["defmt"] }
 portable-atomic = { version = "1.5", features = ["critical-section"] }
 critical-section = "1.1"
 display-interface-spi = "0.5.0"

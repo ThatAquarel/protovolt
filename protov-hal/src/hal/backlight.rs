@@ -1,3 +1,4 @@
+use embassy_rp::Peri;
 use embassy_rp::peripherals;
 use embassy_rp::pwm::{Config, Pwm};
 use embedded_hal::pwm::SetDutyCycle;
@@ -7,7 +8,10 @@ pub struct Backlight<'d> {
 }
 
 impl<'d> Backlight<'d> {
-    pub fn new(slice: peripherals::PWM_SLICE0, pin: peripherals::PIN_16) -> Self {
+    pub fn new(
+        slice: Peri<'d, peripherals::PWM_SLICE0>,
+        pin: Peri<'d, peripherals::PIN_16>,
+    ) -> Self {
         let mut config = Config::default();
         config.top = 255;
         config.compare_a = 255;

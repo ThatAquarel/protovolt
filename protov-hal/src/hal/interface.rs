@@ -1,4 +1,5 @@
 use crate::hal::event::{Change, Channel, InterfaceEvent};
+use embassy_rp::Peri;
 use embassy_rp::gpio::{AnyPin, Input, Level, Output, Pull};
 use embassy_time::Duration;
 
@@ -20,8 +21,8 @@ pub struct ButtonsInterface<'a> {
     debounce: [u16; matrix::N_BUTTONS],
 }
 
-impl ButtonsInterface<'_> {
-    pub fn new(row_pins: [AnyPin; 3], col_pins: [AnyPin; 3]) -> Self {
+impl<'a> ButtonsInterface<'a> {
+    pub fn new(row_pins: [Peri<'a, AnyPin>; 3], col_pins: [Peri<'a, AnyPin>; 3]) -> Self {
         let row = row_pins.map(|p| Output::new(p, Level::High));
         let col = col_pins.map(|p| Input::new(p, Pull::Up));
 

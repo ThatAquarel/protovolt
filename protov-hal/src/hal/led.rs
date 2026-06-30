@@ -1,7 +1,9 @@
 use embassy_rp::{
-    dma::Channel,
+    Peri,
+    dma::ChannelInstance,
+    interrupt,
     pio::{Instance, Pio, PioPin},
-    pio_programs::ws2812::{PioWs2812, PioWs2812Program},
+    pio_programs::ws2812::{Grb, PioWs2812, PioWs2812Program},
 };
 use smart_leds::RGB8;
 
@@ -14,7 +16,7 @@ pub mod ws2812 {
 }
 
 pub struct LedsInterface<'a, PIO: Instance> {
-    led: PioWs2812<'a, PIO, 0, LED_COUNT>,
+    led: PioWs2812<'a, PIO, 0, LED_COUNT, Grb>,
     data: [RGB8; LED_COUNT],
 }
 
@@ -31,18 +33,24 @@ impl<'a, PIO> LedsInterface<'a, PIO>
 where
     PIO: Instance,
 {
-    pub fn new<DMA, PIN>(pio: Pio<'a, PIO>, dma: DMA, pin: PIN) -> Self
+    pub fn new<DMA, PIN, I>(
+        pio: Pio<'a, PIO>,
+        dma: Peri<'a, DMA>,
+        irq: I,
+        pin: Peri<'a, PIN>,
+    ) -> Self
     where
-        DMA: Channel,
+        DMA: ChannelInstance,
         PIN: PioPin,
+        I: interrupt::typelevel::Binding<DMA::Interrupt, embassy_rp::dma::InterruptHandler<DMA>>
+            + 'a,
     {
         let Pio {
             mut common, sm0, ..
         } = pio;
 
         let program = PioWs2812Program::new(&mut common);
-        let ws2812: PioWs2812<'a, PIO, 0, LED_COUNT> =
-            PioWs2812::<PIO, 0, LED_COUNT>::new(&mut common, sm0, dma, pin, &program);
+        let ws2812 = PioWs2812::new(&mut common, sm0, dma, irq, pin, &program);
 
         Self {
             led: ws2812,

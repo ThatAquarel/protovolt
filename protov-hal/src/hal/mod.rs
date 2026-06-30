@@ -1,8 +1,9 @@
 use core::cell::RefCell;
 
 use embassy_rp::{
+    Peri,
     adc::{self, Adc, AdcPin},
-    gpio::{AnyPin, Input, Pull},
+    gpio::{Input, Pin, Pull},
     peripherals::{ADC_TEMP_SENSOR, PIN_14, PIN_15},
 };
 use embassy_sync::{
@@ -61,8 +62,8 @@ where
     pub fn new(
         power_bus: &'a Mutex<M, RefCell<PowerBus>>,
         converter_bus: &'a Mutex<M, RefCell<ConverterBus>>,
-        ch_a_enable: AnyPin,
-        ch_b_enable: AnyPin,
+        ch_a_enable: Peri<'a, impl Pin>,
+        ch_b_enable: Peri<'a, impl Pin>,
     ) -> Self {
         Self {
             power: PowerDeliveryDevice::new(power_bus),
@@ -263,9 +264,9 @@ pub struct HalTempSense<'a> {
 impl<'a> HalTempSense<'a> {
     pub fn new(
         adc: Adc<'a, adc::Async>,
-        ch_a_pin: impl AdcPin,
-        ch_b_pin: impl AdcPin,
-        mcu_pin: ADC_TEMP_SENSOR,
+        ch_a_pin: Peri<'a, impl AdcPin>,
+        ch_b_pin: Peri<'a, impl AdcPin>,
+        mcu_pin: Peri<'a, ADC_TEMP_SENSOR>,
     ) -> Self {
         let ch_a = adc::Channel::new_pin(ch_a_pin, Pull::None);
         let ch_b = adc::Channel::new_pin(ch_b_pin, Pull::None);
@@ -300,7 +301,7 @@ macro_rules! converter_irq_task {
         $channel:expr
     ) => {
         #[embassy_executor::task]
-        pub async fn $task_name(data_channel: HardwareChannelSender, irq_pin: $pin) {
+        pub async fn $task_name(data_channel: HardwareChannelSender, irq_pin: Peri<'static, $pin>) {
             let mut irq_pin = Input::new(irq_pin, Pull::None);
             let mut ticker = Ticker::every(Duration::from_hz(5)); // 100ms
 

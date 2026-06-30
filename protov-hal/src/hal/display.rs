@@ -2,9 +2,9 @@ use core::cell::RefCell;
 
 use display_interface_spi::SPIInterface;
 use embassy_embedded_hal::shared_bus::blocking::spi::SpiDeviceWithConfig;
-use embassy_rp::Peripheral;
+use embassy_rp::Peri;
 use embassy_rp::gpio::Output;
-use embassy_rp::gpio::{AnyPin, Level};
+use embassy_rp::gpio::{Level, Pin};
 use embassy_rp::spi::{self, Instance, Spi};
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
@@ -45,9 +45,9 @@ where
 {
     pub fn new(
         spi_bus: &'d Mutex<NoopRawMutex, RefCell<Spi<'d, T, spi::Blocking>>>,
-        cs: impl Peripheral<P = AnyPin> + 'd,
-        rs: impl Peripheral<P = AnyPin> + 'd,
-        rst: impl Peripheral<P = AnyPin> + 'd,
+        cs: Peri<'d, impl Pin>,
+        rs: Peri<'d, impl Pin>,
+        rst: Peri<'d, impl Pin>,
     ) -> Self {
         let cs = Output::new(cs, Level::High);
         let rs = Output::new(rs, Level::Low);
