@@ -9,6 +9,9 @@
     "DEFMT_LOG": "info"
   },
   "rust-analyzer.files.excludeDirs": ["hardware", "docs", "res"],
+  "rust-analyzer.check.targets": [
+    "x86_64-unknown-linux-gnu"
+  ],
   "[rust]": {
     "editor.formatOnSave": true
   },
