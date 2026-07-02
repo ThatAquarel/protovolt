@@ -137,3 +137,12 @@ fn embassy_boot_partition_requirements() {
         EMBASSY_RP_FLASH_WRITE_SIZE,
     );
 }
+
+#[test]
+fn fwup_constants_match_layout() {
+    use super::fwup::{FWUP_MAX_BLOCK_LEN, FWUP_MAX_IMAGE_SIZE, FWUP_PAGE_SIZE};
+
+    assert_eq!(FWUP_MAX_IMAGE_SIZE, ACTIVE_SIZE);
+    assert_eq!(FWUP_PAGE_SIZE, ERASE_PAGE_SIZE);
+    assert_eq!(FWUP_MAX_BLOCK_LEN, ERASE_PAGE_SIZE as usize);
+}

@@ -28,8 +28,10 @@
 //! }
 //! ```
 
+pub mod fwup;
 pub mod layout;
 
+pub use fwup::*;
 pub use layout::*;
 
 #[cfg(test)]
