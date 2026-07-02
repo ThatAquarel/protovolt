@@ -15,6 +15,7 @@ path = "src/lib.rs"
 
 [dependencies]
 protov-core = { path = "../protov-core" }
+protov-nvm = { path = "../protov-nvm", features = ["application"] }
 defmt = "1.1.0"
 defmt-rtt = "0.4"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
@@ -28,6 +29,8 @@ embassy-embedded-hal = { version = "0.6", features = ["defmt"] }
 embassy-executor = { version = "0.10", features = ["platform-cortex-m", "executor-thread", "defmt", "executor-interrupt"] }
 embassy-sync = { version = "0.8" }
 embassy-time = { version = "0.5", features = ["defmt", "defmt-timestamp-uptime"] }
+embassy-boot = { version = "0.7.0", features = ["ed25519-dalek"] }
+embassy-boot-rp = { version = "0.10.0" }
 cortex-m = { version = "0.7.6" }
 embassy-rp = { version = "0.10", features = ["defmt", "unstable-pac", "time-driver", "critical-section-impl", "rp2040"] }
 embassy-usb = { version = "0.6", features = ["defmt"] }
