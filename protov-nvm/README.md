@@ -15,7 +15,7 @@ Three hand-maintained copies of the same layout:
 
 ## Keeping the layout in sync
 
-Update all three files together. Run `just test-nvm` after changes.
+Update all three files together. Run `just test` (here) or `just nvm::test` (repo root) after changes.
 
 The only intentional difference between the two `.x` files: **`FLASH`** is the bootloader slot in one, the ACTIVE slot in the other. Symbol block is duplicated; `__bootloader_active_*` uses `ACTIVE` (bootloader) or `FLASH` (application).
 
@@ -47,7 +47,8 @@ fn main() {
 ```
 
 ```bash
-just nvm::test
+just test                  # from protov-nvm/
+just nvm::test             # from repo root
 just nvm::build-bootloader
 just nvm::build-application
 ```

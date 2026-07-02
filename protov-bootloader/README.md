@@ -7,9 +7,10 @@ Flash layout comes from [`protov-nvm`](../protov-nvm) (`linker/memory-bootloader
 ## Build / flash
 
 ```bash
-just bootloader::build
-just bootloader::flash   # probe-rs via .cargo/config.toml
-just bootloader::pkg     # target/protov-bootloader.uf2
+just build                 # from protov-bootloader/
+just bootloader::build       # from repo root
+just bootloader::flash       # probe-rs via .cargo/config.toml
+just bootloader::pkg         # target/protov-bootloader.uf2
 ```
 
 Optional defmt:
