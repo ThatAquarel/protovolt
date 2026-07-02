@@ -31,6 +31,10 @@ test-a2:
 clippy:
     cargo clippy -p protov-core --target {{host_target}} --features hw-a1 -- -D warnings
 
+# Sign release firmware (requires PRIVATE_KEY; optional PUBLIC_KEY for verify)
+sign-firmware *args:
+    just -f protov-hal/Justfile sign-all {{args}}
+
 # Cross-compile firmware for RP2040 (production A.1)
 build: build-a1
 

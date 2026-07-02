@@ -1,0 +1,30 @@
+default:
+    @just --list
+
+embedded_target := "thumbv6m-none-eabi"
+elf := "../target/" + embedded_target + "/release/protov"
+release_dir := "../dist"
+
+private_key := env_var("PRIVATE_KEY")
+public_key := env_var_or_default("PUBLIC_KEY", "../protov-nvm/keys/public.pem")
+
+bin := release_dir + "/protov.bin"
+hash := release_dir + "/protov_hash.bin"
+sign := release_dir + "/protov_sign.bin"
+
+objcopy-firmware elf=elf bin=bin:
+    mkdir -p {{release_dir}}
+    cargo objcopy --release --bin protov -- -O binary {{bin}}
+
+hash-firmware bin=bin hash=hash:
+    mkdir -p {{release_dir}}
+    openssl dgst -sha512 -binary {{bin}} > {{hash}}
+
+sign-firmware hash=hash sign=sign:
+    openssl pkeyutl -sign -inkey {{private_key}} -rawin -in {{hash}} -out {{sign}}
+
+verify-firmware bin=bin sign=sign:
+    openssl dgst -sha512 -binary {{bin}} > /tmp/protov_hash.bin
+    openssl pkeyutl -verify -pubin -inkey {{public_key}} -rawin -in /tmp/protov_hash.bin -sigfile {{sign}}
+
+sign-all: objcopy-firmware hash-firmware sign-firmware verify-firmware
