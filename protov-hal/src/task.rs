@@ -68,6 +68,7 @@ pub async fn handle_hardware_task<M, PowerBus, ConverterBus>(
         HardwareTask::UpdateConverterState(channel, state) => {
             hal.update_converter_state(channel, state).await.unwrap();
         }
+        _ => {}
     }
 }
 
@@ -226,6 +227,7 @@ pub async fn handle_display_task<D, PIO>(
                 ui.controls_channel_units(channel).unwrap();
             }
         }
+        DisplayTask::DfuStatus(_) => {}
     }
 
     if !skip_settings_redraw {
