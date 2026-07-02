@@ -1568,7 +1568,7 @@ dependencies = [
 
 [[package]]
 name = "protov-bootloader"
-version = "1.4.1"
+version = "1.4.2"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -1585,7 +1585,7 @@ dependencies = [
 
 [[package]]
 name = "protov-core"
-version = "1.4.1"
+version = "1.4.2"
 dependencies = [
  "embedded-graphics",
  "heapless 0.8.0",
@@ -1596,7 +1596,7 @@ dependencies = [
 
 [[package]]
 name = "protov-hal"
-version = "1.4.1"
+version = "1.4.2"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -1605,6 +1605,7 @@ dependencies = [
  "defmt-rtt",
  "display-interface",
  "display-interface-spi",
+ "embassy-boot-rp",
  "embassy-embedded-hal",
  "embassy-executor",
  "embassy-rp",
@@ -1624,6 +1625,7 @@ dependencies = [
  "panic-probe",
  "portable-atomic",
  "protov-core",
+ "protov-nvm",
  "smart-leds",
  "static_cell",
  "tinybmp",
@@ -1632,7 +1634,7 @@ dependencies = [
 
 [[package]]
 name = "protov-hal-mock"
-version = "1.4.1"
+version = "1.4.2"
 dependencies = [
  "clap",
  "futures-util",
@@ -1649,7 +1651,7 @@ dependencies = [
 
 [[package]]
 name = "protov-nvm"
-version = "1.4.1"
+version = "1.4.2"
 
 [[package]]
 name = "pure-rust-locales"
