@@ -7,7 +7,7 @@ build:
     cargo build -p protov-bootloader --target {{embedded_target}} --release
 
 flash:
-    cargo flash -p protov-bootloader --target {{embedded_target}} --release
+    cargo flash -p protov-bootloader --target {{embedded_target}} --release --chip RP2040
 
 pkg:
     elf2uf2-rs {{elf}} target/protov-bootloader.uf2
