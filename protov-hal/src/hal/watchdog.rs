@@ -4,9 +4,12 @@ use core::sync::atomic::{AtomicBool, Ordering};
 
 use embassy_rp::peripherals::WATCHDOG;
 use embassy_rp::watchdog::Watchdog;
+use embassy_time::Duration;
 use static_cell::StaticCell;
 
-use crate::config::{WATCHDOG_ENABLED, WATCHDOG_TIMEOUT};
+/// When false, all watchdog helpers in [`crate::hal::watchdog`] are no-ops.
+pub const WATCHDOG_ENABLED: bool = true;
+pub const WATCHDOG_TIMEOUT: Duration = Duration::from_secs(8);
 
 static WDOG: StaticCell<Watchdog> = StaticCell::new();
 static INITIALIZED: AtomicBool = AtomicBool::new(false);
