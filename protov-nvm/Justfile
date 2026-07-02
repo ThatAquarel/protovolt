@@ -1,0 +1,15 @@
+# protov-nvm: flash layout linker scripts and host tests
+
+host_target := env_var_or_default("HOST_TARGET", "x86_64-unknown-linux-gnu")
+
+# Emit memory.x for the bootloader profile (host build)
+build-bootloader:
+    cargo build -p protov-nvm --target {{host_target}} --features bootloader
+
+# Emit memory.x for the application profile (host build)
+build-application:
+    cargo build -p protov-nvm --target {{host_target}} --features application
+
+# Layout arithmetic tests
+test:
+    cargo test -p protov-nvm --target {{host_target}}

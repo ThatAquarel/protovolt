@@ -1,5 +1,8 @@
 # ProtoV firmware workspace helpers (run from repo root)
 
+mod nvm 'protov-nvm/Justfile'
+mod bootloader 'protov-bootloader/Justfile'
+
 default:
     @just --list
 

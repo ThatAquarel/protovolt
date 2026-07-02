@@ -1,0 +1,13 @@
+# protov-bootloader: embassy-boot RP2040 bootloader
+
+embedded_target := "thumbv6m-none-eabi"
+elf := "target/" + embedded_target + "/release/protov-bootloader"
+
+build:
+    cargo build -p protov-bootloader --target {{embedded_target}} --release
+
+flash:
+    cargo flash -p protov-bootloader --target {{embedded_target}} --release
+
+pkg:
+    elf2uf2-rs {{elf}} target/protov-bootloader.uf2
