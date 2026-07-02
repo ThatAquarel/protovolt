@@ -77,6 +77,20 @@ fn unknown_command() {
 }
 
 #[test]
+fn parse_fwup_commands() {
+    assert_eq!(parse_command("SYST:FWUP:STAT?"), Some(ScpiCommand::FwupStatQuery));
+    assert_eq!(
+        parse_command("SYST:FWUP:STAR 8192"),
+        Some(ScpiCommand::FwupStar { size: 8192 })
+    );
+    assert_eq!(parse_command("SYST:FWUP:ABOR"), Some(ScpiCommand::FwupAbor));
+    assert_eq!(parse_command("SYST:FWUP:DATA"), Some(ScpiCommand::FwupData));
+    let sig_hex = "#H".to_string() + &"ab".repeat(64);
+    let cmd = parse_command(&format!("SYST:FWUP:APPL {sig_hex}")).unwrap();
+    assert!(matches!(cmd, ScpiCommand::FwupAppl { .. }));
+}
+
+#[test]
 fn is_mutation_matrix() {
     assert!(!is_mutation(&ScpiCommand::IdnQuery));
     assert!(!is_mutation(&ScpiCommand::MeasQuery {
@@ -89,4 +103,17 @@ fn is_mutation_matrix() {
         on: true,
     }));
     assert!(is_mutation(&ScpiCommand::SystLoc));
+    assert!(is_mutation(&ScpiCommand::FwupStar { size: 4096 }));
+    assert!(!is_mutation(&ScpiCommand::FwupStatQuery));
+}
+
+#[test]
+fn update_mode_whitelist() {
+    assert!(is_allowed_in_update_mode(&ScpiCommand::IdnQuery));
+    assert!(is_allowed_in_update_mode(&ScpiCommand::FwupData));
+    assert!(!is_allowed_in_update_mode(&ScpiCommand::OutputSet {
+        channel: ScpiChannel::Ch1,
+        on: true,
+    }));
+    assert!(requires_active_update_session(&ScpiCommand::FwupData));
 }

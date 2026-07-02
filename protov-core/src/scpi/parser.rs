@@ -64,6 +64,11 @@ pub enum ScpiCommand {
     Tps55289RegQuery {
         channel: RegisterChannel,
     },
+    FwupStatQuery,
+    FwupStar { size: u32 },
+    FwupData,
+    FwupAppl { signature: [u8; 64] },
+    FwupAbor,
     Unknown {
         command: [u8; 64],
         command_len: u8,
@@ -93,6 +98,8 @@ pub enum TempSlot {
     Chb,
     Mcu,
 }
+
+pub const FWUP_DATA_PREFIX: &str = "SYST:FWUP:DATA";
 
 pub fn normalize_command(raw: &str) -> heapless::String<256> {
     let trimmed = raw.trim();
@@ -221,6 +228,10 @@ pub fn parse_command(raw: &str) -> Option<ScpiCommand> {
         return Some(ScpiCommand::Tps55289RegQuery { channel: ch });
     }
 
+    if let Some(cmd) = parse_fwup(s) {
+        return Some(cmd);
+    }
+
     let mut command = [0u8; 64];
     let bytes = s.as_bytes();
     let len = bytes.len().min(64);
@@ -243,6 +254,46 @@ fn parse_star_slot(s: &str, prefix: &str) -> Option<u8> {
         return None;
     }
     Some(*digit - b'0')
+}
+
+fn parse_fwup(s: &str) -> Option<ScpiCommand> {
+    if s == "SYST:FWUP:STAT?" {
+        return Some(ScpiCommand::FwupStatQuery);
+    }
+    if s == "SYST:FWUP:ABOR" {
+        return Some(ScpiCommand::FwupAbor);
+    }
+    if let Some(size_str) = s.strip_prefix("SYST:FWUP:STAR ") {
+        let size = parse_u32_token(size_str)?;
+        return Some(ScpiCommand::FwupStar { size });
+    }
+    if s.starts_with(FWUP_DATA_PREFIX) {
+        return Some(ScpiCommand::FwupData);
+    }
+    if let Some(hex) = s.strip_prefix("SYST:FWUP:APPL ") {
+        let bytes = crate::dfu::decode_hex_block(hex.trim())?;
+        if bytes.len() != crate::dfu::FWUP_SIGNATURE_LEN {
+            return None;
+        }
+        let mut signature = [0u8; 64];
+        signature.copy_from_slice(&bytes);
+        return Some(ScpiCommand::FwupAppl { signature });
+    }
+    None
+}
+
+fn parse_u32_token(s: &str) -> Option<u32> {
+    if s.is_empty() {
+        return None;
+    }
+    let mut value: u32 = 0;
+    for b in s.bytes() {
+        if !b.is_ascii_digit() {
+            return None;
+        }
+        value = value.checked_mul(10)?.checked_add((b - b'0') as u32)?;
+    }
+    Some(value)
 }
 
 fn parse_scpi_channel(token: &str) -> Option<ScpiChannel> {
@@ -476,7 +527,28 @@ pub fn is_mutation(cmd: &ScpiCommand) -> bool {
             | ScpiCommand::DiagQuery
             | ScpiCommand::Ina226RegQuery { .. }
             | ScpiCommand::Tps55289RegQuery { .. }
+            | ScpiCommand::FwupStatQuery
             | ScpiCommand::Unknown { .. }
+    )
+}
+
+pub fn is_allowed_in_update_mode(cmd: &ScpiCommand) -> bool {
+    matches!(
+        cmd,
+        ScpiCommand::IdnQuery
+            | ScpiCommand::SystErrQuery
+            | ScpiCommand::SystVersQuery
+            | ScpiCommand::FwupStatQuery
+            | ScpiCommand::FwupData
+            | ScpiCommand::FwupAbor
+            | ScpiCommand::FwupAppl { .. }
+    )
+}
+
+pub fn requires_active_update_session(cmd: &ScpiCommand) -> bool {
+    matches!(
+        cmd,
+        ScpiCommand::FwupData | ScpiCommand::FwupAppl { .. }
     )
 }
 

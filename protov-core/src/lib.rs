@@ -7,6 +7,7 @@
 
 pub mod app;
 pub mod config;
+pub mod dfu;
 pub mod fmt;
 pub mod model;
 pub mod pd;

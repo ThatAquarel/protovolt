@@ -193,6 +193,26 @@ impl InterfaceEvent {
 pub enum AppEvent {
     Hardware(HardwareEvent),
     Interface(InterfaceEvent),
+    Dfu(DfuEvent),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DfuEvent {
+    PrepareComplete,
+    PrepareFailed,
+    BlockWriteComplete { offset: u32, len: u32 },
+    BlockWriteFailed,
+    VerifyApplyComplete,
+    VerifyApplyFailed,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DfuStatus {
+    Idle,
+    Preparing { total: u32 },
+    Receiving { received: u32, total: u32 },
+    Ready { total: u32 },
+    Error,
 }
 
 pub enum HardwareTask {
@@ -204,6 +224,9 @@ pub enum HardwareTask {
     UpdateConverterState(Channel, bool),
     UpdateConverterVoltage(Channel, f32),
     UpdateConverterCurrent(Channel, f32),
+    DfuPrepare,
+    DfuWriteBlock { offset: u32, len: u32 },
+    DfuVerifyApply { len: u32, signature: [u8; 64] },
     /// Delay in milliseconds before dispatching the nested event.
     DelayedHardwareEvent(u64, HardwareEvent),
 }
@@ -234,6 +257,7 @@ pub enum DisplayTask {
     UpdateButton(ConfirmState, Option<FunctionButton>),
     UpdateSettings(bool),
     UpdateChannelUnits(Channel),
+    DfuStatus(DfuStatus),
 }
 
 impl DisplayTask {

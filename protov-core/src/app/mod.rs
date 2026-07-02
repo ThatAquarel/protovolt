@@ -6,12 +6,14 @@ use crate::config::{
     format_idn,
 };
 use crate::fmt::format_f32;
+use crate::dfu::{DfuAction, DfuSession};
 use crate::model::ConverterFlags;
 use crate::model::TemperatureReading;
 use crate::model::{
     AppEvent, AppTask, AppTaskBuilder, Change, Channel, ChannelFocus, ChannelHardwareState,
-    ConfirmState, DecimalPrecision, DisplayTask, FunctionButton, HardwareEvent, HardwareTask,
-    InterfaceEvent, Limits, PowerType, Readout, SetSelect, SetState,
+    ConfirmState, DecimalPrecision, DisplayTask, DfuEvent, DfuStatus, FunctionButton,
+    HardwareEvent, HardwareTask, InterfaceEvent, Limits, PowerType, Readout, SetSelect,
+    SetState,
 };
 use crate::protection;
 use crate::scpi::colors::{self, Rgb};
@@ -31,6 +33,8 @@ pub struct AppCore {
 
     ch_a: ChannelState,
     ch_b: ChannelState,
+
+    dfu: DfuSession,
 }
 
 #[derive(Default)]
@@ -195,6 +199,7 @@ impl Default for AppCore {
             last_temp: Default::default(),
             ch_a: ChannelState::from_profile(&FACTORY.ch1),
             ch_b: ChannelState::from_profile(&FACTORY.ch2),
+            dfu: DfuSession::new(),
         }
     }
 }
@@ -219,6 +224,7 @@ enum HardwareState {
 
     WaitingMainUi,
     Standby,
+    FirmwareUpdate,
     // Error,
 }
 
@@ -233,8 +239,19 @@ enum Screen {
 impl AppCore {
     pub fn handle_event(&mut self, event: AppEvent, scpi: &mut ScpiState) -> Option<AppTask> {
         match event {
-            AppEvent::Hardware(hw) => self.handle_hardware_event(hw, scpi),
-            AppEvent::Interface(ui) => self.handle_interface_event(ui, scpi),
+            AppEvent::Dfu(dfu) => self.handle_dfu_event(dfu, scpi),
+            AppEvent::Hardware(hw) => {
+                if self.is_update_mode() {
+                    return None;
+                }
+                self.handle_hardware_event(hw, scpi)
+            }
+            AppEvent::Interface(ui) => {
+                if self.is_update_mode() {
+                    return None;
+                }
+                self.handle_interface_event(ui, scpi)
+            }
         }
     }
 
@@ -905,6 +922,147 @@ impl AppCore {
         matches!(self.hardware_state, HardwareState::Standby)
     }
 
+    pub fn is_update_mode(&self) -> bool {
+        matches!(self.hardware_state, HardwareState::FirmwareUpdate)
+    }
+
+    pub fn dfu_session(&self) -> &DfuSession {
+        &self.dfu
+    }
+
+    fn dfu_status_task(&self) -> AppTaskBuilder {
+        AppTaskBuilder::new().display(DisplayTask::DfuStatus(self.dfu.to_status()))
+    }
+
+    fn handle_dfu_event(&mut self, event: DfuEvent, _scpi: &mut ScpiState) -> Option<AppTask> {
+        match event {
+            DfuEvent::PrepareComplete => {
+                if self.dfu.on_prepare_complete().is_err() {
+                    return None;
+                }
+                self.dfu_status_task().build()
+            }
+            DfuEvent::PrepareFailed => {
+                self.dfu.on_prepare_failed();
+                self.dfu_status_task().build()
+            }
+            DfuEvent::BlockWriteComplete { .. } => self.dfu_status_task().build(),
+            DfuEvent::BlockWriteFailed => {
+                self.dfu.on_block_failed();
+                self.dfu_status_task().build()
+            }
+            DfuEvent::VerifyApplyComplete => None,
+            DfuEvent::VerifyApplyFailed => {
+                self.dfu.on_verify_failed();
+                self.dfu_status_task().build()
+            }
+        }
+    }
+
+    fn fwup_ok_result(tasks: Option<AppTask>) -> ScpiHandleResult {
+        ScpiHandleResult {
+            response: Self::push_response_text("OK"),
+            tasks,
+        }
+    }
+
+    fn fwup_err_result(scpi: &mut ScpiState, code: i32, msg: &'static str) -> ScpiHandleResult {
+        scpi.push_error(code, msg);
+        ScpiHandleResult {
+            response: Self::push_response_text("ERR"),
+            tasks: None,
+        }
+    }
+
+    fn handle_fwup_star(&mut self, size: u32, scpi: &mut ScpiState) -> ScpiHandleResult {
+        if self.is_update_mode() {
+            return Self::fwup_err_result(scpi, -200, "Update already in progress");
+        }
+        if !self.is_standby() {
+            scpi.push_error(-221, "Not in Standby");
+            return ScpiHandleResult {
+                response: ScpiResponse::none(),
+                tasks: None,
+            };
+        }
+        match self.dfu.start(size) {
+            Ok(DfuAction::Prepare) => {
+                self.hardware_state = HardwareState::FirmwareUpdate;
+                let tasks = AppTaskBuilder::new()
+                    .hardware(HardwareTask::DfuPrepare)
+                    .display(DisplayTask::DfuStatus(DfuStatus::Preparing { total: size }))
+                    .build();
+                Self::fwup_ok_result(tasks)
+            }
+            Err(e) => Self::fwup_err_result(scpi, -200, e.scpi_message()),
+            _ => Self::fwup_err_result(scpi, -200, "Unexpected update action"),
+        }
+    }
+
+    fn handle_fwup_abor(&mut self) -> ScpiHandleResult {
+        self.dfu.abort();
+        if self.is_update_mode() {
+            self.hardware_state = HardwareState::Standby;
+        }
+        let tasks = AppTaskBuilder::new()
+            .display(DisplayTask::DfuStatus(DfuStatus::Idle))
+            .build();
+        Self::fwup_ok_result(tasks)
+    }
+
+    fn handle_fwup_stat(&self) -> ScpiHandleResult {
+        let mut stat = heapless::String::<64>::new();
+        self.dfu.format_stat(&mut stat);
+        ScpiHandleResult {
+            response: Self::push_response_text(stat.as_str()),
+            tasks: None,
+        }
+    }
+
+    fn handle_fwup_appl(
+        &mut self,
+        signature: [u8; 64],
+        scpi: &mut ScpiState,
+    ) -> ScpiHandleResult {
+        if !self.is_update_mode() {
+            return Self::fwup_err_result(scpi, -200, "Use SYST:FWUP:STAR first");
+        }
+        match self.dfu.apply(signature) {
+            Ok(DfuAction::VerifyApply { len, signature }) => {
+                let tasks = AppTaskBuilder::new()
+                    .hardware(HardwareTask::DfuVerifyApply { len, signature })
+                    .build();
+                Self::fwup_ok_result(tasks)
+            }
+            Err(e) => Self::fwup_err_result(scpi, -200, e.scpi_message()),
+            _ => Self::fwup_err_result(scpi, -200, "Unexpected update action"),
+        }
+    }
+
+    pub fn handle_fwup_data(
+        &mut self,
+        block_len: u32,
+        scpi: &mut ScpiState,
+    ) -> ScpiHandleResult {
+        if !self.is_update_mode() {
+            return Self::fwup_err_result(scpi, -200, "Use SYST:FWUP:STAR first");
+        }
+        if !self.dfu.accepts_data() {
+            return Self::fwup_err_result(scpi, -200, "Not receiving firmware");
+        }
+        match self.dfu.accept_block(block_len) {
+            Ok((_offset, DfuAction::WriteBlock { offset, len })) => {
+                let tasks = AppTaskBuilder::new()
+                    .hardware(HardwareTask::DfuWriteBlock { offset, len })
+                    .display(DisplayTask::DfuStatus(self.dfu.to_status()))
+                    .build();
+                Self::fwup_ok_result(tasks)
+            }
+            Err(e) => Self::fwup_err_result(scpi, -200, e.scpi_message()),
+            _ => Self::fwup_err_result(scpi, -200, "Unexpected update action"),
+        }
+    }
+
     fn channel_mut(&mut self, ch: Channel) -> &mut ChannelState {
         match ch {
             Channel::A => &mut self.ch_a,
@@ -987,6 +1145,25 @@ impl AppCore {
         ctx: &ScpiContext,
     ) -> ScpiHandleResult {
         use core::fmt::Write;
+
+        if self.is_update_mode() && !crate::scpi::parser::is_allowed_in_update_mode(&cmd) {
+            return Self::fwup_err_result(scpi, -200, "Only FWUP commands in update mode");
+        }
+
+        if !self.is_update_mode() && crate::scpi::parser::requires_active_update_session(&cmd) {
+            return Self::fwup_err_result(scpi, -200, "Use SYST:FWUP:STAR first");
+        }
+
+        match cmd {
+            ScpiCommand::FwupStatQuery => return self.handle_fwup_stat(),
+            ScpiCommand::FwupStar { size } => return self.handle_fwup_star(size, scpi),
+            ScpiCommand::FwupAbor => return self.handle_fwup_abor(),
+            ScpiCommand::FwupAppl { signature } => return self.handle_fwup_appl(signature, scpi),
+            ScpiCommand::FwupData => {
+                return Self::fwup_err_result(scpi, -200, "Missing firmware block length");
+            }
+            _ => {}
+        }
 
         if crate::scpi::parser::is_mutation(&cmd) && !self.is_standby() {
             scpi.push_error(-221, "Not in Standby; mutating command rejected");
@@ -1079,6 +1256,13 @@ impl AppCore {
             }
             ScpiCommand::Ina226RegQuery { .. } | ScpiCommand::Tps55289RegQuery { .. } => {
                 unreachable!("register dumps are handled in main")
+            }
+            ScpiCommand::FwupStatQuery
+            | ScpiCommand::FwupStar { .. }
+            | ScpiCommand::FwupData
+            | ScpiCommand::FwupAppl { .. }
+            | ScpiCommand::FwupAbor => {
+                unreachable!("FWUP commands are handled before the main match")
             }
             ScpiCommand::MeasQuery { kind, channel } => {
                 let state = self.scpi_channel_ref(channel);
@@ -1470,6 +1654,8 @@ impl AppCore {
     }
 }
 
+#[cfg(test)]
+mod dfu_tests;
 #[cfg(test)]
 mod scpi_tests;
 

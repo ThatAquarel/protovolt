@@ -1645,6 +1645,7 @@ dependencies = [
  "embedded-graphics",
  "heapless 0.8.0",
  "micromath",
+ "protov-nvm",
  "rstest",
  "smart-leds",
 ]

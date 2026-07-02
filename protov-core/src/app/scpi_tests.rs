@@ -34,6 +34,13 @@ impl TestBench {
 }
 
 #[test]
+fn fwup_stat_idle_in_standby() {
+    let mut bench = TestBench::standby();
+    assert_eq!(bench.exec("SYST:FWUP:STAT?").unwrap().as_str(), "IDLE");
+    assert_eq!(bench.exec("SYST:FWUP:ABOR").unwrap().as_str(), "OK");
+}
+
+#[test]
 fn idn_query() {
     let mut bench = TestBench::standby();
     let resp = bench.exec("*IDN?").unwrap();
