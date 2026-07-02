@@ -6,14 +6,16 @@ use embassy_usb::class::cdc_acm::{CdcAcmClass, State};
 use embassy_usb::driver::EndpointError;
 use static_cell::StaticCell;
 
+use protov_core::dfu::parse_definite_block_at;
+use protov_core::scpi::parser::{self, FWUP_DATA_PREFIX, ScpiCommand};
+use protov_core::scpi::LINE_BUF;
+use protov_nvm::FWUP_MAX_BLOCK_LEN;
+
 use crate::config::{
     MANUFACTURER, PRODUCT_NAME, SERIAL_NUMBER, USB_MAX_POWER_MA, USB_PID, USB_VID,
 };
-use crate::scpi::parser::parse_command;
-use crate::scpi::{LINE_BUF, SCPI_CMD, SCPI_RESP, set_serial_connected};
+use crate::scpi::{set_serial_connected, SCPI_CMD, SCPI_RESP};
 
-/// Bus power budget in the configuration descriptor (embassy-usb: milliamps).
-/// ProtoV is PD-powered; keep this modest for the RP2040 USB PHY only.
 pub const USB_ENUM_GRACE_MS: u64 = 250;
 
 type RpUsbDriver = Driver<'static, embassy_rp::peripherals::USB>;
@@ -23,6 +25,22 @@ type CdcSerialPort = CdcAcmClass<'static, RpUsbDriver>;
 pub struct ScpiUsbStack {
     pub class: &'static mut CdcSerialPort,
     pub usb: UsbDeviceStack,
+}
+
+static mut FWUP_PAYLOAD: [u8; FWUP_MAX_BLOCK_LEN] = [0; FWUP_MAX_BLOCK_LEN];
+static mut FWUP_PAYLOAD_LEN: usize = 0;
+
+pub fn fwup_payload() -> &'static [u8] {
+    unsafe {
+        core::slice::from_raw_parts(
+            core::ptr::addr_of!(FWUP_PAYLOAD).cast::<u8>(),
+            FWUP_PAYLOAD_LEN,
+        )
+    }
+}
+
+pub fn fwup_payload_len() -> usize {
+    unsafe { FWUP_PAYLOAD_LEN }
 }
 
 pub fn build_usb_cdc(driver: RpUsbDriver) -> ScpiUsbStack {
@@ -76,19 +94,184 @@ impl From<EndpointError> for Disconnected {
     }
 }
 
+enum RxMode {
+    Ascii,
+    FwupPayload {
+        payload_len: usize,
+        received: usize,
+    },
+}
+
+struct ScpiReader {
+    buf: heapless::Vec<u8, LINE_BUF>,
+    mode: RxMode,
+}
+
+impl ScpiReader {
+    fn new() -> Self {
+        Self {
+            buf: heapless::Vec::new(),
+            mode: RxMode::Ascii,
+        }
+    }
+
+    fn push(&mut self, data: &[u8]) {
+        for &b in data {
+            let _ = self.buf.push(b);
+        }
+    }
+
+    fn wants_more_usb(&self) -> bool {
+        match self.mode {
+            RxMode::FwupPayload { payload_len, received } => received < payload_len,
+            RxMode::Ascii => {
+                try_fwup_header(&self.buf).is_some() || fwup_data_pending(&self.buf)
+            }
+        }
+    }
+
+    async fn drain(&mut self, class: &mut CdcSerialPort) -> Result<(), Disconnected> {
+        loop {
+            match self.mode {
+                RxMode::Ascii => {
+                    // Detect FWUP binary blocks before newline splitting — payload bytes
+                    // may contain 0x0A and must not be parsed as ASCII SCPI lines.
+                    if let Some((header_end, payload_len)) = try_fwup_header(&self.buf) {
+                        if payload_len > FWUP_MAX_BLOCK_LEN {
+                            self.buf.clear();
+                            break;
+                        }
+                        let inline = self.buf.len().saturating_sub(header_end);
+                        let take = inline.min(payload_len);
+                        if take > 0 {
+                            unsafe {
+                                FWUP_PAYLOAD[..take].copy_from_slice(
+                                    &self.buf.as_slice()[header_end..header_end + take],
+                                );
+                            }
+                        }
+                        consume_front(&mut self.buf, header_end + take);
+                        if take == payload_len {
+                            self.finish_fwup_block(class, payload_len).await?;
+                        } else {
+                            self.mode = RxMode::FwupPayload {
+                                payload_len,
+                                received: take,
+                            };
+                        }
+                        continue;
+                    }
+
+                    if fwup_data_pending(&self.buf) {
+                        if self.buf.len() >= LINE_BUF {
+                            self.buf.clear();
+                        }
+                        break;
+                    }
+
+                    if let Some(newline) = self.buf.iter().position(|&b| b == b'\n') {
+                        let mut line_bytes = heapless::Vec::<u8, LINE_BUF>::new();
+                        for &b in &self.buf[..=newline] {
+                            let _ = line_bytes.push(b);
+                        }
+                        consume_front(&mut self.buf, newline + 1);
+                        let line = trim_line(&line_bytes);
+                        if !line.is_empty() {
+                            self.dispatch_line(class, line).await?;
+                        }
+                        continue;
+                    }
+
+                    if self.buf.len() >= LINE_BUF {
+                        self.buf.clear();
+                    }
+                    break;
+                }
+                RxMode::FwupPayload {
+                    payload_len,
+                    received,
+                } => {
+                    if self.buf.is_empty() {
+                        break;
+                    }
+                    let need = payload_len - received;
+                    let take = need.min(self.buf.len());
+                    unsafe {
+                        FWUP_PAYLOAD[received..received + take]
+                            .copy_from_slice(&self.buf.as_slice()[..take]);
+                    }
+                    consume_front(&mut self.buf, take);
+                    let received = received + take;
+                    if received == payload_len {
+                        self.mode = RxMode::Ascii;
+                        self.finish_fwup_block(class, payload_len).await?;
+                        continue;
+                    }
+                    self.mode = RxMode::FwupPayload {
+                        payload_len,
+                        received,
+                    };
+                    break;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    async fn finish_fwup_block(
+        &mut self,
+        class: &mut CdcSerialPort,
+        payload_len: usize,
+    ) -> Result<(), Disconnected> {
+        unsafe {
+            FWUP_PAYLOAD_LEN = payload_len;
+        }
+        self.dispatch_cmd(class, ScpiCommand::FwupData).await
+    }
+
+    async fn dispatch_line(
+        &mut self,
+        class: &mut CdcSerialPort,
+        line: &str,
+    ) -> Result<(), Disconnected> {
+        if let Some(cmd) = parser::parse_command(line) {
+            if matches!(cmd, ScpiCommand::FwupData) {
+                return Ok(());
+            }
+            self.dispatch_cmd(class, cmd).await?;
+        }
+        Ok(())
+    }
+
+    async fn dispatch_cmd(
+        &mut self,
+        class: &mut CdcSerialPort,
+        cmd: ScpiCommand,
+    ) -> Result<(), Disconnected> {
+        SCPI_CMD.send(cmd).await;
+        let response = SCPI_RESP.receive().await;
+        match response.text {
+            Some(text) => write_response(class, text.as_bytes()).await?,
+            None => write_response(class, b"ERR\n").await?,
+        }
+        Ok(())
+    }
+}
+
 #[embassy_executor::task]
 async fn scpi_task(class: &'static mut CdcSerialPort) -> ! {
-    let mut line_buf = heapless::String::<LINE_BUF>::new();
+    let mut reader = ScpiReader::new();
 
     loop {
         class.wait_connection().await;
         set_serial_connected(true);
 
         info!("SCPI USB connected");
-        line_buf.clear();
+        reader.buf.clear();
+        reader.mode = RxMode::Ascii;
 
         loop {
-            match read_scpi_session(class, &mut line_buf).await {
+            match read_scpi_session(class, &mut reader).await {
                 Ok(()) => {}
                 Err(Disconnected) => {
                     set_serial_connected(false);
@@ -102,49 +285,71 @@ async fn scpi_task(class: &'static mut CdcSerialPort) -> ! {
 
 async fn read_scpi_session(
     class: &mut CdcSerialPort,
-    line_buf: &mut heapless::String<LINE_BUF>,
+    reader: &mut ScpiReader,
 ) -> Result<(), Disconnected> {
     let mut packet = [0u8; 64];
-    let n = class.read_packet(&mut packet).await?;
-    push_bytes(line_buf, &packet[..n]);
+    loop {
+        let n = class.read_packet(&mut packet).await?;
+        reader.push(&packet[..n]);
+        reader.drain(class).await?;
 
-    while let Some(line) = take_complete_line(line_buf) {
-        if let Some(cmd) = parse_command(&line) {
-            SCPI_CMD.send(cmd).await;
-        } else {
+        if reader.wants_more_usb() {
             continue;
         }
-        let response = SCPI_RESP.receive().await;
-        if let Some(text) = response.text {
-            write_response(class, text.as_bytes()).await?;
-        }
+        break;
     }
-
     Ok(())
 }
 
-fn push_bytes(buf: &mut heapless::String<LINE_BUF>, data: &[u8]) {
-    for &b in data {
-        if b == b'\n' || b == b'\r' {
-            let _ = buf.push('\n');
-            continue;
-        }
-        if (b as char).is_ascii() {
-            let _ = buf.push(b as char);
-        }
+fn consume_front(buf: &mut heapless::Vec<u8, LINE_BUF>, n: usize) {
+    let len = buf.len();
+    if n >= len {
+        buf.clear();
+        return;
     }
+    for i in 0..len - n {
+        buf[i] = buf[i + n];
+    }
+    buf.truncate(len - n);
 }
 
-fn take_complete_line(buf: &mut heapless::String<LINE_BUF>) -> Option<heapless::String<LINE_BUF>> {
-    let newline_pos = buf.as_str().find('\n')?;
-    let mut line = heapless::String::<LINE_BUF>::new();
-    let _ = line.push_str(buf.as_str()[..newline_pos].trim());
-    let mut rest = heapless::String::<LINE_BUF>::new();
-    let rest_start = newline_pos + 1;
-    let _ = rest.push_str(buf.as_str()[rest_start..].trim_start());
-    buf.clear();
-    let _ = buf.push_str(rest.as_str());
-    Some(line)
+fn trim_line(line_bytes: &[u8]) -> &str {
+    let end = line_bytes
+        .iter()
+        .position(|&b| b == b'\n' || b == b'\r')
+        .unwrap_or(line_bytes.len());
+    core::str::from_utf8(&line_bytes[..end])
+        .ok()
+        .map(str::trim)
+        .unwrap_or("")
+}
+
+fn try_fwup_header(buf: &[u8]) -> Option<(usize, usize)> {
+    let prefix = FWUP_DATA_PREFIX.as_bytes();
+    if buf.len() < prefix.len() || !buf.starts_with(prefix) {
+        return None;
+    }
+    let mut i = prefix.len();
+    if buf.get(i) == Some(&b' ') {
+        i += 1;
+    }
+    if buf.get(i) != Some(&b'#') {
+        return None;
+    }
+    let (hdr_len, payload_len) = parse_definite_block_at(&buf[i..])?;
+    Some((i + hdr_len, payload_len))
+}
+
+/// True when buf holds a partial or complete `SYST:FWUP:DATA` prefix (binary block incoming).
+fn fwup_data_pending(buf: &[u8]) -> bool {
+    let prefix = FWUP_DATA_PREFIX.as_bytes();
+    if buf.is_empty() {
+        return false;
+    }
+    if buf.len() < prefix.len() {
+        return prefix.starts_with(buf);
+    }
+    buf.starts_with(prefix)
 }
 
 async fn write_response(class: &mut CdcSerialPort, text: &[u8]) -> Result<(), Disconnected> {
@@ -157,6 +362,8 @@ async fn write_response(class: &mut CdcSerialPort, text: &[u8]) -> Result<(), Di
         offset = end;
     }
 
-    class.write_packet(b"\n").await?;
+    if !text.ends_with(b"\n") {
+        class.write_packet(b"\n").await?;
+    }
     Ok(())
 }

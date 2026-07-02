@@ -40,9 +40,11 @@ mod device;
 
 pub mod converter;
 pub mod event;
+pub mod firmware;
 pub mod measure;
 pub mod power;
 pub mod temperature;
+pub mod watchdog;
 
 use crate::hal::converter::ConverterFlags;
 use event::Channel as ConverterChannel;

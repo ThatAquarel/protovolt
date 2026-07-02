@@ -13,6 +13,7 @@ pub static SCPI_CMD: Channel<ThreadModeRawMutex, ScpiCommand, 4> = Channel::new(
 pub static SCPI_RESP: Channel<ThreadModeRawMutex, ScpiResponse, 4> = Channel::new();
 
 static SERIAL_CONNECTED: AtomicBool = AtomicBool::new(false);
+static FWUP_MODE: AtomicBool = AtomicBool::new(false);
 
 pub fn serial_connected() -> bool {
     SERIAL_CONNECTED.load(Ordering::Relaxed)
@@ -20,4 +21,12 @@ pub fn serial_connected() -> bool {
 
 pub fn set_serial_connected(connected: bool) {
     SERIAL_CONNECTED.store(connected, Ordering::Relaxed);
+}
+
+pub fn fwup_mode_active() -> bool {
+    FWUP_MODE.load(Ordering::Relaxed)
+}
+
+pub fn set_fwup_mode(active: bool) {
+    FWUP_MODE.store(active, Ordering::Relaxed);
 }

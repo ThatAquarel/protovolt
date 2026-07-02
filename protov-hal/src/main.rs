@@ -27,10 +27,12 @@ use embassy_time::{Duration, Ticker};
 use hal::backlight::Backlight;
 use hal::display::DisplayInterface;
 use hal::event::{AppEvent, HardwareEvent, InterfaceEvent, Task};
+use hal::firmware;
 use hal::interface::{ButtonsInterface, matrix};
+use hal::watchdog;
 
 use app::App;
-use task::{handle_display_task, handle_hardware_task};
+use task::{handle_dfu_task, handle_display_task, handle_hardware_task};
 use ui::Ui;
 
 use hal::event::{
@@ -44,7 +46,7 @@ use hal::{
 };
 use scpi::parser::ScpiCommand;
 use scpi::state::ScpiState;
-use scpi::usb::{build_usb_cdc, spawn_usb_tasks};
+use scpi::usb::{build_usb_cdc, fwup_payload, fwup_payload_len, spawn_usb_tasks};
 use scpi::{RESPONSE_BUF, SCPI_CMD, SCPI_RESP, ScpiContext, ScpiResponse};
 
 use static_cell::StaticCell;
@@ -64,10 +66,6 @@ static mut CORE1_STACK: Stack<8192> = Stack::new();
 static EXECUTOR1: StaticCell<Executor> = StaticCell::new();
 
 static BUTTONS_INTERFACE: StaticCell<ButtonsInterface> = StaticCell::new();
-
-// type StaticI2c1 = I2c<'static, I2C1, i2c::Blocking>;
-// type I2c0Bus = Mutex<NoopRawMutex, I2c<'static, I2C0, i2c::Blocking>>;
-// type I2c1Bus = Mutex<NoopRawMutex, I2c<'static, I2C1, i2c::Blocking>>;
 
 type StaticI2c0 = I2c<'static, I2C0, i2c::Blocking>;
 type StaticI2c0Bus = Mutex<NoopRawMutex, RefCell<StaticI2c0>>;
@@ -92,18 +90,29 @@ bind_interrupts!(struct Irqs {
     USBCTRL_IRQ => InterruptHandler<USB>;
 });
 
+fn is_dfu_task(task: &HardwareTask) -> bool {
+    matches!(
+        task,
+        HardwareTask::DfuPrepare
+            | HardwareTask::DfuWriteBlock { .. }
+            | HardwareTask::DfuVerifyApply { .. }
+    )
+}
+
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
+
+    watchdog::init(p.WATCHDOG);
+    watchdog::stop_bootloader();
+    let fw_ctx = firmware::init(p.FLASH);
+    watchdog::cancel_after_boot();
 
     // USB must start before any lengthy blocking init — the host will enumerate
     // and SET_CONFIGURATION while we are still booting otherwise (error -110).
     let usb_driver = Driver::new(p.USB, Irqs);
     let usb_resources = build_usb_cdc(usb_driver);
     spawn_usb_tasks(&spawner, usb_resources);
-    // Blocking init below starves the executor; give the host time to finish
-    // SET_CONFIGURATION while only usb_task is runnable.
-    // Timer::after_millis(USB_ENUM_GRACE_MS).await;
 
     // Power hardware initialization
     let i2c0 = I2c::new_blocking(p.I2C0, p.PIN_1, p.PIN_0, i2c::Config::default());
@@ -237,15 +246,56 @@ async fn main(spawner: Spawner) {
                     };
                     (response, None)
                 }
+                ScpiCommand::FwupData => {
+                    let result = app.handle_fwup_data(fwup_payload_len() as u32, scpi_state);
+                    (result.response, result.tasks)
+                }
+                ScpiCommand::FwupAbor => {
+                    let result = app.handle_scpi(cmd, scpi_state, &ctx);
+                    fw_ctx.dfu_abort();
+                    (result.response, result.tasks)
+                }
                 _ => {
                     let result = app.handle_scpi(cmd, scpi_state, &ctx);
                     (result.response, result.tasks)
                 }
             };
-            SCPI_RESP.send(response).await;
             if let Some(tasks) = tasks {
                 for task in tasks {
                     match task {
+                        Task::Hardware(hw_task) if is_dfu_task(&hw_task) => {
+                            if let Some(extra) = handle_dfu_task(
+                                hw_task,
+                                fw_ctx,
+                                &mut app,
+                                scpi_state,
+                                fwup_payload(),
+                            ) {
+                                for followup in extra {
+                                    match followup {
+                                        Task::Hardware(hw) => {
+                                            handle_hardware_task(
+                                                hw,
+                                                &mut hal,
+                                                &hw_sender,
+                                                &int_sender,
+                                            )
+                                            .await;
+                                        }
+                                        Task::Display(disp) => {
+                                            handle_display_task(
+                                                disp,
+                                                &mut ui,
+                                                scpi_state,
+                                                &hw_sender,
+                                                &int_sender,
+                                            )
+                                            .await;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         Task::Hardware(hw_task) => {
                             handle_hardware_task(hw_task, &mut hal, &hw_sender, &int_sender).await;
                         }
@@ -257,11 +307,12 @@ async fn main(spawner: Spawner) {
                                 &hw_sender,
                                 &int_sender,
                             )
-                            .await
+                            .await;
                         }
                     }
                 }
             }
+            SCPI_RESP.send(response).await;
         }
 
         let mut tasks = AppTaskBuilder::new();

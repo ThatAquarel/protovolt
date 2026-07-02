@@ -8,13 +8,27 @@ use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::DrawTarget;
 use embedded_hal::i2c::I2c;
 
+use crate::app::App;
 use crate::hal::Hal;
 use crate::hal::event::{
-    Channel, ChannelFocus, ChannelHardwareState, ConfirmState, DisplayTask, HardwareEvent,
-    HardwareTask, InterfaceEvent, PowerType, SetState,
+    AppEvent, AppTask, Channel, ChannelFocus, ChannelHardwareState, ConfirmState, DisplayTask,
+    HardwareEvent, HardwareTask, InterfaceEvent, PowerType, SetState,
 };
+use crate::hal::firmware::BoardFirmwareCtx;
+use crate::hal::firmware;
 use crate::scpi::state::ScpiState;
 use crate::ui::{SCREEN_HOLD_TIME, Ui, labels};
+
+pub fn handle_dfu_task(
+    task: HardwareTask,
+    fw: &mut BoardFirmwareCtx,
+    app: &mut App,
+    scpi: &mut ScpiState,
+    payload: &[u8],
+) -> Option<AppTask> {
+    firmware::dfu_hardware_event(task, fw, payload)
+        .and_then(|evt| app.handle_event(AppEvent::Dfu(evt), scpi))
+}
 
 pub async fn handle_hardware_task<M, PowerBus, ConverterBus>(
     hardware_task: HardwareTask,
