@@ -1,0 +1,16 @@
+[package]
+name = "protov-nvm"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "XIP flash partition layout and linker scripts for ProtoV"
+publish = false
+links = "protov_nvm"
+
+[features]
+# Enable exactly one when linking firmware (bootloader or application).
+default = []
+bootloader = []
+application = []
+
+[lib]
