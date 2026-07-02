@@ -3,13 +3,11 @@
 use core::cell::RefCell;
 
 use defmt::{error, info, warn};
-use embassy_boot_rp::{
-    AlignedBuffer, BlockingFirmwareUpdater, FirmwareUpdaterConfig, State,
-};
+use embassy_boot_rp::{AlignedBuffer, BlockingFirmwareUpdater, FirmwareUpdaterConfig, State};
 use embassy_rp::flash::{Blocking, Flash};
 use embassy_rp::peripherals::FLASH;
-use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::blocking_mutex::Mutex;
+use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embedded_storage::nor_flash::NorFlash;
 
 use embassy_embedded_hal::flash::partition::BlockingPartition;
@@ -79,12 +77,9 @@ where
 
     pub fn dfu_prepare(&mut self) -> Result<(), ()> {
         with_flash(|| {
-            self.updater
-                .prepare_update()
-                .map(|_| ())
-                .map_err(|e| {
-                    warn!("prepare_update: {:?}", defmt::Debug2Format(&e));
-                })
+            self.updater.prepare_update().map(|_| ()).map_err(|e| {
+                warn!("prepare_update: {:?}", defmt::Debug2Format(&e));
+            })
         })?;
         self.session_active = true;
         Ok(())
@@ -125,10 +120,7 @@ where
             self.updater
                 .verify_and_mark_updated(PUBLIC_KEY, &signature, len)
                 .map_err(|e| {
-                    warn!(
-                        "verify_and_mark_updated: {:?}",
-                        defmt::Debug2Format(&e)
-                    );
+                    warn!("verify_and_mark_updated: {:?}", defmt::Debug2Format(&e));
                 })
         })?;
         info!("Firmware verified; resetting");

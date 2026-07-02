@@ -65,9 +65,13 @@ pub enum ScpiCommand {
         channel: RegisterChannel,
     },
     FwupStatQuery,
-    FwupStar { size: u32 },
+    FwupStar {
+        size: u32,
+    },
     FwupData,
-    FwupAppl { signature: [u8; 64] },
+    FwupAppl {
+        signature: [u8; 64],
+    },
     FwupAbor,
     Unknown {
         command: [u8; 64],
@@ -546,10 +550,7 @@ pub fn is_allowed_in_update_mode(cmd: &ScpiCommand) -> bool {
 }
 
 pub fn requires_active_update_session(cmd: &ScpiCommand) -> bool {
-    matches!(
-        cmd,
-        ScpiCommand::FwupData | ScpiCommand::FwupAppl { .. }
-    )
+    matches!(cmd, ScpiCommand::FwupData | ScpiCommand::FwupAppl { .. })
 }
 
 #[cfg(test)]

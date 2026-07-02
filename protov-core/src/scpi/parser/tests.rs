@@ -78,7 +78,10 @@ fn unknown_command() {
 
 #[test]
 fn parse_fwup_commands() {
-    assert_eq!(parse_command("SYST:FWUP:STAT?"), Some(ScpiCommand::FwupStatQuery));
+    assert_eq!(
+        parse_command("SYST:FWUP:STAT?"),
+        Some(ScpiCommand::FwupStatQuery)
+    );
     assert_eq!(
         parse_command("SYST:FWUP:STAR 8192"),
         Some(ScpiCommand::FwupStar { size: 8192 })

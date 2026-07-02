@@ -4,7 +4,7 @@ use crate::model::{
 };
 use crate::scpi::parser::parse_command;
 use crate::scpi::state::ScpiState;
-use crate::scpi::{ScpiContext, RESPONSE_BUF};
+use crate::scpi::{RESPONSE_BUF, ScpiContext};
 
 use super::AppCore;
 
@@ -36,10 +36,7 @@ impl TestBench {
     }
 
     fn fwup_data(&mut self, len: u32) -> Option<heapless::String<RESPONSE_BUF>> {
-        self.app
-            .handle_fwup_data(len, &mut self.scpi)
-            .response
-            .text
+        self.app.handle_fwup_data(len, &mut self.scpi).response.text
     }
 }
 
@@ -49,17 +46,20 @@ fn iter_tasks(task: &AppTask) -> impl Iterator<Item = &Task> {
 
 fn has_hw(task: &AppTask, expected: HardwareTask) -> bool {
     iter_tasks(task).any(|t| match (t, &expected) {
-        (
-            Task::Hardware(HardwareTask::DfuPrepare),
-            HardwareTask::DfuPrepare,
-        ) => true,
+        (Task::Hardware(HardwareTask::DfuPrepare), HardwareTask::DfuPrepare) => true,
         (
             Task::Hardware(HardwareTask::DfuWriteBlock { offset: a, len: b }),
             HardwareTask::DfuWriteBlock { offset: c, len: d },
         ) => a == c && b == d,
         (
-            Task::Hardware(HardwareTask::DfuVerifyApply { len: a, signature: sa }),
-            HardwareTask::DfuVerifyApply { len: b, signature: sb },
+            Task::Hardware(HardwareTask::DfuVerifyApply {
+                len: a,
+                signature: sa,
+            }),
+            HardwareTask::DfuVerifyApply {
+                len: b,
+                signature: sb,
+            },
         ) => a == b && sa == sb,
         _ => false,
     })
@@ -93,7 +93,9 @@ fn fwup_data_block_and_progress() {
         .app
         .handle_event(AppEvent::Dfu(DfuEvent::PrepareComplete), &mut bench.scpi);
 
-    let result = bench.app.handle_fwup_data(FWUP_MAX_BLOCK_LEN as u32, &mut bench.scpi);
+    let result = bench
+        .app
+        .handle_fwup_data(FWUP_MAX_BLOCK_LEN as u32, &mut bench.scpi);
     assert_eq!(result.response.text.unwrap().as_str(), "OK");
     let tasks = result.tasks.expect("write task");
     assert!(has_hw(
@@ -224,7 +226,10 @@ fn fwup_appl_when_ready() {
         }),
         &mut bench.scpi,
     );
-    assert_eq!(bench.exec("SYST:FWUP:STAT?").unwrap().as_str(), "READY,4096");
+    assert_eq!(
+        bench.exec("SYST:FWUP:STAT?").unwrap().as_str(),
+        "READY,4096"
+    );
 
     let sig_hex = "#H".to_string() + &"cd".repeat(64);
     let result = bench.exec(&format!("SYST:FWUP:APPL {sig_hex}")).unwrap();

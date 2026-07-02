@@ -17,8 +17,14 @@ pub enum DfuPhase {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DfuAction {
     Prepare,
-    WriteBlock { offset: u32, len: u32 },
-    VerifyApply { len: u32, signature: [u8; FWUP_SIGNATURE_LEN] },
+    WriteBlock {
+        offset: u32,
+        len: u32,
+    },
+    VerifyApply {
+        len: u32,
+        signature: [u8; FWUP_SIGNATURE_LEN],
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -28,7 +34,9 @@ pub struct DfuSession {
 
 impl Default for DfuSession {
     fn default() -> Self {
-        Self { phase: DfuPhase::Idle }
+        Self {
+            phase: DfuPhase::Idle,
+        }
     }
 }
 
@@ -127,9 +135,7 @@ impl DfuSession {
             return Err(DfuError::WrongState);
         };
 
-        let new_received = received
-            .checked_add(len)
-            .ok_or(DfuError::Overflow)?;
+        let new_received = received.checked_add(len).ok_or(DfuError::Overflow)?;
         if new_received > total {
             return Err(DfuError::Overflow);
         }
@@ -144,27 +150,21 @@ impl DfuSession {
             };
         }
 
-        Ok((
-            offset,
-            DfuAction::WriteBlock {
-                offset,
-                len,
-            },
-        ))
+        Ok((offset, DfuAction::WriteBlock { offset, len }))
     }
 
     pub fn on_block_failed(&mut self) {
         self.phase = DfuPhase::Error;
     }
 
-    pub fn apply(
-        &mut self,
-        signature: [u8; FWUP_SIGNATURE_LEN],
-    ) -> Result<DfuAction, DfuError> {
+    pub fn apply(&mut self, signature: [u8; FWUP_SIGNATURE_LEN]) -> Result<DfuAction, DfuError> {
         let DfuPhase::Ready { total } = self.phase else {
             return Err(DfuError::WrongState);
         };
-        Ok(DfuAction::VerifyApply { len: total, signature })
+        Ok(DfuAction::VerifyApply {
+            len: total,
+            signature,
+        })
     }
 
     pub fn on_verify_failed(&mut self) {

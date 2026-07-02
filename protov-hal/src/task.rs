@@ -14,8 +14,8 @@ use crate::hal::event::{
     AppEvent, AppTask, Channel, ChannelFocus, ChannelHardwareState, ConfirmState, DisplayTask,
     HardwareEvent, HardwareTask, InterfaceEvent, PowerType, SetState,
 };
-use crate::hal::firmware::BoardFirmwareCtx;
 use crate::hal::firmware;
+use crate::hal::firmware::BoardFirmwareCtx;
 use crate::scpi::state::ScpiState;
 use crate::ui::{SCREEN_HOLD_TIME, Ui, labels};
 

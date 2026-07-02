@@ -7,14 +7,14 @@ use embassy_usb::driver::EndpointError;
 use static_cell::StaticCell;
 
 use protov_core::dfu::parse_definite_block_at;
-use protov_core::scpi::parser::{self, FWUP_DATA_PREFIX, ScpiCommand};
 use protov_core::scpi::LINE_BUF;
+use protov_core::scpi::parser::{self, FWUP_DATA_PREFIX, ScpiCommand};
 use protov_nvm::FWUP_MAX_BLOCK_LEN;
 
 use crate::config::{
     MANUFACTURER, PRODUCT_NAME, SERIAL_NUMBER, USB_MAX_POWER_MA, USB_PID, USB_VID,
 };
-use crate::scpi::{set_serial_connected, SCPI_CMD, SCPI_RESP};
+use crate::scpi::{SCPI_CMD, SCPI_RESP, set_serial_connected};
 
 pub const USB_ENUM_GRACE_MS: u64 = 250;
 
@@ -96,10 +96,7 @@ impl From<EndpointError> for Disconnected {
 
 enum RxMode {
     Ascii,
-    FwupPayload {
-        payload_len: usize,
-        received: usize,
-    },
+    FwupPayload { payload_len: usize, received: usize },
 }
 
 struct ScpiReader {
@@ -123,10 +120,11 @@ impl ScpiReader {
 
     fn wants_more_usb(&self) -> bool {
         match self.mode {
-            RxMode::FwupPayload { payload_len, received } => received < payload_len,
-            RxMode::Ascii => {
-                try_fwup_header(&self.buf).is_some() || fwup_data_pending(&self.buf)
-            }
+            RxMode::FwupPayload {
+                payload_len,
+                received,
+            } => received < payload_len,
+            RxMode::Ascii => try_fwup_header(&self.buf).is_some() || fwup_data_pending(&self.buf),
         }
     }
 

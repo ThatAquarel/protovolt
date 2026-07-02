@@ -91,8 +91,7 @@ mod tests {
 
     #[test]
     fn parse_block_in_command_prefix() {
-        let (end, len) =
-            parse_definite_block_in_ascii("SYST:FWUP:DATA #44096").unwrap();
+        let (end, len) = parse_definite_block_in_ascii("SYST:FWUP:DATA #44096").unwrap();
         assert_eq!(end, "SYST:FWUP:DATA #44096".len());
         assert_eq!(len, 4096);
     }

@@ -225,8 +225,14 @@ pub enum HardwareTask {
     UpdateConverterVoltage(Channel, f32),
     UpdateConverterCurrent(Channel, f32),
     DfuPrepare,
-    DfuWriteBlock { offset: u32, len: u32 },
-    DfuVerifyApply { len: u32, signature: [u8; 64] },
+    DfuWriteBlock {
+        offset: u32,
+        len: u32,
+    },
+    DfuVerifyApply {
+        len: u32,
+        signature: [u8; 64],
+    },
     /// Delay in milliseconds before dispatching the nested event.
     DelayedHardwareEvent(u64, HardwareEvent),
 }

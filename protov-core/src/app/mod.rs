@@ -5,15 +5,14 @@ use crate::config::{
     CURRENT_EDIT_RANGE, ChannelProfile, FACTORY, SCPI_SYSTEM_VERSION, VOLTAGE_EDIT_RANGE,
     format_idn,
 };
-use crate::fmt::format_f32;
 use crate::dfu::{DfuAction, DfuSession};
+use crate::fmt::format_f32;
 use crate::model::ConverterFlags;
 use crate::model::TemperatureReading;
 use crate::model::{
     AppEvent, AppTask, AppTaskBuilder, Change, Channel, ChannelFocus, ChannelHardwareState,
-    ConfirmState, DecimalPrecision, DisplayTask, DfuEvent, DfuStatus, FunctionButton,
-    HardwareEvent, HardwareTask, InterfaceEvent, Limits, PowerType, Readout, SetSelect,
-    SetState,
+    ConfirmState, DecimalPrecision, DfuEvent, DfuStatus, DisplayTask, FunctionButton,
+    HardwareEvent, HardwareTask, InterfaceEvent, Limits, PowerType, Readout, SetSelect, SetState,
 };
 use crate::protection;
 use crate::scpi::colors::{self, Rgb};
@@ -1019,11 +1018,7 @@ impl AppCore {
         }
     }
 
-    fn handle_fwup_appl(
-        &mut self,
-        signature: [u8; 64],
-        scpi: &mut ScpiState,
-    ) -> ScpiHandleResult {
+    fn handle_fwup_appl(&mut self, signature: [u8; 64], scpi: &mut ScpiState) -> ScpiHandleResult {
         if !self.is_update_mode() {
             return Self::fwup_err_result(scpi, -200, "Use SYST:FWUP:STAR first");
         }
@@ -1039,11 +1034,7 @@ impl AppCore {
         }
     }
 
-    pub fn handle_fwup_data(
-        &mut self,
-        block_len: u32,
-        scpi: &mut ScpiState,
-    ) -> ScpiHandleResult {
+    pub fn handle_fwup_data(&mut self, block_len: u32, scpi: &mut ScpiState) -> ScpiHandleResult {
         if !self.is_update_mode() {
             return Self::fwup_err_result(scpi, -200, "Use SYST:FWUP:STAR first");
         }
