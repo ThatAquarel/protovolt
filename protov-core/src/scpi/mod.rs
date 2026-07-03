@@ -52,8 +52,16 @@ pub struct ScpiResponse {
 }
 
 impl ScpiResponse {
+    /// No bus line (mutations, *RST, etc.). Errors are reported via `SYST:ERR?`.
     pub fn none() -> Self {
         Self { text: None }
+    }
+
+    /// FWUP protocol acknowledgement (`SYST:FWUP:STAR`, `ABOR`, etc.).
+    pub fn ok() -> Self {
+        let mut text = heapless::String::<RESPONSE_BUF>::new();
+        let _ = text.push_str("OK");
+        Self { text: Some(text) }
     }
 
     pub fn with_text(text: heapless::String<RESPONSE_BUF>) -> Self {

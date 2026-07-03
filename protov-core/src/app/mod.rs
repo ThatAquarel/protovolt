@@ -960,7 +960,7 @@ impl AppCore {
 
     fn fwup_ok_result(tasks: Option<AppTask>) -> ScpiHandleResult {
         ScpiHandleResult {
-            response: Self::push_response_text("OK"),
+            response: ScpiResponse::ok(),
             tasks,
         }
     }
@@ -1649,6 +1649,8 @@ impl AppCore {
 mod dfu_tests;
 #[cfg(test)]
 mod scpi_tests;
+#[cfg(test)]
+mod scpi_response_tests;
 
 #[cfg(test)]
 mod event_tests;

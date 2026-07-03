@@ -248,9 +248,9 @@ impl ScpiReader {
     ) -> Result<(), Disconnected> {
         SCPI_CMD.send(cmd).await;
         let response = SCPI_RESP.receive().await;
-        match response.text {
-            Some(text) => write_response(class, text.as_bytes()).await?,
-            None => write_response(class, b"ERR\n").await?,
+        // v1.3.3 contract: only queries (and FWUP acks) emit a bus line; sets stay silent.
+        if let Some(text) = response.text {
+            write_response(class, text.as_bytes()).await?;
         }
         Ok(())
     }

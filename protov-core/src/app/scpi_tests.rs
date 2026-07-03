@@ -81,6 +81,7 @@ fn outp_on_off() {
 fn mode_query_off_by_default() {
     let mut bench = TestBench::standby();
     assert_eq!(bench.exec("CH1:MODE?").unwrap().as_str(), "OFF");
+    assert_eq!(bench.exec("CH2:MODE?").unwrap().as_str(), "OFF");
 }
 
 #[test]
