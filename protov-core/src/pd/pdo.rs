@@ -256,4 +256,94 @@ mod tests {
         }];
         assert!(select_best_source_pdo(&caps).is_none());
     }
+
+    #[test]
+    fn decode_rejects_non_fixed_pdo() {
+        assert!(decode_fixed_src_pdo(0x8000_0000).is_none());
+    }
+
+    #[test]
+    fn fixed_pdo_power_w() {
+        let pdo = FixedPdo {
+            voltage_v: 12.0,
+            current_a: 2.5,
+        };
+        assert!((pdo.power_w() - 30.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn indexed_source_pdo_scorer() {
+        let caps = [
+            IndexedSourcePdo {
+                index: 1,
+                pdo: FixedPdo {
+                    voltage_v: 5.0,
+                    current_a: 3.0,
+                },
+            },
+            IndexedSourcePdo {
+                index: 2,
+                pdo: FixedPdo {
+                    voltage_v: 15.0,
+                    current_a: 3.0,
+                },
+            },
+        ];
+        let best = super::select_best_indexed_source_pdo(&caps).unwrap();
+        assert_eq!(best.index, 2);
+        assert!((best.pdo.voltage_v - 15.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn voltage_for_rdo_pos_matches_index() {
+        let caps = [
+            IndexedSourcePdo {
+                index: 1,
+                pdo: FixedPdo {
+                    voltage_v: 5.0,
+                    current_a: 3.0,
+                },
+            },
+            IndexedSourcePdo {
+                index: 2,
+                pdo: FixedPdo {
+                    voltage_v: 9.0,
+                    current_a: 3.0,
+                },
+            },
+        ];
+        assert!((IndexedSourcePdo::voltage_for_rdo_pos(&caps, 2).unwrap() - 9.0).abs() < f32::EPSILON);
+        assert!(IndexedSourcePdo::voltage_for_rdo_pos(&caps, 9).is_none());
+    }
+
+    #[test]
+    fn rdo_currents_decode() {
+        let raw = (2 << 28) | (400 << 10) | 250;
+        let (op_a, max_a, pos) = super::decode_rdo_currents(raw);
+        assert_eq!(pos, 2);
+        assert!((op_a - 2.5).abs() < f32::EPSILON);
+        assert!((max_a - 4.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn sink_slots_reuses_best_when_no_second_voltage() {
+        let caps = [FixedPdo {
+            voltage_v: 20.0,
+            current_a: 3.0,
+        }];
+        let best = caps[0];
+        let slots = build_sink_slots(&caps, best);
+        assert!((slots.pdo3.voltage_v - 20.0).abs() < f32::EPSILON);
+        assert!((slots.pdo2.voltage_v - 20.0).abs() < f32::EPSILON);
+        assert!((slots.pdo1.voltage_v - 5.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn rejects_out_of_range_voltage_pdo() {
+        let caps = [FixedPdo {
+            voltage_v: 4.0,
+            current_a: 3.0,
+        }];
+        assert!(select_best_source_pdo(&caps).is_none());
+    }
 }
