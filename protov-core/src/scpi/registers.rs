@@ -80,7 +80,9 @@ mod tests {
         let mut buf = heapless::String::<RESPONSE_BUF>::new();
         assert!(format_ina226(RegisterChannel::Cha, &mut buf));
         assert_eq!(
-            format_ina226_response(RegisterChannel::Cha).unwrap().as_str(),
+            format_ina226_response(RegisterChannel::Cha)
+                .unwrap()
+                .as_str(),
             buf.as_str()
         );
     }
@@ -90,7 +92,9 @@ mod tests {
         let mut buf = heapless::String::<RESPONSE_BUF>::new();
         assert!(format_tps55289(RegisterChannel::Chb, &mut buf));
         assert_eq!(
-            format_tps55289_response(RegisterChannel::Chb).unwrap().as_str(),
+            format_tps55289_response(RegisterChannel::Chb)
+                .unwrap()
+                .as_str(),
             buf.as_str()
         );
     }

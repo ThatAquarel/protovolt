@@ -129,9 +129,11 @@ fn app_task_builder_caps_at_limit() {
 
 #[test]
 fn app_task_display_task_helper() {
-    let built =
-        AppTaskBuilder::display_task(DisplayTask::DfuStatus(DfuStatus::Idle)).unwrap();
+    let built = AppTaskBuilder::display_task(DisplayTask::DfuStatus(DfuStatus::Idle)).unwrap();
     assert_eq!(built.count, 1);
     let only = built.into_iter().next().unwrap();
-    assert!(matches!(only, Task::Display(DisplayTask::DfuStatus(DfuStatus::Idle))));
+    assert!(matches!(
+        only,
+        Task::Display(DisplayTask::DfuStatus(DfuStatus::Idle))
+    ));
 }

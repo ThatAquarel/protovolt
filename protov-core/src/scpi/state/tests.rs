@@ -143,16 +143,8 @@ fn color_for_hal_mapping() {
 #[test]
 fn color_roundtrip_per_scpi_channel() {
     let mut state = ScpiState::default();
-    let ch1 = Rgb {
-        r: 1,
-        g: 2,
-        b: 3,
-    };
-    let ch2 = Rgb {
-        r: 4,
-        g: 5,
-        b: 6,
-    };
+    let ch1 = Rgb { r: 1, g: 2, b: 3 };
+    let ch2 = Rgb { r: 4, g: 5, b: 6 };
     state.set_color(ScpiChannel::Ch1, ch1);
     state.set_color(ScpiChannel::Ch2, ch2);
     assert_eq!(state.color(ScpiChannel::Ch1), ch1);

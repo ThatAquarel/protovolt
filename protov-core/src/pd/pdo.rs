@@ -312,7 +312,9 @@ mod tests {
                 },
             },
         ];
-        assert!((IndexedSourcePdo::voltage_for_rdo_pos(&caps, 2).unwrap() - 9.0).abs() < f32::EPSILON);
+        assert!(
+            (IndexedSourcePdo::voltage_for_rdo_pos(&caps, 2).unwrap() - 9.0).abs() < f32::EPSILON
+        );
         assert!(IndexedSourcePdo::voltage_for_rdo_pos(&caps, 9).is_none());
     }
 
