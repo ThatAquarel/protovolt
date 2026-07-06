@@ -22,6 +22,7 @@ use u8g2_fonts::{FontRenderer, fonts};
 use crate::{
     app::{DecimalPrecision, SetSelect},
     hal::{
+        backlight::Backlight,
         display::st7789,
         event::{
             Channel, ChannelFocus, ChannelHardwareState, ConfirmState, FunctionButton, Limits,
@@ -35,18 +36,19 @@ use crate::{
 pub trait Display: DrawTarget<Color = Rgb565> {}
 impl<T: DrawTarget<Color = Rgb565>> Display for T {}
 
-pub struct Ui<'a, D, PIO>
+pub struct Ui<'disp, 'bl, D, PIO>
 where
     D: DrawTarget<Color = Rgb565>,
     PIO: Instance,
 {
-    pub target: &'a mut D,
-    pub led_interface: LedsInterface<'a, PIO>,
+    pub target: &'disp mut D,
+    pub led_interface: LedsInterface<'disp, PIO>,
+    backlight: Backlight<'bl>,
 
     pub fonts: Fonts,
     pub layout: Layout,
 
-    boot: BootScreen<'a>,
+    boot: BootScreen<'disp>,
     controls: ControlsScreen,
     settings: SettingsScreen,
 
@@ -54,15 +56,20 @@ where
     settings_visible: bool,
 }
 
-impl<'a, D, PIO> Ui<'a, D, PIO>
+impl<'disp, 'bl, D, PIO> Ui<'disp, 'bl, D, PIO>
 where
     D: DrawTarget<Color = Rgb565>,
     PIO: Instance,
 {
-    pub fn new(target: &'a mut D, led_interface: LedsInterface<'a, PIO>) -> Self {
+    pub fn new(
+        target: &'disp mut D,
+        led_interface: LedsInterface<'disp, PIO>,
+        backlight: Backlight<'bl>,
+    ) -> Self {
         Self {
-            target: target,
-            led_interface: led_interface,
+            target,
+            led_interface,
+            backlight,
 
             fonts: Fonts::default(),
             layout: Layout {},
@@ -74,6 +81,14 @@ where
             navbar: Navbar::new(),
             settings_visible: false,
         }
+    }
+
+    pub fn lcd_brightness(&self) -> u8 {
+        self.backlight.level()
+    }
+
+    pub fn set_lcd_brightness(&mut self, level: u8) {
+        self.backlight.set_brightness(level);
     }
 
     pub fn set_settings_visible(&mut self, visible: bool) {
@@ -122,7 +137,8 @@ where
     }
 
     pub fn clear(&mut self) -> Result<(), ()> {
-        self.target.clear(color_scheme::BACKGROUND).map_err(|_| ())
+        self.backlight
+            .while_suppressed(|| self.target.clear(color_scheme::BACKGROUND).map_err(|_| ()))
     }
 
     #[cfg(feature = "demo")]

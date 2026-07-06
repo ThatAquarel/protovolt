@@ -179,7 +179,7 @@ async fn main(spawner: Spawner) {
     let spi = Spi::new_blocking(p.SPI0, p.PIN_18, p.PIN_19, p.PIN_20, spi::Config::default());
     let spi_shared: Mutex<NoopRawMutex, _> = Mutex::new(RefCell::new(spi));
     let mut display = DisplayInterface::new(&spi_shared, p.PIN_17, p.PIN_21, p.PIN_28);
-    let mut backlight = Backlight::new(p.PWM_SLICE0, p.PIN_16);
+    let backlight = Backlight::new(p.PWM_SLICE0, p.PIN_16);
 
     // Interfacing LEDs setup
     let pio = Pio::new(p.PIO0, Irqs);
@@ -187,9 +187,9 @@ async fn main(spawner: Spawner) {
 
     // App logic
     let mut app = App::default();
-    let mut ui = Ui::new(&mut display.target, leds);
+    let mut ui = Ui::new(&mut display.target, leds, backlight);
     ui.clear().unwrap();
-    backlight.set_brightness(scpi_state.lcd_brightness);
+    ui.set_lcd_brightness(scpi_state.lcd_brightness);
 
     // Start core 1 and spawn poll_interface there
     spawn_core1(
@@ -210,12 +210,10 @@ async fn main(spawner: Spawner) {
 
     let mut ticker = Ticker::every(Duration::from_hz(100));
     let mut poll_counter = 0u32;
-    let mut applied_lcd_brightness = scpi_state.lcd_brightness;
 
     loop {
-        if scpi_state.lcd_brightness != applied_lcd_brightness {
-            applied_lcd_brightness = scpi_state.lcd_brightness;
-            backlight.set_brightness(applied_lcd_brightness);
+        if scpi_state.lcd_brightness != ui.lcd_brightness() {
+            ui.set_lcd_brightness(scpi_state.lcd_brightness);
         }
 
         if let Ok(cmd) = SCPI_CMD.try_receive() {

@@ -106,7 +106,7 @@ pub async fn handle_hardware_task<M, PowerBus, ConverterBus>(
 
 pub async fn handle_display_task<D, PIO>(
     display_task: DisplayTask,
-    ui: &mut Ui<'_, D, PIO>,
+    ui: &mut Ui<'_, '_, D, PIO>,
     scpi: &ScpiState,
     _hw_sender: &Sender<'_, ThreadModeRawMutex, HardwareEvent, 32>,
     _int_sender: &Sender<'_, ThreadModeRawMutex, InterfaceEvent, 32>,
