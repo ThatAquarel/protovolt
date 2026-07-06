@@ -1,0 +1,33 @@
+[package]
+name = "protov-scpi"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "ProtoV SCPI wire protocol (parse, encode, host client)"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "protov_scpi"
+
+[dependencies]
+heapless = "0.8"
+
+protov-nvm = { path = "../protov-nvm", optional = true }
+
+wasm-bindgen = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true }
+
+[features]
+default = []
+std = []
+limits = ["dep:protov-nvm"]
+wasm = ["std", "dep:wasm-bindgen", "dep:js-sys"]
+
+[[test]]
+name = "block"
+required-features = ["std"]
+
+[[test]]
+name = "client"
+required-features = ["std"]
