@@ -1,9 +1,9 @@
 [workspace]
-members = ["protov-bootloader", "protov-core", "protov-hal", "protov-hal-mock", "protov-nvm"]
+members = ["protov-bootloader", "protov-core", "protov-hal", "protov-hal-mock", "protov-nvm", "protov-scpi"]
 resolver = "2"
 
 [workspace.package]
-version = "1.5.2"
+version = "1.5.3"
 edition = "2024"
 authors = ["Alex Xia <alex.xia@flakeblade.com>"]
 
