@@ -47,6 +47,25 @@ pub fn format_idn_parts<const N: usize>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::{FIRMWARE_REVISION, HARDWARE_REVISION, SERIAL_NUMBER, format_idn};
+
+    #[test]
+    fn default_identity_matches_product_constants() {
+        let identity = DeviceIdentity::default();
+        assert_eq!(identity.serial, SERIAL_NUMBER);
+        assert_eq!(identity.fw_version, FIRMWARE_REVISION);
+        assert_eq!(identity.hw_version, HARDWARE_REVISION);
+    }
+
+    #[test]
+    fn default_identity_formats_like_product_idn() {
+        let identity = DeviceIdentity::default();
+        let mut from_identity = heapless::String::<128>::new();
+        let mut from_product = heapless::String::<128>::new();
+        format_idn_with(&identity, &mut from_identity);
+        format_idn(&mut from_product);
+        assert_eq!(from_identity.as_str(), from_product.as_str());
+    }
 
     #[test]
     fn format_idn_with_custom_serial() {
