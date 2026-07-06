@@ -71,6 +71,43 @@ test-mock:
 test-nvm:
     @just nvm::test
 
+coverage_dir := "dist/coverage"
+coverage_html_dir := coverage_dir + "/html"
+coverage_lcov_path := coverage_dir + "/lcov.info"
+
+# LLVM source coverage (cargo-llvm-cov) for host-testable workspace crates.
+# Embedded-only protov-hal and protov-bootloader have no host tests and are excluded.
+coverage: coverage-html
+
+coverage-html dir=coverage_html_dir:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mkdir -p "{{dir}}"
+    cargo llvm-cov --workspace \
+        --exclude protov-hal --exclude protov-bootloader \
+        --target {{host_target}} \
+        --features hw-a1,test-harness \
+        --html --output-dir "{{dir}}"
+    echo "Coverage report: {{dir}}/index.html"
+
+coverage-lcov path=coverage_lcov_path:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mkdir -p "$(dirname "{{path}}")"
+    cargo llvm-cov --workspace \
+        --exclude protov-hal --exclude protov-bootloader \
+        --target {{host_target}} \
+        --features hw-a1,test-harness \
+        --lcov --output-path "{{path}}"
+    echo "Coverage lcov: {{path}}"
+
+coverage-summary:
+    cargo llvm-cov --workspace \
+        --exclude protov-hal --exclude protov-bootloader \
+        --target {{host_target}} \
+        --features hw-a1,test-harness \
+        --summary-only --text
+
 fmt:
     cargo fmt --all
 
