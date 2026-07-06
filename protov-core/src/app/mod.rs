@@ -1648,9 +1648,9 @@ impl AppCore {
 #[cfg(test)]
 mod dfu_tests;
 #[cfg(test)]
-mod scpi_tests;
-#[cfg(test)]
 mod scpi_response_tests;
+#[cfg(test)]
+mod scpi_tests;
 
 #[cfg(test)]
 mod event_tests;

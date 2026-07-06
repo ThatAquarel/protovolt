@@ -55,7 +55,10 @@ fn assert_line(bench: &mut TestBench, cmd: &str, expected: &str) {
 
 fn assert_line_nonempty(bench: &mut TestBench, cmd: &str) {
     let line = usb_line(bench.exec(cmd));
-    assert!(line.as_ref().is_some_and(|s| !s.is_empty()), "query {cmd:?}");
+    assert!(
+        line.as_ref().is_some_and(|s| !s.is_empty()),
+        "query {cmd:?}"
+    );
 }
 
 #[test]
@@ -152,16 +155,8 @@ fn channel_queries_return_factory_defaults() {
 #[test]
 fn brightness_query_after_set() {
     let mut bench = TestBench::standby();
-    assert_line(
-        &mut bench,
-        "LCD:BRIG?",
-        &DEFAULT_LCD_BRIGHTNESS.to_string(),
-    );
-    assert_line(
-        &mut bench,
-        "LED:BRIG?",
-        &DEFAULT_LED_BRIGHTNESS.to_string(),
-    );
+    assert_line(&mut bench, "LCD:BRIG?", &DEFAULT_LCD_BRIGHTNESS.to_string());
+    assert_line(&mut bench, "LED:BRIG?", &DEFAULT_LED_BRIGHTNESS.to_string());
     assert_silent(&mut bench, "LCD:BRIG 128");
     assert_line(&mut bench, "LCD:BRIG?", "128");
     assert_silent(&mut bench, "LED:BRIG 64");
@@ -189,7 +184,11 @@ fn interleaved_sets_and_queries_stay_aligned() {
 fn error_commands_are_silent_use_syst_err() {
     let mut bench = TestBench::standby();
     assert_silent(&mut bench, "GARBAGE");
-    assert_line(&mut bench, "SYST:ERR?", r#"-113,"Unknown command: GARBAGE""#);
+    assert_line(
+        &mut bench,
+        "SYST:ERR?",
+        r#"-113,"Unknown command: GARBAGE""#,
+    );
     assert_line(&mut bench, "SYST:ERR?", r#"0,"No error""#);
 
     let mut app = AppCore::default();
