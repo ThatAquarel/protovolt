@@ -111,7 +111,7 @@ coverage-summary:
 fmt:
     cargo fmt --all
 
-checks: test-a0 test-a1 test-a2 test-mock test-nvm clippy
+checks: test-a0 test-a1 test-a2 test-mock test-nvm clippy fmt
 
 # Build + package all hardware profiles (version e.g. 1.0.0, without v prefix)
 release-bundle version:
