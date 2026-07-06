@@ -5,6 +5,7 @@ use core::cell::RefCell;
 
 use cortex_m_rt::{entry, exception};
 use embassy_boot_rp::*;
+use embassy_rp::gpio::Output;
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_time::Duration;
 use protov_nvm::FLASH_SIZE;
@@ -17,6 +18,13 @@ use defmt_rtt as _;
 #[entry]
 fn main() -> ! {
     let p = embassy_rp::init(Default::default());
+
+    // Leave backlight ON during bootloading sequence
+    // to allow for displaying update information
+    let mut output = Output::new(p.PIN_16, embassy_rp::gpio::Level::High);
+    output.set_inversion(false);
+    output.set_drive_strength(embassy_rp::gpio::Drive::_8mA);
+    output.set_high();
 
     #[cfg(feature = "defmt")]
     {
