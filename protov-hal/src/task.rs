@@ -19,15 +19,33 @@ use crate::hal::firmware::BoardFirmwareCtx;
 use crate::scpi::state::ScpiState;
 use crate::ui::{SCREEN_HOLD_TIME, Ui, labels};
 
+pub enum DfuOutcome {
+    Progress(Option<AppTask>),
+    VerifySucceeded,
+    VerifyFailed(Option<AppTask>),
+}
+
 pub fn handle_dfu_task(
     task: HardwareTask,
     fw: &mut BoardFirmwareCtx,
     app: &mut App,
     scpi: &mut ScpiState,
     payload: &[u8],
-) -> Option<AppTask> {
-    firmware::dfu_hardware_event(task, fw, payload)
-        .and_then(|evt| app.handle_event(AppEvent::Dfu(evt), scpi))
+) -> DfuOutcome {
+    let Some(event) = firmware::dfu_hardware_event(task, fw, payload) else {
+        return DfuOutcome::Progress(None);
+    };
+
+    match event {
+        protov_core::model::DfuEvent::VerifyApplyComplete => {
+            let _ = app.handle_event(AppEvent::Dfu(event), scpi);
+            DfuOutcome::VerifySucceeded
+        }
+        protov_core::model::DfuEvent::VerifyApplyFailed => {
+            DfuOutcome::VerifyFailed(app.handle_event(AppEvent::Dfu(event), scpi))
+        }
+        other => DfuOutcome::Progress(app.handle_event(AppEvent::Dfu(other), scpi)),
+    }
 }
 
 pub async fn handle_hardware_task<M, PowerBus, ConverterBus>(

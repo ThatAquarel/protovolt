@@ -5,7 +5,7 @@ use crate::config::{
     CURRENT_EDIT_RANGE, ChannelProfile, FACTORY, SCPI_SYSTEM_VERSION, VOLTAGE_EDIT_RANGE,
     format_idn,
 };
-use crate::dfu::{DfuAction, DfuSession};
+use crate::dfu::{DfuAction, DfuError, DfuSession};
 use crate::fmt::format_f32;
 use crate::model::ConverterFlags;
 use crate::model::TemperatureReading;
@@ -1041,10 +1041,23 @@ impl AppCore {
                 let tasks = AppTaskBuilder::new()
                     .hardware(HardwareTask::DfuVerifyApply { len, signature })
                     .build();
-                Self::fwup_ok_result(tasks)
+                ScpiHandleResult {
+                    response: ScpiResponse::none(),
+                    tasks,
+                }
             }
             Err(e) => Self::fwup_err_result(scpi, -200, e.scpi_message()),
             _ => Self::fwup_err_result(scpi, -200, "Unexpected update action"),
+        }
+    }
+
+    /// Build the deferred `SYST:FWUP:APPL` response after hardware verify completes.
+    pub fn fwup_appl_response(&mut self, success: bool, scpi: &mut ScpiState) -> ScpiResponse {
+        if success {
+            ScpiResponse::ok()
+        } else {
+            scpi.push_error(-200, DfuError::VerifyFailed.scpi_message());
+            Self::push_response_text("ERR")
         }
     }
 

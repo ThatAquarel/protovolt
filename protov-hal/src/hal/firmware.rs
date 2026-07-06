@@ -116,20 +116,32 @@ where
         if !self.session_active {
             return Err(());
         }
-        with_flash(|| {
+        match with_flash(|| {
             self.updater
                 .verify_and_mark_updated(PUBLIC_KEY, &signature, len)
                 .map_err(|e| {
                     warn!("verify_and_mark_updated: {:?}", defmt::Debug2Format(&e));
                 })
-        })?;
-        info!("Firmware verified; resetting");
-        cortex_m::peripheral::SCB::sys_reset();
+        }) {
+            Ok(()) => {
+                self.session_active = false;
+                Ok(())
+            }
+            Err(()) => {
+                self.session_active = false;
+                Err(())
+            }
+        }
     }
 
     pub fn dfu_abort(&mut self) {
         self.session_active = false;
     }
+}
+
+pub fn dfu_reset_after_verify() -> ! {
+    info!("Firmware verified; resetting");
+    cortex_m::peripheral::SCB::sys_reset();
 }
 
 pub fn on_boot<'d, DFU, STATE>(updater: &mut BlockingFirmwareUpdater<'d, DFU, STATE>)
@@ -138,24 +150,21 @@ where
     STATE: NorFlash,
 {
     with_flash(|| match updater.get_state() {
-        Ok(State::Boot) => {
-            info!("Bootloader is ready to boot the active partition.");
-        }
-        Ok(State::Swap) => {
-            info!("Bootloader swapped partitions; confirming boot.");
-            match updater.mark_booted() {
-                Ok(()) => info!("mark_booted succeeded"),
-                Err(e) => {
-                    error!("mark_booted failed: {:?}", defmt::Debug2Format(&e));
-                }
+        Ok(State::Swap) => match updater.mark_booted() {
+            Ok(()) => info!("Confirmed firmware swap"),
+            Err(e) => error!("mark_booted failed: {:?}", defmt::Debug2Format(&e)),
+        },
+        Ok(State::DfuDetach) => {
+            // SCPI FWUP does not use USB DFU detach; clear stale magic so the next
+            // reset is not treated as a failed trial boot.
+            if let Err(e) = updater.mark_booted() {
+                error!("clear DfuDetach failed: {:?}", defmt::Debug2Format(&e));
             }
         }
         Ok(State::Revert) => {
-            info!("Bootloader reverted to previous image.");
+            warn!("Bootloader reverted to previous firmware");
         }
-        Ok(State::DfuDetach) => {
-            info!("DFU detach requested.");
-        }
+        Ok(State::Boot) => {}
         Err(e) => error!("failed to get update state: {:?}", defmt::Debug2Format(&e)),
     });
 }
@@ -184,7 +193,7 @@ pub fn dfu_hardware_event(
         }
         HardwareTask::DfuVerifyApply { len, signature } => {
             match fw.dfu_verify_apply(len, signature) {
-                Ok(()) => None,
+                Ok(()) => Some(DfuEvent::VerifyApplyComplete),
                 Err(()) => Some(DfuEvent::VerifyApplyFailed),
             }
         }

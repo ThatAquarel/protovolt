@@ -256,7 +256,7 @@ fn dfu_status_display_task_on_star() {
 }
 
 #[test]
-fn fwup_appl_when_ready() {
+fn fwup_appl_when_ready_defers_response() {
     let mut bench = TestBench::standby();
     bench.exec("SYST:FWUP:STAR 4096");
     bench
@@ -276,6 +276,62 @@ fn fwup_appl_when_ready() {
     );
 
     let sig_hex = "#H".to_string() + &"cd".repeat(64);
-    let result = bench.exec(&format!("SYST:FWUP:APPL {sig_hex}")).unwrap();
-    assert_eq!(result.as_str(), "OK");
+    let result = bench.exec_parsed(parse_command(&format!("SYST:FWUP:APPL {sig_hex}")).unwrap());
+    assert!(result.response.text.is_none());
+    let tasks = result.tasks.expect("verify task");
+    assert!(has_hw(
+        &tasks,
+        HardwareTask::DfuVerifyApply {
+            len: 4096,
+            signature: [0xcd; 64],
+        }
+    ));
+}
+
+#[test]
+fn fwup_appl_response_ok_after_verify() {
+    let mut bench = TestBench::standby();
+    bench.exec("SYST:FWUP:STAR 4096");
+    bench
+        .app
+        .handle_event(AppEvent::Dfu(DfuEvent::PrepareComplete), &mut bench.scpi);
+    bench.fwup_data(4096);
+    bench.app.handle_event(
+        AppEvent::Dfu(DfuEvent::BlockWriteComplete {
+            offset: 0,
+            len: 4096,
+        }),
+        &mut bench.scpi,
+    );
+    let sig_hex = "#H".to_string() + &"cd".repeat(64);
+    bench.exec(&format!("SYST:FWUP:APPL {sig_hex}"));
+
+    let resp = bench.app.fwup_appl_response(true, &mut bench.scpi);
+    assert_eq!(resp.text.unwrap().as_str(), "OK");
+}
+
+#[test]
+fn fwup_appl_response_err_on_verify_failure() {
+    let mut bench = TestBench::standby();
+    bench.exec("SYST:FWUP:STAR 4096");
+    bench
+        .app
+        .handle_event(AppEvent::Dfu(DfuEvent::PrepareComplete), &mut bench.scpi);
+    bench.fwup_data(4096);
+    bench.app.handle_event(
+        AppEvent::Dfu(DfuEvent::BlockWriteComplete {
+            offset: 0,
+            len: 4096,
+        }),
+        &mut bench.scpi,
+    );
+    let sig_hex = "#H".to_string() + &"cd".repeat(64);
+    bench.exec(&format!("SYST:FWUP:APPL {sig_hex}"));
+
+    let resp = bench.app.fwup_appl_response(false, &mut bench.scpi);
+    assert_eq!(resp.text.unwrap().as_str(), "ERR");
+    assert_eq!(
+        bench.exec("SYST:ERR?").unwrap().as_str(),
+        "-200,\"Firmware signature verification failed\""
+    );
 }

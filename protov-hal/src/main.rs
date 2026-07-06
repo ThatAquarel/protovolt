@@ -22,7 +22,7 @@ use embassy_sync::blocking_mutex::raw::{NoopRawMutex, ThreadModeRawMutex};
 use embassy_sync::blocking_mutex::Mutex as I2cMutex;
 
 use embassy_sync::channel::{Channel, Sender};
-use embassy_time::{Duration, Ticker};
+use embassy_time::{Duration, Ticker, Timer};
 
 use hal::backlight::Backlight;
 use hal::display::DisplayInterface;
@@ -32,7 +32,7 @@ use hal::interface::{ButtonsInterface, matrix};
 use hal::watchdog;
 
 use app::App;
-use task::{handle_dfu_task, handle_display_task, handle_hardware_task};
+use task::{DfuOutcome, handle_dfu_task, handle_display_task, handle_hardware_task};
 use ui::Ui;
 
 use hal::event::{
@@ -99,13 +99,16 @@ fn is_dfu_task(task: &HardwareTask) -> bool {
     )
 }
 
+const FWUP_APPL_RESET_DELAY_MS: u64 = 200;
+
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
 
+    // Confirm swap / clear stale bootloader state before any other init (Embassy b.rs).
+    let fw_ctx = firmware::init(p.FLASH);
     watchdog::init(p.WATCHDOG);
     watchdog::stop_bootloader();
-    let fw_ctx = firmware::init(p.FLASH);
     watchdog::cancel_after_boot();
 
     // USB must start before any lengthy blocking init — the host will enumerate
@@ -224,7 +227,7 @@ async fn main(spawner: Spawner) {
                 input_current,
                 scpi_state,
             );
-            let (response, tasks) = match cmd {
+            let (mut response, tasks) = match cmd {
                 ScpiCommand::Ina226RegQuery { channel } => {
                     INA226_DUMP_REQ.send(channel.to_hal()).await;
                     let response = match INA226_DUMP_RESP.receive().await {
@@ -260,37 +263,72 @@ async fn main(spawner: Spawner) {
                     (result.response, result.tasks)
                 }
             };
+            let mut fwup_appl_outcome = None;
             if let Some(tasks) = tasks {
                 for task in tasks {
                     match task {
                         Task::Hardware(hw_task) if is_dfu_task(&hw_task) => {
-                            if let Some(extra) = handle_dfu_task(
+                            match handle_dfu_task(
                                 hw_task,
                                 fw_ctx,
                                 &mut app,
                                 scpi_state,
                                 fwup_payload(),
                             ) {
-                                for followup in extra {
-                                    match followup {
-                                        Task::Hardware(hw) => {
-                                            handle_hardware_task(
-                                                hw,
-                                                &mut hal,
-                                                &hw_sender,
-                                                &int_sender,
-                                            )
-                                            .await;
+                                DfuOutcome::VerifySucceeded => fwup_appl_outcome = Some(true),
+                                DfuOutcome::VerifyFailed(extra) => {
+                                    fwup_appl_outcome = Some(false);
+                                    fw_ctx.dfu_abort();
+                                    if let Some(extra) = extra {
+                                        for followup in extra {
+                                            match followup {
+                                                Task::Hardware(hw) => {
+                                                    handle_hardware_task(
+                                                        hw,
+                                                        &mut hal,
+                                                        &hw_sender,
+                                                        &int_sender,
+                                                    )
+                                                    .await;
+                                                }
+                                                Task::Display(disp) => {
+                                                    handle_display_task(
+                                                        disp,
+                                                        &mut ui,
+                                                        scpi_state,
+                                                        &hw_sender,
+                                                        &int_sender,
+                                                    )
+                                                    .await;
+                                                }
+                                            }
                                         }
-                                        Task::Display(disp) => {
-                                            handle_display_task(
-                                                disp,
-                                                &mut ui,
-                                                scpi_state,
-                                                &hw_sender,
-                                                &int_sender,
-                                            )
-                                            .await;
+                                    }
+                                }
+                                DfuOutcome::Progress(extra) => {
+                                    if let Some(extra) = extra {
+                                        for followup in extra {
+                                            match followup {
+                                                Task::Hardware(hw) => {
+                                                    handle_hardware_task(
+                                                        hw,
+                                                        &mut hal,
+                                                        &hw_sender,
+                                                        &int_sender,
+                                                    )
+                                                    .await;
+                                                }
+                                                Task::Display(disp) => {
+                                                    handle_display_task(
+                                                        disp,
+                                                        &mut ui,
+                                                        scpi_state,
+                                                        &hw_sender,
+                                                        &int_sender,
+                                                    )
+                                                    .await;
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -312,7 +350,14 @@ async fn main(spawner: Spawner) {
                     }
                 }
             }
+            if let Some(success) = fwup_appl_outcome {
+                response = app.fwup_appl_response(success, scpi_state);
+            }
             SCPI_RESP.send(response).await;
+            if fwup_appl_outcome == Some(true) {
+                Timer::after(Duration::from_millis(FWUP_APPL_RESET_DELAY_MS)).await;
+                firmware::dfu_reset_after_verify();
+            }
         }
 
         let mut tasks = AppTaskBuilder::new();

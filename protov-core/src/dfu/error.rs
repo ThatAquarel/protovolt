@@ -5,6 +5,7 @@ pub enum DfuError {
     Overflow,
     BlockTooLarge,
     EmptyBlock,
+    VerifyFailed,
 }
 
 impl DfuError {
@@ -15,6 +16,7 @@ impl DfuError {
             Self::Overflow => "Firmware image overflow",
             Self::BlockTooLarge => "Block exceeds page size",
             Self::EmptyBlock => "Empty firmware block",
+            Self::VerifyFailed => "Firmware signature verification failed",
         }
     }
 }
@@ -36,5 +38,9 @@ mod tests {
             "Block exceeds page size"
         );
         assert_eq!(DfuError::EmptyBlock.scpi_message(), "Empty firmware block");
+        assert_eq!(
+            DfuError::VerifyFailed.scpi_message(),
+            "Firmware signature verification failed"
+        );
     }
 }
