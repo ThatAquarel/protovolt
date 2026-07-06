@@ -63,5 +63,35 @@ mod tests {
     #[test]
     fn tps55289_dump_contains_address() {
         assert!(tps55289_dump(RegisterChannel::Chb).contains("TPS55289 @ 0x74"));
+        assert!(tps55289_dump(RegisterChannel::Cha).contains("TPS55289 @ 0x75"));
+    }
+
+    #[test]
+    fn ina226_dump_chb_differs_from_cha() {
+        assert!(ina226_dump(RegisterChannel::Chb).contains("INA226 @ 0x40"));
+        assert_ne!(
+            ina226_dump(RegisterChannel::Cha),
+            ina226_dump(RegisterChannel::Chb)
+        );
+    }
+
+    #[test]
+    fn format_ina226_response_roundtrip() {
+        let mut buf = heapless::String::<RESPONSE_BUF>::new();
+        assert!(format_ina226(RegisterChannel::Cha, &mut buf));
+        assert_eq!(
+            format_ina226_response(RegisterChannel::Cha).unwrap().as_str(),
+            buf.as_str()
+        );
+    }
+
+    #[test]
+    fn format_tps55289_response_roundtrip() {
+        let mut buf = heapless::String::<RESPONSE_BUF>::new();
+        assert!(format_tps55289(RegisterChannel::Chb, &mut buf));
+        assert_eq!(
+            format_tps55289_response(RegisterChannel::Chb).unwrap().as_str(),
+            buf.as_str()
+        );
     }
 }

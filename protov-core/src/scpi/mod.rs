@@ -106,3 +106,49 @@ pub struct ScpiHandleResult {
     pub response: ScpiResponse,
     pub tasks: Option<crate::model::AppTask>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::{BOOT_TEMP_CH_A, BOOT_TEMP_CH_B, BOOT_TEMP_MCU};
+    use crate::model::Channel;
+
+    #[test]
+    fn scpi_channel_hal_roundtrip() {
+        assert_eq!(ScpiChannel::Ch1.to_hal(), Channel::A);
+        assert_eq!(ScpiChannel::Ch2.to_hal(), Channel::B);
+        assert_eq!(ScpiChannel::from_hal(Channel::A), ScpiChannel::Ch1);
+        assert_eq!(ScpiChannel::from_hal(Channel::B), ScpiChannel::Ch2);
+    }
+
+    #[test]
+    fn register_channel_maps_to_hal() {
+        assert_eq!(RegisterChannel::Cha.to_hal(), Channel::A);
+        assert_eq!(RegisterChannel::Chb.to_hal(), Channel::B);
+    }
+
+    #[test]
+    fn scpi_response_constructors() {
+        assert!(ScpiResponse::none().text.is_none());
+        assert_eq!(ScpiResponse::ok().text.unwrap().as_str(), "OK");
+        let mut text = heapless::String::<RESPONSE_BUF>::new();
+        let _ = text.push_str("5.000");
+        assert_eq!(
+            ScpiResponse::with_text(text).text.unwrap().as_str(),
+            "5.000"
+        );
+    }
+
+    #[test]
+    fn scpi_context_default_boot_temps() {
+        let ctx = ScpiContext::default();
+        assert_eq!(ctx.temp_ch_a, BOOT_TEMP_CH_A);
+        assert_eq!(ctx.temp_ch_b, BOOT_TEMP_CH_B);
+        assert_eq!(ctx.temp_mcu, BOOT_TEMP_MCU);
+        assert!(ctx.input_type_pd);
+        assert!(ctx.sense_ok);
+        assert!(ctx.converter_ok);
+        assert!(!ctx.prot_latched_a);
+        assert!(!ctx.prot_latched_b);
+    }
+}
