@@ -21,13 +21,7 @@ fn main() -> ! {
     let p = embassy_rp::init(Default::default());
 
     let _display = display::DisplayHold::wake(
-        p.PIN_28,
-        p.PIN_17,
-        p.PIN_21,
-        p.PIN_18,
-        p.PIN_19,
-        p.PIN_16,
-        p.SPI0,
+        p.PIN_28, p.PIN_17, p.PIN_21, p.PIN_18, p.PIN_19, p.PIN_16, p.SPI0,
     );
 
     #[cfg(feature = "defmt")]
