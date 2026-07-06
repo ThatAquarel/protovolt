@@ -711,7 +711,6 @@ impl AppCore {
         AppTaskBuilder::new()
             .hardware(HardwareTask::UpdateConverterState(Channel::A, false))
             .hardware(HardwareTask::UpdateConverterState(Channel::B, false))
-            .extend(self.refresh_channels_display())
     }
 
     pub fn update_hw_state(&mut self, scpi: &mut ScpiState, channel: Channel) -> AppTaskBuilder {
@@ -952,7 +951,7 @@ impl AppCore {
                 if self.dfu.on_prepare_complete().is_err() {
                     return None;
                 }
-                self.dfu_status_task().build()
+                None
             }
             DfuEvent::PrepareFailed => {
                 self.dfu.on_prepare_failed();
@@ -963,7 +962,11 @@ impl AppCore {
                 self.dfu.on_block_failed();
                 self.dfu_status_task().build()
             }
-            DfuEvent::VerifyApplyComplete => None,
+            DfuEvent::VerifyApplyComplete => {
+                AppTaskBuilder::new()
+                    .display(DisplayTask::DfuStatus(DfuStatus::Verified))
+                    .build()
+            }
             DfuEvent::VerifyApplyFailed => {
                 self.dfu.on_verify_failed();
                 self.dfu_status_task().build()
@@ -1000,10 +1003,10 @@ impl AppCore {
         match self.dfu.start(size) {
             Ok(DfuAction::Prepare) => {
                 self.hardware_state = HardwareState::FirmwareUpdate;
-                let tasks = self
-                    .disable_output_channels()
-                    .hardware(HardwareTask::DfuPrepare)
+                let tasks = AppTaskBuilder::new()
                     .display(DisplayTask::DfuStatus(DfuStatus::Preparing { total: size }))
+                    .extend(self.disable_output_channels())
+                    .hardware(HardwareTask::DfuPrepare)
                     .build();
                 Self::fwup_ok_result(tasks)
             }
@@ -1072,7 +1075,6 @@ impl AppCore {
             Ok((_offset, DfuAction::WriteBlock { offset, len })) => {
                 let tasks = AppTaskBuilder::new()
                     .hardware(HardwareTask::DfuWriteBlock { offset, len })
-                    .display(DisplayTask::DfuStatus(self.dfu.to_status()))
                     .build();
                 Self::fwup_ok_result(tasks)
             }

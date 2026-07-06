@@ -154,6 +154,7 @@ pub enum ConfirmState {
     AwaitConfirmModify(Option<Channel>),
 }
 
+#[derive(Clone, Copy)]
 pub enum FunctionButton {
     Enter,
     Switch,
@@ -212,6 +213,10 @@ pub enum DfuStatus {
     Preparing { total: u32 },
     Receiving { received: u32, total: u32 },
     Ready { total: u32 },
+    /// Signature verified; awaiting reboot.
+    Verified,
+    /// Bootloader swap / flash in progress before reset.
+    Flashing,
     Error,
 }
 
@@ -237,6 +242,7 @@ pub enum HardwareTask {
     DelayedHardwareEvent(u64, HardwareEvent),
 }
 
+#[derive(Clone, Copy)]
 pub enum DisplayTask {
     SetupSplash,
     ConfirmPowerDelivery(PowerType),
