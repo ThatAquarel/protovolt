@@ -18,3 +18,20 @@ impl DfuError {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::DfuError;
+
+    #[test]
+    fn scpi_messages_are_stable() {
+        assert_eq!(DfuError::InvalidSize.scpi_message(), "Invalid firmware size");
+        assert_eq!(DfuError::WrongState.scpi_message(), "Wrong update state");
+        assert_eq!(DfuError::Overflow.scpi_message(), "Firmware image overflow");
+        assert_eq!(
+            DfuError::BlockTooLarge.scpi_message(),
+            "Block exceeds page size"
+        );
+        assert_eq!(DfuError::EmptyBlock.scpi_message(), "Empty firmware block");
+    }
+}

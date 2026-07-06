@@ -252,4 +252,165 @@ mod tests {
         s.start(4096).unwrap();
         assert_eq!(s.accept_block(4096), Err(DfuError::WrongState));
     }
+
+    #[test]
+    fn default_and_new_are_idle() {
+        let from_default = DfuSession::default();
+        let from_new = DfuSession::new();
+        assert_eq!(from_default.phase(), DfuPhase::Idle);
+        assert_eq!(from_new.phase(), DfuPhase::Idle);
+        assert!(!from_default.is_active());
+        assert!(!from_default.accepts_data());
+    }
+
+    #[test]
+    fn format_stat_all_phases() {
+        let mut buf = heapless::String::<64>::new();
+        let mut s = DfuSession::new();
+
+        s.format_stat(&mut buf);
+        assert_eq!(buf.as_str(), "IDLE");
+
+        s.start(8192).unwrap();
+        buf.clear();
+        s.format_stat(&mut buf);
+        assert_eq!(buf.as_str(), "PREPARE,8192");
+
+        s.on_prepare_complete().unwrap();
+        buf.clear();
+        s.format_stat(&mut buf);
+        assert_eq!(buf.as_str(), "RECV,0/8192");
+
+        s.accept_block(4096).unwrap();
+        buf.clear();
+        s.format_stat(&mut buf);
+        assert_eq!(buf.as_str(), "RECV,4096/8192");
+
+        s.accept_block(4096).unwrap();
+        buf.clear();
+        s.format_stat(&mut buf);
+        assert_eq!(buf.as_str(), "READY,8192");
+
+        s.on_verify_failed();
+        buf.clear();
+        s.format_stat(&mut buf);
+        assert_eq!(buf.as_str(), "ERROR");
+    }
+
+    #[test]
+    fn to_status_maps_phases() {
+        use crate::model::DfuStatus;
+
+        let mut s = DfuSession::new();
+        assert_eq!(s.to_status(), DfuStatus::Idle);
+
+        s.start(512).unwrap();
+        assert_eq!(s.to_status(), DfuStatus::Preparing { total: 512 });
+
+        s.on_prepare_complete().unwrap();
+        assert_eq!(
+            s.to_status(),
+            DfuStatus::Receiving {
+                received: 0,
+                total: 512
+            }
+        );
+
+        s.accept_block(256).unwrap();
+        assert_eq!(
+            s.to_status(),
+            DfuStatus::Receiving {
+                received: 256,
+                total: 512
+            }
+        );
+
+        s.accept_block(256).unwrap();
+        assert_eq!(s.to_status(), DfuStatus::Ready { total: 512 });
+
+        s.on_block_failed();
+        assert_eq!(s.to_status(), DfuStatus::Error);
+    }
+
+    #[test]
+    fn start_rejects_zero_size() {
+        assert_eq!(DfuSession::new().start(0), Err(DfuError::InvalidSize));
+    }
+
+    #[test]
+    fn start_rejects_while_active() {
+        let mut s = DfuSession::new();
+        s.start(100).unwrap();
+        assert_eq!(s.start(100), Err(DfuError::WrongState));
+    }
+
+    #[test]
+    fn on_prepare_complete_wrong_state() {
+        let mut s = DfuSession::new();
+        assert_eq!(s.on_prepare_complete(), Err(DfuError::WrongState));
+    }
+
+    #[test]
+    fn on_prepare_failed_sets_error() {
+        let mut s = DfuSession::new();
+        s.start(100).unwrap();
+        s.on_prepare_failed();
+        assert_eq!(s.phase(), DfuPhase::Error);
+        assert!(s.is_active());
+        assert!(!s.accepts_data());
+    }
+
+    #[test]
+    fn accept_block_rejects_empty() {
+        let mut s = DfuSession::new();
+        s.start(100).unwrap();
+        s.on_prepare_complete().unwrap();
+        assert_eq!(s.accept_block(0), Err(DfuError::EmptyBlock));
+    }
+
+    #[test]
+    fn accept_block_rejects_too_large() {
+        let mut s = DfuSession::new();
+        s.start(FWUP_MAX_BLOCK_LEN as u32 * 2).unwrap();
+        s.on_prepare_complete().unwrap();
+        assert_eq!(
+            s.accept_block(FWUP_MAX_BLOCK_LEN as u32 + 1),
+            Err(DfuError::BlockTooLarge)
+        );
+    }
+
+    #[test]
+    fn on_block_failed_sets_error() {
+        let mut s = DfuSession::new();
+        s.start(4096).unwrap();
+        s.on_prepare_complete().unwrap();
+        s.accept_block(4096).unwrap();
+        s.on_block_failed();
+        assert_eq!(s.phase(), DfuPhase::Error);
+    }
+
+    #[test]
+    fn on_verify_failed_sets_error() {
+        let mut s = DfuSession::new();
+        s.start(4096).unwrap();
+        s.on_prepare_complete().unwrap();
+        s.accept_block(4096).unwrap();
+        s.on_verify_failed();
+        assert_eq!(s.phase(), DfuPhase::Error);
+    }
+
+    #[test]
+    fn accepts_data_only_while_receiving() {
+        let mut s = DfuSession::new();
+        assert!(!s.accepts_data());
+
+        s.start(4096).unwrap();
+        assert!(!s.accepts_data());
+
+        s.on_prepare_complete().unwrap();
+        assert!(s.accepts_data());
+
+        s.accept_block(4096).unwrap();
+        assert!(!s.accepts_data());
+    }
 }
