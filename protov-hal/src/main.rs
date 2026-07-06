@@ -39,7 +39,7 @@ use task::{
 use ui::Ui;
 
 use hal::event::{
-    AppTask, AppTaskBuilder, Channel as OutputChannel, DisplayTask, DfuStatus, HardwareTask,
+    AppTask, AppTaskBuilder, Channel as OutputChannel, DfuStatus, DisplayTask, HardwareTask,
     PowerType,
 };
 use hal::led::LedsInterface;
@@ -48,6 +48,7 @@ use hal::{
     Hal, HalSense, HalTempSense, INA226_DUMP_REQ, INA226_DUMP_RESP, SENSE_CHANNEL, converter_a_irq,
     converter_b_irq, poll_sense, temp_sense,
 };
+use scpi::RegisterChannelExt;
 use scpi::parser::ScpiCommand;
 use scpi::state::ScpiState;
 use scpi::usb::{build_usb_cdc, fwup_payload, fwup_payload_len, spawn_usb_tasks};
