@@ -8,15 +8,19 @@ default:
 
 # Host target (override if needed: just test host_target=x86_64-apple-darwin)
 host_target := env_var_or_default("HOST_TARGET", "x86_64-unknown-linux-gnu")
-
-# Embedded target
 embedded_target := "thumbv6m-none-eabi"
 
 elf := "target/" + embedded_target + "/release/protov"
 release_dir := "dist"
 
 # Host unit tests (protov-core, A.1 profile)
-test: test-a1
+test: test-a1 test-scpi
+
+test-scpi:
+    cargo test -p protov-scpi --target {{host_target}} --features std
+
+scpi-wasm-build:
+    bash protov-scpi/scripts/build-wasm.sh
 
 test-a0:
     cargo test -p protov-core --target {{host_target}} --features hw-a0,test-harness
@@ -111,7 +115,7 @@ coverage-summary:
 fmt:
     cargo fmt --all
 
-checks: test-a0 test-a1 test-a2 test-mock test-nvm clippy fmt
+checks: test-a0 test-a1 test-a2 test-mock test-nvm test-scpi clippy fmt
 
 # Build + package all hardware profiles (version e.g. 1.0.0, without v prefix)
 release-bundle version:
