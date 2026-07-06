@@ -8,6 +8,6 @@ pub use block::{
 pub use error::DfuError;
 pub use session::{DfuAction, DfuPhase, DfuSession};
 
-pub use protov_nvm::fwup::{
+pub use protov_scpi::{
     FWUP_MAX_BLOCK_LEN, FWUP_MAX_IMAGE_SIZE, FWUP_PAGE_SIZE, FWUP_SIGNATURE_LEN,
 };

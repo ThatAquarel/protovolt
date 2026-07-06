@@ -1,4 +1,7 @@
-use super::*;
+use protov_scpi::{
+    ChannelParam, MeasKind, ScpiChannel, ScpiCommand, is_allowed_in_update_mode, is_mutation,
+    normalize_command, parse_command, requires_active_update_session,
+};
 
 #[test]
 fn normalize_uppercases_and_collapses_spaces() {

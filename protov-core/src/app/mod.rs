@@ -19,7 +19,9 @@ use crate::scpi::colors::{self, Rgb};
 use crate::scpi::parser::{ChannelParam, MeasKind, ScpiCommand};
 use crate::scpi::state::{ChannelSnapshot, ScpiState};
 use crate::scpi::telemetry;
-use crate::scpi::{RESPONSE_BUF, ScpiChannel, ScpiContext, ScpiHandleResult, ScpiResponse};
+use crate::scpi::{
+    RESPONSE_BUF, ScpiChannel, ScpiChannelExt, ScpiContext, ScpiHandleResult, ScpiResponse,
+};
 
 pub struct AppCore {
     power_type: PowerType,
@@ -962,11 +964,9 @@ impl AppCore {
                 self.dfu.on_block_failed();
                 self.dfu_status_task().build()
             }
-            DfuEvent::VerifyApplyComplete => {
-                AppTaskBuilder::new()
-                    .display(DisplayTask::DfuStatus(DfuStatus::Verified))
-                    .build()
-            }
+            DfuEvent::VerifyApplyComplete => AppTaskBuilder::new()
+                .display(DisplayTask::DfuStatus(DfuStatus::Verified))
+                .build(),
             DfuEvent::VerifyApplyFailed => {
                 self.dfu.on_verify_failed();
                 self.dfu_status_task().build()

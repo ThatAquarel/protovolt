@@ -210,9 +210,16 @@ pub enum DfuEvent {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DfuStatus {
     Idle,
-    Preparing { total: u32 },
-    Receiving { received: u32, total: u32 },
-    Ready { total: u32 },
+    Preparing {
+        total: u32,
+    },
+    Receiving {
+        received: u32,
+        total: u32,
+    },
+    Ready {
+        total: u32,
+    },
     /// Signature verified; awaiting reboot.
     Verified,
     /// Bootloader swap / flash in progress before reset.

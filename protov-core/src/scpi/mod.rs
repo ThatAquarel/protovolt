@@ -4,26 +4,24 @@ pub mod registers;
 pub mod state;
 pub mod telemetry;
 
-pub use parser::ScpiCommand;
+pub use protov_scpi::{
+    LINE_BUF, RESPONSE_BUF, RegisterChannel, Rgb, ScpiChannel, ScpiCommand, ScpiResponse,
+};
 
-pub const RESPONSE_BUF: usize = 512;
-pub const LINE_BUF: usize = 256;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ScpiChannel {
-    Ch1,
-    Ch2,
+pub trait ScpiChannelExt {
+    fn to_hal(self) -> crate::model::Channel;
+    fn from_hal(ch: crate::model::Channel) -> Self;
 }
 
-impl ScpiChannel {
-    pub fn to_hal(self) -> crate::model::Channel {
+impl ScpiChannelExt for ScpiChannel {
+    fn to_hal(self) -> crate::model::Channel {
         match self {
             ScpiChannel::Ch1 => crate::model::Channel::A,
             ScpiChannel::Ch2 => crate::model::Channel::B,
         }
     }
 
-    pub fn from_hal(ch: crate::model::Channel) -> Self {
+    fn from_hal(ch: crate::model::Channel) -> Self {
         match ch {
             crate::model::Channel::A => ScpiChannel::Ch1,
             crate::model::Channel::B => ScpiChannel::Ch2,
@@ -31,41 +29,16 @@ impl ScpiChannel {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RegisterChannel {
-    Cha,
-    Chb,
+pub trait RegisterChannelExt {
+    fn to_hal(self) -> crate::model::Channel;
 }
 
-impl RegisterChannel {
-    pub fn to_hal(self) -> crate::model::Channel {
+impl RegisterChannelExt for RegisterChannel {
+    fn to_hal(self) -> crate::model::Channel {
         match self {
             RegisterChannel::Cha => crate::model::Channel::A,
             RegisterChannel::Chb => crate::model::Channel::B,
         }
-    }
-}
-
-#[derive(Debug)]
-pub struct ScpiResponse {
-    pub text: Option<heapless::String<RESPONSE_BUF>>,
-}
-
-impl ScpiResponse {
-    /// No bus line (mutations, *RST, etc.). Errors are reported via `SYST:ERR?`.
-    pub fn none() -> Self {
-        Self { text: None }
-    }
-
-    /// FWUP protocol acknowledgement (`SYST:FWUP:STAR`, `ABOR`, etc.).
-    pub fn ok() -> Self {
-        let mut text = heapless::String::<RESPONSE_BUF>::new();
-        let _ = text.push_str("OK");
-        Self { text: Some(text) }
-    }
-
-    pub fn with_text(text: heapless::String<RESPONSE_BUF>) -> Self {
-        Self { text: Some(text) }
     }
 }
 
@@ -112,6 +85,7 @@ mod tests {
     use super::*;
     use crate::config::{BOOT_TEMP_CH_A, BOOT_TEMP_CH_B, BOOT_TEMP_MCU};
     use crate::model::Channel;
+    use crate::scpi::ScpiChannelExt;
 
     #[test]
     fn scpi_channel_hal_roundtrip() {
@@ -123,6 +97,7 @@ mod tests {
 
     #[test]
     fn register_channel_maps_to_hal() {
+        use crate::scpi::RegisterChannelExt;
         assert_eq!(RegisterChannel::Cha.to_hal(), Channel::A);
         assert_eq!(RegisterChannel::Chb.to_hal(), Channel::B);
     }
