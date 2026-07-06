@@ -125,7 +125,7 @@ def upload(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Upload signed firmware via SCPI FWUP")
-    parser.add_argument("--port", required=False, help="Serial port (e.g. /dev/ttyACM0)", default="/dev/ttyACM2")
+    parser.add_argument("--port", required=False, help="Serial port (e.g. /dev/ttyACM0)", default="/dev/ttyACM1")
     parser.add_argument("--firmware", type=Path, required=False, help="Raw .bin firmware", default="dist/protov.bin")
     parser.add_argument("--signature", type=Path, required=False, help="64-byte Ed25519 signature", default="dist/protov_sign.bin")
     parser.add_argument(
