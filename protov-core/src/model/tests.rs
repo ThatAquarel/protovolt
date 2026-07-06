@@ -61,3 +61,77 @@ fn interface_events_blocked_while_settings_open() {
     assert!(InterfaceEvent::ButtonUp.blocked_while_settings_open());
     assert!(InterfaceEvent::ButtonChannel(Channel::A).blocked_while_settings_open());
 }
+
+#[test]
+fn decimal_precision_clamps_exponent() {
+    let mut p = DecimalPrecision::default();
+    p.set_exponent(5);
+    assert_eq!(p.get_exponent(), 1);
+    p.set_exponent(-5);
+    assert_eq!(p.get_exponent(), -2);
+    p.set_exponent(0);
+    assert_eq!(p.get_exponent(), 0);
+}
+
+#[test]
+fn decimal_precision_cursor_moves_within_bounds() {
+    let mut p = DecimalPrecision { exponent: 0 };
+    p.cursor_right();
+    assert_eq!(p.get_exponent(), -1);
+    p.cursor_left();
+    assert_eq!(p.get_exponent(), 0);
+    p.cursor_left();
+    assert_eq!(p.get_exponent(), 1);
+    p.cursor_right();
+    p.cursor_right();
+    assert_eq!(p.get_exponent(), -1);
+    p.cursor_right();
+    assert_eq!(p.get_exponent(), -2);
+    p.cursor_right();
+    assert_eq!(p.get_exponent(), -2);
+}
+
+#[test]
+fn app_task_builder_collects_and_iterates() {
+    let built = AppTaskBuilder::new()
+        .hardware(HardwareTask::UpdateConverterState(Channel::A, true))
+        .display(DisplayTask::UpdateSettings(true))
+        .build()
+        .unwrap();
+    assert_eq!(built.count, 2);
+    let kinds: heapless::Vec<&'static str, 4> = built
+        .into_iter()
+        .map(|t| match t {
+            Task::Hardware(_) => "hw",
+            Task::Display(_) => "disp",
+        })
+        .collect();
+    assert_eq!(kinds.as_slice(), &["hw", "disp"]);
+}
+
+#[test]
+fn app_task_builder_extend_merges_tasks() {
+    let a = AppTaskBuilder::new().hardware(HardwareTask::EnableSense);
+    let b = AppTaskBuilder::new().display(DisplayTask::UpdateSettings(false));
+    let merged = a.extend(b).build().unwrap();
+    assert_eq!(merged.count, 2);
+}
+
+#[test]
+fn app_task_builder_caps_at_limit() {
+    let mut builder = AppTaskBuilder::default();
+    for _ in 0..15 {
+        builder = builder.hardware(HardwareTask::PollConverterStatus(Channel::A));
+    }
+    let built = builder.build().unwrap();
+    assert_eq!(built.count, 12);
+}
+
+#[test]
+fn app_task_display_task_helper() {
+    let built =
+        AppTaskBuilder::display_task(DisplayTask::DfuStatus(DfuStatus::Idle)).unwrap();
+    assert_eq!(built.count, 1);
+    let only = built.into_iter().next().unwrap();
+    assert!(matches!(only, Task::Display(DisplayTask::DfuStatus(DfuStatus::Idle))));
+}
