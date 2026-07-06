@@ -701,6 +701,19 @@ impl AppCore {
             .extend(self.refresh_channels_display())
     }
 
+    fn disable_output_channels(&mut self) -> AppTaskBuilder {
+        for ch in [Channel::A, Channel::B] {
+            let state = self.channel_mut(ch);
+            state.enable = false;
+            state.hw_state = ChannelHardwareState::Off;
+        }
+
+        AppTaskBuilder::new()
+            .hardware(HardwareTask::UpdateConverterState(Channel::A, false))
+            .hardware(HardwareTask::UpdateConverterState(Channel::B, false))
+            .extend(self.refresh_channels_display())
+    }
+
     pub fn update_hw_state(&mut self, scpi: &mut ScpiState, channel: Channel) -> AppTaskBuilder {
         if protection::mcu_overtemp(&self.last_temp) {
             if self.ch_a.enable || self.ch_b.enable {
@@ -987,7 +1000,8 @@ impl AppCore {
         match self.dfu.start(size) {
             Ok(DfuAction::Prepare) => {
                 self.hardware_state = HardwareState::FirmwareUpdate;
-                let tasks = AppTaskBuilder::new()
+                let tasks = self
+                    .disable_output_channels()
                     .hardware(HardwareTask::DfuPrepare)
                     .display(DisplayTask::DfuStatus(DfuStatus::Preparing { total: size }))
                     .build();

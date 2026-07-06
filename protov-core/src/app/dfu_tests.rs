@@ -48,6 +48,10 @@ fn has_hw(task: &AppTask, expected: HardwareTask) -> bool {
     iter_tasks(task).any(|t| match (t, &expected) {
         (Task::Hardware(HardwareTask::DfuPrepare), HardwareTask::DfuPrepare) => true,
         (
+            Task::Hardware(HardwareTask::UpdateConverterState(ch, on)),
+            HardwareTask::UpdateConverterState(expected_ch, expected_on),
+        ) => ch == expected_ch && on == expected_on,
+        (
             Task::Hardware(HardwareTask::DfuWriteBlock { offset: a, len: b }),
             HardwareTask::DfuWriteBlock { offset: c, len: d },
         ) => a == c && b == d,
@@ -65,6 +69,14 @@ fn has_hw(task: &AppTask, expected: HardwareTask) -> bool {
     })
 }
 
+fn assert_both_channels_disabled(app: &AppCore) {
+    use crate::model::{Channel, ChannelHardwareState};
+    for ch in [Channel::A, Channel::B] {
+        assert!(!app.channel_enable(ch));
+        assert_eq!(app.hw_state(ch), ChannelHardwareState::Off);
+    }
+}
+
 #[test]
 fn fwup_star_prepare_and_stat() {
     let mut bench = TestBench::standby();
@@ -73,7 +85,16 @@ fn fwup_star_prepare_and_stat() {
     let result = bench.exec_parsed(parse_command("SYST:FWUP:STAR 8192").unwrap());
     assert_eq!(result.response.text.unwrap().as_str(), "OK");
     assert!(bench.app.is_update_mode());
+    assert_both_channels_disabled(&bench.app);
     let tasks = result.tasks.expect("prepare tasks");
+    assert!(has_hw(
+        &tasks,
+        HardwareTask::UpdateConverterState(crate::model::Channel::A, false)
+    ));
+    assert!(has_hw(
+        &tasks,
+        HardwareTask::UpdateConverterState(crate::model::Channel::B, false)
+    ));
     assert!(has_hw(&tasks, HardwareTask::DfuPrepare));
 
     bench
@@ -83,6 +104,29 @@ fn fwup_star_prepare_and_stat() {
         bench.exec("SYST:FWUP:STAT?").unwrap().as_str(),
         "RECV,0/8192"
     );
+}
+
+#[test]
+fn fwup_star_disables_active_channels() {
+    let mut bench = TestBench::standby();
+    bench.exec("OUTP CH1,ON");
+    bench.exec("OUTP CH2,ON");
+    assert!(bench.app.channel_enable(crate::model::Channel::A));
+    assert!(bench.app.channel_enable(crate::model::Channel::B));
+
+    let result = bench.exec_parsed(parse_command("SYST:FWUP:STAR 4096").unwrap());
+    assert_eq!(result.response.text.unwrap().as_str(), "OK");
+    assert_both_channels_disabled(&bench.app);
+
+    let tasks = result.tasks.expect("prepare tasks");
+    assert!(has_hw(
+        &tasks,
+        HardwareTask::UpdateConverterState(crate::model::Channel::A, false)
+    ));
+    assert!(has_hw(
+        &tasks,
+        HardwareTask::UpdateConverterState(crate::model::Channel::B, false)
+    ));
 }
 
 #[test]
