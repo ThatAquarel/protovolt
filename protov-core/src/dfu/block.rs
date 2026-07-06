@@ -39,7 +39,7 @@ pub fn parse_definite_block_in_ascii(s: &str) -> Option<(usize, usize)> {
 /// Decode `#H<hex>` into raw bytes. `hex` must be even length, all hex digits.
 pub fn decode_hex_block(hex: &str) -> Option<heapless::Vec<u8, 128>> {
     let hex = hex.strip_prefix("#H").unwrap_or(hex);
-    if hex.len() % 2 != 0 || hex.len() > 256 {
+    if !hex.len().is_multiple_of(2) || hex.len() > 256 {
         return None;
     }
     if !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
