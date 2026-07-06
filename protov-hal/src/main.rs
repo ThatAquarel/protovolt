@@ -32,11 +32,15 @@ use hal::interface::{ButtonsInterface, matrix};
 use hal::watchdog;
 
 use app::App;
-use task::{DfuOutcome, handle_dfu_task, handle_display_task, handle_hardware_task};
+use task::{
+    DfuOutcome, handle_dfu_task, handle_display_task, handle_hardware_task, is_dfu_hardware_task,
+    run_followup_tasks,
+};
 use ui::Ui;
 
 use hal::event::{
-    AppTask, AppTaskBuilder, Channel as OutputChannel, DisplayTask, HardwareTask, PowerType,
+    AppTask, AppTaskBuilder, Channel as OutputChannel, DisplayTask, DfuStatus, HardwareTask,
+    PowerType,
 };
 use hal::led::LedsInterface;
 use hal::temperature::TemperatureReading;
@@ -89,15 +93,6 @@ bind_interrupts!(struct Irqs {
     ADC_IRQ_FIFO => adc::InterruptHandler;
     USBCTRL_IRQ => InterruptHandler<USB>;
 });
-
-fn is_dfu_task(task: &HardwareTask) -> bool {
-    matches!(
-        task,
-        HardwareTask::DfuPrepare
-            | HardwareTask::DfuWriteBlock { .. }
-            | HardwareTask::DfuVerifyApply { .. }
-    )
-}
 
 const FWUP_APPL_RESET_DELAY_MS: u64 = 200;
 
@@ -263,9 +258,23 @@ async fn main(spawner: Spawner) {
             };
             let mut fwup_appl_outcome = None;
             if let Some(tasks) = tasks {
+                for slot in tasks.tasks[..tasks.count].iter().filter_map(|t| t.as_ref()) {
+                    if let Task::Display(disp_task) = slot {
+                        handle_display_task(
+                            *disp_task,
+                            &mut ui,
+                            scpi_state,
+                            &hw_sender,
+                            &int_sender,
+                        )
+                        .await;
+                    }
+                }
+
                 for task in tasks {
                     match task {
-                        Task::Hardware(hw_task) if is_dfu_task(&hw_task) => {
+                        Task::Display(_) => {}
+                        Task::Hardware(hw_task) if is_dfu_hardware_task(&hw_task) => {
                             match handle_dfu_task(
                                 hw_task,
                                 fw_ctx,
@@ -273,77 +282,49 @@ async fn main(spawner: Spawner) {
                                 scpi_state,
                                 fwup_payload(),
                             ) {
-                                DfuOutcome::VerifySucceeded => fwup_appl_outcome = Some(true),
+                                DfuOutcome::VerifySucceeded(extra) => {
+                                    fwup_appl_outcome = Some(true);
+                                    if let Some(extra) = extra {
+                                        run_followup_tasks(
+                                            extra,
+                                            &mut ui,
+                                            scpi_state,
+                                            &hw_sender,
+                                            &int_sender,
+                                        )
+                                        .await;
+                                    }
+                                }
                                 DfuOutcome::VerifyFailed(extra) => {
                                     fwup_appl_outcome = Some(false);
                                     fw_ctx.dfu_abort();
                                     if let Some(extra) = extra {
-                                        for followup in extra {
-                                            match followup {
-                                                Task::Hardware(hw) => {
-                                                    handle_hardware_task(
-                                                        hw,
-                                                        &mut hal,
-                                                        &hw_sender,
-                                                        &int_sender,
-                                                    )
-                                                    .await;
-                                                }
-                                                Task::Display(disp) => {
-                                                    handle_display_task(
-                                                        disp,
-                                                        &mut ui,
-                                                        scpi_state,
-                                                        &hw_sender,
-                                                        &int_sender,
-                                                    )
-                                                    .await;
-                                                }
-                                            }
-                                        }
+                                        run_followup_tasks(
+                                            extra,
+                                            &mut ui,
+                                            scpi_state,
+                                            &hw_sender,
+                                            &int_sender,
+                                        )
+                                        .await;
                                     }
                                 }
                                 DfuOutcome::Progress(extra) => {
                                     if let Some(extra) = extra {
-                                        for followup in extra {
-                                            match followup {
-                                                Task::Hardware(hw) => {
-                                                    handle_hardware_task(
-                                                        hw,
-                                                        &mut hal,
-                                                        &hw_sender,
-                                                        &int_sender,
-                                                    )
-                                                    .await;
-                                                }
-                                                Task::Display(disp) => {
-                                                    handle_display_task(
-                                                        disp,
-                                                        &mut ui,
-                                                        scpi_state,
-                                                        &hw_sender,
-                                                        &int_sender,
-                                                    )
-                                                    .await;
-                                                }
-                                            }
-                                        }
+                                        run_followup_tasks(
+                                            extra,
+                                            &mut ui,
+                                            scpi_state,
+                                            &hw_sender,
+                                            &int_sender,
+                                        )
+                                        .await;
                                     }
                                 }
                             }
                         }
                         Task::Hardware(hw_task) => {
                             handle_hardware_task(hw_task, &mut hal, &hw_sender, &int_sender).await;
-                        }
-                        Task::Display(disp_task) => {
-                            handle_display_task(
-                                disp_task,
-                                &mut ui,
-                                scpi_state,
-                                &hw_sender,
-                                &int_sender,
-                            )
-                            .await;
                         }
                     }
                 }
@@ -353,6 +334,14 @@ async fn main(spawner: Spawner) {
             }
             SCPI_RESP.send(response).await;
             if fwup_appl_outcome == Some(true) {
+                handle_display_task(
+                    DisplayTask::DfuStatus(DfuStatus::Flashing),
+                    &mut ui,
+                    scpi_state,
+                    &hw_sender,
+                    &int_sender,
+                )
+                .await;
                 Timer::after(Duration::from_millis(FWUP_APPL_RESET_DELAY_MS)).await;
                 firmware::dfu_reset_after_verify();
             }

@@ -25,8 +25,8 @@ use crate::{
         backlight::Backlight,
         display::st7789,
         event::{
-            Channel, ChannelFocus, ChannelHardwareState, ConfirmState, FunctionButton, Limits,
-            PowerType, Readout, SetState,
+            Channel, ChannelFocus, ChannelHardwareState, ConfirmState, DfuStatus, FunctionButton,
+            Limits, PowerType, Readout, SetState,
         },
         led::{LedsColor, LedsInterface},
     },
@@ -54,6 +54,7 @@ where
 
     navbar: Navbar,
     settings_visible: bool,
+    dfu_screen_active: bool,
 }
 
 impl<'disp, 'bl, D, PIO> Ui<'disp, 'bl, D, PIO>
@@ -80,7 +81,12 @@ where
 
             navbar: Navbar::new(),
             settings_visible: false,
+            dfu_screen_active: false,
         }
+    }
+
+    pub fn dfu_screen_active(&self) -> bool {
+        self.dfu_screen_active
     }
 
     pub fn lcd_brightness(&self) -> u8 {
@@ -168,6 +174,37 @@ where
             subtitle,
             valid,
         )
+    }
+
+    pub fn draw_dfu_status(&mut self, status: DfuStatus) -> Result<(), ()> {
+        match status {
+            DfuStatus::Idle => {
+                self.dfu_screen_active = false;
+                Ok(())
+            }
+            DfuStatus::Preparing { .. } => {
+                self.dfu_screen_active = true;
+                self.clear()?;
+                self.boot
+                    .draw_splash_screen(&mut *self.target, &mut self.layout)?;
+                self.boot
+                    .draw_dfu_text(&mut *self.target, &self.fonts, status)
+            }
+            DfuStatus::Receiving { .. }
+            | DfuStatus::Ready { .. }
+            | DfuStatus::Verified
+            | DfuStatus::Error => {
+                self.dfu_screen_active = true;
+                self.boot
+                    .draw_dfu_text(&mut *self.target, &self.fonts, status)
+            }
+            DfuStatus::Flashing => {
+                self.dfu_screen_active = true;
+                self.backlight.turn_off();
+                self.boot
+                    .draw_dfu_text(&mut *self.target, &self.fonts, status)
+            }
+        }
     }
 
     fn channel_color(scpi: &ScpiState, channel: Channel, focus: ChannelFocus) -> Rgb565 {
@@ -476,6 +513,7 @@ pub mod color_scheme {
     pub const SELECTED: Rgb565 = Rgb565::CSS_SILVER;
     pub const UNSELECTED: Rgb565 = Rgb565::CSS_DIM_GRAY;
     pub const NAVBAR_TEXT: Rgb565 = Rgb565::CSS_DIM_GRAY;
+    pub const WARNING: Rgb565 = Rgb565::CSS_RED;
 
     pub const LED_OFF: RGB8 = RGB8::new(0, 0, 0);
 }
@@ -523,6 +561,14 @@ pub mod labels {
     pub const FW_VERSION: &'static str = "FW VERSION";
     pub const HW_VERSION: &'static str = "HW VERSION";
     pub const SERIAL_NUMBER: &'static str = "SERIAL NUMBER";
+
+    // Firmware update
+    pub const DFU_PREPARING: &'static str = "PREPARING.";
+    pub const DFU_TRANSFERRING: &'static str = "TRANSFERRING.";
+    pub const DFU_VERIFIED: &'static str = "VERIFIED.";
+    pub const DFU_FLASHING: &'static str = "BOOTLOADER FLASHING.";
+    pub const DFU_DO_NOT_DISCONNECT: &'static str = "DO NOT DISCONNECT.";
+    pub const DFU_FAILED: &'static str = "UPDATE FAILED.";
 }
 
 #[cfg(feature = "demo")]

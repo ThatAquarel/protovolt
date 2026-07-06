@@ -12,7 +12,7 @@ use crate::app::App;
 use crate::hal::Hal;
 use crate::hal::event::{
     AppEvent, AppTask, Channel, ChannelFocus, ChannelHardwareState, ConfirmState, DisplayTask,
-    HardwareEvent, HardwareTask, InterfaceEvent, PowerType, SetState,
+    HardwareEvent, HardwareTask, InterfaceEvent, PowerType, SetState, Task,
 };
 use crate::hal::firmware;
 use crate::hal::firmware::BoardFirmwareCtx;
@@ -21,8 +21,37 @@ use crate::ui::{SCREEN_HOLD_TIME, Ui, labels};
 
 pub enum DfuOutcome {
     Progress(Option<AppTask>),
-    VerifySucceeded,
+    VerifySucceeded(Option<AppTask>),
     VerifyFailed(Option<AppTask>),
+}
+
+pub fn is_dfu_hardware_task(task: &HardwareTask) -> bool {
+    matches!(
+        task,
+        HardwareTask::DfuPrepare
+            | HardwareTask::DfuWriteBlock { .. }
+            | HardwareTask::DfuVerifyApply { .. }
+    )
+}
+
+pub async fn run_followup_tasks<D, PIO>(
+    followup: AppTask,
+    ui: &mut Ui<'_, '_, D, PIO>,
+    scpi: &mut ScpiState,
+    hw_sender: &Sender<'_, ThreadModeRawMutex, HardwareEvent, 32>,
+    int_sender: &Sender<'_, ThreadModeRawMutex, InterfaceEvent, 32>,
+) where
+    D: DrawTarget<Color = Rgb565>,
+    PIO: Instance,
+{
+    for task in followup {
+        match task {
+            Task::Hardware(_) => {}
+            Task::Display(disp) => {
+                handle_display_task(disp, ui, scpi, hw_sender, int_sender).await;
+            }
+        }
+    }
 }
 
 pub fn handle_dfu_task(
@@ -38,8 +67,7 @@ pub fn handle_dfu_task(
 
     match event {
         protov_core::model::DfuEvent::VerifyApplyComplete => {
-            let _ = app.handle_event(AppEvent::Dfu(event), scpi);
-            DfuOutcome::VerifySucceeded
+            DfuOutcome::VerifySucceeded(app.handle_event(AppEvent::Dfu(event), scpi))
         }
         protov_core::model::DfuEvent::VerifyApplyFailed => {
             DfuOutcome::VerifyFailed(app.handle_event(AppEvent::Dfu(event), scpi))
@@ -123,7 +151,12 @@ pub async fn handle_display_task<D, PIO>(
             | DisplayTask::ConfirmSense(_)
             | DisplayTask::ConfirmConverter(_)
             | DisplayTask::SetupMain(_, _, _)
+            | DisplayTask::DfuStatus(_)
     );
+
+    if ui.dfu_screen_active() && !matches!(display_task, DisplayTask::DfuStatus(_)) {
+        return;
+    }
 
     match display_task {
         DisplayTask::SetupSplash => {
@@ -259,7 +292,9 @@ pub async fn handle_display_task<D, PIO>(
                 ui.controls_channel_units(channel).unwrap();
             }
         }
-        DisplayTask::DfuStatus(_) => {}
+        DisplayTask::DfuStatus(status) => {
+            ui.draw_dfu_status(status).ok();
+        }
     }
 
     if !skip_settings_redraw {

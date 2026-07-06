@@ -34,6 +34,11 @@ impl<'d> Backlight<'d> {
         self.apply(level);
     }
 
+    /// Drive the panel off without changing the configured level.
+    pub fn turn_off(&mut self) {
+        self.apply(0);
+    }
+
     /// Run `f` with the panel powered off, then restore the configured brightness.
     pub fn while_suppressed<F, R>(&mut self, f: F) -> R
     where
