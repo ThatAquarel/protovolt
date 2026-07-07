@@ -62,6 +62,37 @@ pkg:
 run:
     cargo run -p protov-hal --target {{embedded_target}} --release
 
+# Program the factory identity sector from compile-time env vars, then flash.
+# Required env: SERIAL_NUMBER HARDWARE_REV FACTORY_YEAR FACTORY_MONTH FACTORY_DAY SIGNATURE
+factory-program *args:
+    cargo run -p protov-hal --target {{embedded_target}} --release --features factory-program {{args}}
+
+# Query *IDN? and SYST:IDAT? on a USB CDC serial port (e.g. /dev/ttyACM0).
+scpi-id port:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    port="{{port}}"
+    if [[ ! -e "$port" ]]; then
+      echo "serial port not found: $port" >&2
+      exit 1
+    fi
+    stty -F "$port" 115200 cs8 -cstopb -parenb -ixon -crtscts raw -echo min 0 time 5
+    exec 3<>"$port"
+    scpi_query() {
+      local cmd="$1"
+      printf '%s\n' "$cmd" >&3
+      if ! IFS= read -r -u 3 -t 3 response; then
+        echo "timeout waiting for response to ${cmd}" >&2
+        return 1
+      fi
+      printf '%s\n' "$response"
+    }
+    echo "*IDN?"
+    scpi_query "*IDN?"
+    echo
+    echo "SYST:IDAT?"
+    scpi_query "SYST:IDAT?"
+
 # Host-only ProtoV MINI WebSocket simulator
 build-mock:
     cargo build -p protov-hal-mock --target {{host_target}} --release --features hw-a1
