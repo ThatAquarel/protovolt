@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use protov_core::config::MANUFACTURING_DATE;
+use protov_core::config::DEFAULT_MANUFACTURING_DATE;
 
 use crate::device::{MockDevice, MockIdentity};
 
@@ -29,7 +29,7 @@ pub const SLOT_PROFILES: [SlotProfile; MAX_MOCK_DEVICES] = [
         serial: "550e8400",
         fw_version: "1.0.0",
         hw_version: "A.1",
-        manufacturing_date: MANUFACTURING_DATE,
+        manufacturing_date: DEFAULT_MANUFACTURING_DATE,
         flash_unique_id: slot_flash_uid(0x55),
         serial_signature: slot_signature(0x55),
     },
@@ -37,7 +37,7 @@ pub const SLOT_PROFILES: [SlotProfile; MAX_MOCK_DEVICES] = [
         serial: "32983fe4",
         fw_version: "1.0.1",
         hw_version: "B.2",
-        manufacturing_date: MANUFACTURING_DATE,
+        manufacturing_date: DEFAULT_MANUFACTURING_DATE,
         flash_unique_id: slot_flash_uid(0x32),
         serial_signature: slot_signature(0x32),
     },
@@ -45,7 +45,7 @@ pub const SLOT_PROFILES: [SlotProfile; MAX_MOCK_DEVICES] = [
         serial: "deadbeef",
         fw_version: "0.9.0",
         hw_version: "A.0",
-        manufacturing_date: MANUFACTURING_DATE,
+        manufacturing_date: DEFAULT_MANUFACTURING_DATE,
         flash_unique_id: slot_flash_uid(0xDE),
         serial_signature: slot_signature(0xDE),
     },
@@ -53,7 +53,7 @@ pub const SLOT_PROFILES: [SlotProfile; MAX_MOCK_DEVICES] = [
         serial: "a1b2c3d4",
         fw_version: "1.2.3",
         hw_version: "C.1",
-        manufacturing_date: MANUFACTURING_DATE,
+        manufacturing_date: DEFAULT_MANUFACTURING_DATE,
         flash_unique_id: slot_flash_uid(0xA1),
         serial_signature: slot_signature(0xA1),
     },
