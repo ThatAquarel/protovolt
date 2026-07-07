@@ -1,6 +1,9 @@
 //! Per-device identity overrides for simulator / multi-slot mock pools.
 
-use super::product::{FIRMWARE_REVISION, SERIAL_ATTESTATION, format_idat_parts, format_idn_parts};
+use super::product::{
+    DEFAULT_FLASH_UNIQUE_ID, FIRMWARE_REVISION, MANUFACTURING_DATE, SERIAL_ATTESTATION,
+    format_idat_parts, format_idn_parts,
+};
 use super::{HARDWARE_REVISION, SERIAL_NUMBER};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -8,6 +11,8 @@ pub struct DeviceIdentity {
     pub serial: &'static str,
     pub fw_version: &'static str,
     pub hw_version: &'static str,
+    pub manufacturing_date: (u16, u8, u8),
+    pub flash_unique_id: [u8; 8],
     pub serial_signature: &'static [u8; 64],
 }
 
@@ -17,6 +22,8 @@ impl Default for DeviceIdentity {
             serial: SERIAL_NUMBER,
             fw_version: FIRMWARE_REVISION,
             hw_version: HARDWARE_REVISION,
+            manufacturing_date: MANUFACTURING_DATE,
+            flash_unique_id: DEFAULT_FLASH_UNIQUE_ID,
             serial_signature: &SERIAL_ATTESTATION,
         }
     }
@@ -38,6 +45,8 @@ pub fn format_idat_with<const N: usize>(
     format_idat_parts(
         identity.serial,
         identity.hw_version,
+        identity.manufacturing_date,
+        &identity.flash_unique_id,
         identity.serial_signature,
         buf,
     )
@@ -46,7 +55,7 @@ pub fn format_idat_with<const N: usize>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{format_idat_parts, format_idn, SERIAL_ATTESTATION};
+    use crate::config::{SERIAL_ATTESTATION, format_idat_parts, format_idn};
 
     #[test]
     fn default_identity_matches_product_constants() {
@@ -69,10 +78,10 @@ mod tests {
     fn format_idat_with_custom_serial() {
         let sig = [0xAB; 64];
         let mut buf = heapless::String::<256>::new();
-        format_idat_parts("550e8400", "A.1", &sig, &mut buf).unwrap();
+        format_idat_parts("550e8400", "A.1", (2026, 6, 27), &[0x11; 8], &sig, &mut buf).unwrap();
         assert_eq!(
-            &buf.as_str()[.."550e8400,A.1,#H".len()],
-            "550e8400,A.1,#H"
+            &buf.as_str()[.."550e8400,A.1,2026-06-27,#H".len()],
+            "550e8400,A.1,2026-06-27,#H"
         );
     }
 
@@ -80,9 +89,12 @@ mod tests {
     fn format_idat_parts_emits_serial_hw_and_hex_signature() {
         let sig = [0xAB; 64];
         let mut buf = heapless::String::<256>::new();
-        format_idat_parts("550e8400", "A.1", &sig, &mut buf).unwrap();
-        assert!(buf.starts_with("550e8400,A.1,#H"));
-        assert_eq!(buf.len(), "550e8400,A.1,#H".len() + 128);
+        format_idat_parts("550e8400", "A.1", (2026, 6, 27), &[0x11; 8], &sig, &mut buf).unwrap();
+        assert!(buf.starts_with("550e8400,A.1,2026-06-27,#H1111111111111111,#H"));
+        assert_eq!(
+            buf.len(),
+            "550e8400,A.1,2026-06-27,#H1111111111111111,#H".len() + 128
+        );
         assert!(buf.ends_with("AB"));
     }
 }

@@ -54,11 +54,14 @@ pub struct ScpiContext {
     pub converter_ok: bool,
     pub prot_latched_a: bool,
     pub prot_latched_b: bool,
+    pub flash_unique_id: [u8; 8],
 }
 
 impl Default for ScpiContext {
     fn default() -> Self {
-        use crate::config::{BOOT_TEMP_CH_A, BOOT_TEMP_CH_B, BOOT_TEMP_MCU};
+        use crate::config::{
+            BOOT_TEMP_CH_A, BOOT_TEMP_CH_B, BOOT_TEMP_MCU, DEFAULT_FLASH_UNIQUE_ID,
+        };
 
         Self {
             temp_ch_a: BOOT_TEMP_CH_A,
@@ -71,6 +74,7 @@ impl Default for ScpiContext {
             converter_ok: true,
             prot_latched_a: false,
             prot_latched_b: false,
+            flash_unique_id: DEFAULT_FLASH_UNIQUE_ID,
         }
     }
 }

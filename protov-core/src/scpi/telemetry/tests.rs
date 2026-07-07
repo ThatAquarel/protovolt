@@ -15,6 +15,7 @@ fn format_telemetry_shape() {
         converter_ok: false,
         prot_latched_a: false,
         prot_latched_b: false,
+        ..Default::default()
     };
     let mut buf = heapless::String::<512>::new();
     format_telemetry(&ctx, &mut buf);
