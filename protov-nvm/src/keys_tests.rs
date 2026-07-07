@@ -68,6 +68,21 @@ mod tests {
     fn verify_serial_attestation_rejects_invalid_signature() {
         use crate::verify_serial_attestation;
 
-        assert!(verify_serial_attestation("550e8400", &[0u8; 64]).is_err());
+        assert!(verify_serial_attestation("550e8400", "A.1", (2026, 6, 27), &[0u8; 64]).is_err());
+    }
+
+    #[test]
+    fn verify_serial_attestation_rejects_signature_for_different_hw_revision() {
+        use ed25519_dalek::{Signer, SigningKey};
+
+        use crate::{encode_attestation_message, verify_serial_attestation};
+
+        const TEST_SIGNING_KEY: [u8; 32] = [0x5A; 32];
+        let message = encode_attestation_message("550e8400", "A.1", (2026, 6, 27)).unwrap();
+        let signature = SigningKey::from_bytes(&TEST_SIGNING_KEY).sign(message.as_bytes());
+        let signature_bytes = signature.to_bytes();
+        assert!(
+            verify_serial_attestation("550e8400", "A.2", (2026, 6, 27), &signature_bytes,).is_err()
+        );
     }
 }

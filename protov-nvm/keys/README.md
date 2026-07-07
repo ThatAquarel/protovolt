@@ -64,8 +64,8 @@ SERIAL ATTESTATION  (device serial number and related manufacturing data)
 - The **HW manifest** uses the same root key and manifest format as CIx (96
   bytes = three Ed25519 public keys), but authorizes a separate key set used
   only for manufacturing workflows.
-- **HW keys** sign serial numbers (and related hardware identity records) at
-  production time. Any verifier with the embedded root key can confirm that a
+- **HW keys** sign the canonical attestation message `{serial},{hw_revision},{YYYY-MM-DD}`
+  at production time. Any verifier with the embedded root key can confirm that a
   serial was signed by one of the currently trusted HW keys.
 - Rotating or revoking an HW key follows the same process as CI: the master
   key signs a new `protov_public_HWx.key` manifest; verifiers reject
@@ -115,8 +115,10 @@ openssl pkeyutl -verify -pubin -inkey /tmp/ci0.pem \
   -rawin -in firmware.bin -sigfile firmware.sig
 
 # Verify a serial attestation, signed by an HW key
+# Message bytes: {serial},{hw_revision},{YYYY-MM-DD}  e.g. 550e8400,A.1,2026-06-27
+printf '%s' '550e8400,A.1,2026-06-27' > /tmp/serial_record.bin
 openssl pkeyutl -verify -pubin -inkey /tmp/hw0.pem \
-  -rawin -in serial_record.bin -sigfile serial_record.sig
+  -rawin -in /tmp/serial_record.bin -sigfile serial_record.sig
 ```
 
 On a connected device, query the provisioned attestation with `SYST:IDAT?` (see
