@@ -9,6 +9,11 @@ pub struct SlotProfile {
     pub serial: &'static str,
     pub fw_version: &'static str,
     pub hw_version: &'static str,
+    pub serial_signature: [u8; 64],
+}
+
+const fn slot_signature(seed: u8) -> [u8; 64] {
+    [seed; 64]
 }
 
 pub const SLOT_PROFILES: [SlotProfile; MAX_MOCK_DEVICES] = [
@@ -16,26 +21,35 @@ pub const SLOT_PROFILES: [SlotProfile; MAX_MOCK_DEVICES] = [
         serial: "550e8400",
         fw_version: "1.0.0",
         hw_version: "A.1",
+        serial_signature: slot_signature(0x55),
     },
     SlotProfile {
         serial: "32983fe4",
         fw_version: "1.0.1",
         hw_version: "B.2",
+        serial_signature: slot_signature(0x32),
     },
     SlotProfile {
         serial: "deadbeef",
         fw_version: "0.9.0",
         hw_version: "A.0",
+        serial_signature: slot_signature(0xDE),
     },
     SlotProfile {
         serial: "a1b2c3d4",
         fw_version: "1.2.3",
         hw_version: "C.1",
+        serial_signature: slot_signature(0xA1),
     },
 ];
 
 pub fn identity_from_profile(profile: SlotProfile) -> MockIdentity {
-    MockIdentity::new(profile.serial, profile.fw_version, profile.hw_version)
+    MockIdentity::new(
+        profile.serial,
+        profile.fw_version,
+        profile.hw_version,
+        profile.serial_signature,
+    )
 }
 
 struct PoolInner {

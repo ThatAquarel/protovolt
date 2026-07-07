@@ -55,6 +55,14 @@ fn lcd_brig_protocol_form() {
 }
 
 #[test]
+fn syst_idat_returns_serial_hw_and_signature() {
+    let mut device = device();
+    let response = device.handle("SYST:IDAT?").expect("SYST:IDAT? response");
+    assert!(response.starts_with("550e8400,A.1,#H"));
+    assert_eq!(response.len(), "550e8400,A.1,#H".len() + 128);
+}
+
+#[test]
 fn sav_rcl_smoke() {
     let mut device = device();
     device.handle("CH1:VOLT 5.0");

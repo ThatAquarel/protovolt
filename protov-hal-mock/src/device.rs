@@ -9,14 +9,21 @@ pub struct MockIdentity {
     pub serial: String,
     pub fw_version: String,
     pub hw_version: String,
+    pub serial_signature: [u8; 64],
 }
 
 impl MockIdentity {
-    pub fn new(serial: &str, fw_version: &str, hw_version: &str) -> Self {
+    pub fn new(
+        serial: &str,
+        fw_version: &str,
+        hw_version: &str,
+        serial_signature: [u8; 64],
+    ) -> Self {
         Self {
             serial: serial.to_owned(),
             fw_version: fw_version.to_owned(),
             hw_version: hw_version.to_owned(),
+            serial_signature,
         }
     }
 }

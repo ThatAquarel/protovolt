@@ -1,5 +1,6 @@
 //! HAL-style SCPI command routing and response assembly.
 
+use protov_core::config::format_idat_parts;
 use protov_core::config::format_idn_parts;
 use protov_core::scpi::RESPONSE_BUF;
 use protov_core::scpi::registers::{format_ina226_response, format_tps55289_response};
@@ -19,6 +20,20 @@ pub fn dispatch_command(device: &mut MockDevice, cmd: ScpiCommand) -> Option<Str
                 &device.identity.hw_version,
                 &mut buf,
             );
+            return Some(buf.to_string());
+        }
+        ScpiCommand::SystIdatQuery => {
+            let mut buf = heapless::String::<RESPONSE_BUF>::new();
+            if format_idat_parts(
+                &device.identity.serial,
+                &device.identity.hw_version,
+                &device.identity.serial_signature,
+                &mut buf,
+            )
+            .is_err()
+            {
+                return None;
+            }
             return Some(buf.to_string());
         }
         ScpiCommand::Ina226RegQuery { channel } => {
