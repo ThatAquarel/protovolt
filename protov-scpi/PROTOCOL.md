@@ -69,7 +69,7 @@ Slot commands require exactly one digit after the prefix (e.g. `*SAV 3`). `*SAV 
 | Command | Type | Response |
 |---------|------|----------|
 | `*IDN?` | Query | Full identity string (manufacturer, product, serial, firmware, hardware) |
-| `SYST:IDAT?` | Query | Serial number, hardware revision, and Ed25519 serial attestation signature |
+| `SYST:IDAT?` | Query | Serial number, hardware revision, manufacturing date, flash unique ID, and Ed25519 serial attestation signature |
 
 `*IDN?` returns a comma-separated identity line (see [IEEE 488.2 common commands](#ieee-4882-common-commands)).
 
@@ -77,19 +77,21 @@ Slot commands require exactly one digit after the prefix (e.g. `*SAV 3`). `*SAV 
 embedded HW trust manifest (`protov-nvm`):
 
 ```
-{serial},{hw_version},#H{128 hex uppercase}
+{serial},{hw_version},{YYYY-MM-DD},#H{16 hex uppercase},#H{128 hex uppercase}
 ```
 
 | Field | Description |
 |-------|-------------|
 | `serial` | Device serial number (ASCII, same token as field 3 of `*IDN?`) |
 | `hw_version` | Hardware revision string (same token as field 5 of `*IDN?`) |
-| `#H…` | 64-byte Ed25519 signature over the **raw serial bytes** (UTF-8/ASCII, no pre-hash), encoded as `#H` plus 128 uppercase hex digits |
+| `YYYY-MM-DD` | Manufacturing / attestation date (ISO 8601 calendar date) |
+| `#H…` (16 hex) | 8-byte RP2040 flash unique ID |
+| `#H…` (128 hex) | 64-byte Ed25519 signature over the **raw serial bytes** (UTF-8/ASCII, no pre-hash) |
 
 Example (truncated):
 
 ```
-550e8400,A.1,#H55…55
+550e8400,A.1,2026-06-27,#H5555555555555555,#H55…55
 ```
 
 Hosts verify the signature with any public key listed in the root-signed HW manifest
