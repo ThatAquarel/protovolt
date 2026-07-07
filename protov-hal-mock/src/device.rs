@@ -9,6 +9,8 @@ pub struct MockIdentity {
     pub serial: String,
     pub fw_version: String,
     pub hw_version: String,
+    pub manufacturing_date: (u16, u8, u8),
+    pub flash_unique_id: [u8; 8],
     pub serial_signature: [u8; 64],
 }
 
@@ -17,12 +19,16 @@ impl MockIdentity {
         serial: &str,
         fw_version: &str,
         hw_version: &str,
+        manufacturing_date: (u16, u8, u8),
+        flash_unique_id: [u8; 8],
         serial_signature: [u8; 64],
     ) -> Self {
         Self {
             serial: serial.to_owned(),
             fw_version: fw_version.to_owned(),
             hw_version: hw_version.to_owned(),
+            manufacturing_date,
+            flash_unique_id,
             serial_signature,
         }
     }
@@ -40,10 +46,12 @@ impl MockDevice {
     pub fn with_identity(identity: MockIdentity) -> Self {
         let mut app = AppCore::default();
         app.force_standby();
+        let mut ctx = ScpiContext::default();
+        ctx.flash_unique_id = identity.flash_unique_id;
         Self {
             app,
             scpi: ScpiState::default(),
-            ctx: ScpiContext::default(),
+            ctx,
             identity,
             firmware: MockFirmwareStore::default(),
         }
@@ -53,6 +61,7 @@ impl MockDevice {
         self.identity = identity;
         self.app.reset_to_factory(&mut self.scpi);
         self.ctx = ScpiContext::default();
+        self.ctx.flash_unique_id = self.identity.flash_unique_id;
         self.firmware.abort();
     }
 

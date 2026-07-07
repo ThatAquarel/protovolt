@@ -27,6 +27,8 @@ pub fn dispatch_command(device: &mut MockDevice, cmd: ScpiCommand) -> Option<Str
             if format_idat_parts(
                 &device.identity.serial,
                 &device.identity.hw_version,
+                device.identity.manufacturing_date,
+                &device.identity.flash_unique_id,
                 &device.identity.serial_signature,
                 &mut buf,
             )

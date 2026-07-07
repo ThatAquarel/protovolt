@@ -58,8 +58,11 @@ fn lcd_brig_protocol_form() {
 fn syst_idat_returns_serial_hw_and_signature() {
     let mut device = device();
     let response = device.handle("SYST:IDAT?").expect("SYST:IDAT? response");
-    assert!(response.starts_with("550e8400,A.1,#H"));
-    assert_eq!(response.len(), "550e8400,A.1,#H".len() + 128);
+    assert!(response.starts_with("550e8400,A.1,2026-06-27,#H5555555555555555,#H"));
+    assert_eq!(
+        response.len(),
+        "550e8400,A.1,2026-06-27,#H5555555555555555,#H".len() + 128
+    );
 }
 
 #[test]

@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 
+use protov_core::config::MANUFACTURING_DATE;
+
 use crate::device::{MockDevice, MockIdentity};
 
 pub const MAX_MOCK_DEVICES: usize = 4;
@@ -9,6 +11,8 @@ pub struct SlotProfile {
     pub serial: &'static str,
     pub fw_version: &'static str,
     pub hw_version: &'static str,
+    pub manufacturing_date: (u16, u8, u8),
+    pub flash_unique_id: [u8; 8],
     pub serial_signature: [u8; 64],
 }
 
@@ -16,29 +20,41 @@ const fn slot_signature(seed: u8) -> [u8; 64] {
     [seed; 64]
 }
 
+const fn slot_flash_uid(seed: u8) -> [u8; 8] {
+    [seed; 8]
+}
+
 pub const SLOT_PROFILES: [SlotProfile; MAX_MOCK_DEVICES] = [
     SlotProfile {
         serial: "550e8400",
         fw_version: "1.0.0",
         hw_version: "A.1",
+        manufacturing_date: MANUFACTURING_DATE,
+        flash_unique_id: slot_flash_uid(0x55),
         serial_signature: slot_signature(0x55),
     },
     SlotProfile {
         serial: "32983fe4",
         fw_version: "1.0.1",
         hw_version: "B.2",
+        manufacturing_date: MANUFACTURING_DATE,
+        flash_unique_id: slot_flash_uid(0x32),
         serial_signature: slot_signature(0x32),
     },
     SlotProfile {
         serial: "deadbeef",
         fw_version: "0.9.0",
         hw_version: "A.0",
+        manufacturing_date: MANUFACTURING_DATE,
+        flash_unique_id: slot_flash_uid(0xDE),
         serial_signature: slot_signature(0xDE),
     },
     SlotProfile {
         serial: "a1b2c3d4",
         fw_version: "1.2.3",
         hw_version: "C.1",
+        manufacturing_date: MANUFACTURING_DATE,
+        flash_unique_id: slot_flash_uid(0xA1),
         serial_signature: slot_signature(0xA1),
     },
 ];
@@ -48,6 +64,8 @@ pub fn identity_from_profile(profile: SlotProfile) -> MockIdentity {
         profile.serial,
         profile.fw_version,
         profile.hw_version,
+        profile.manufacturing_date,
+        profile.flash_unique_id,
         profile.serial_signature,
     )
 }
