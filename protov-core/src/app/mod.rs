@@ -3,7 +3,7 @@ use micromath::F32Ext;
 
 use crate::config::{
     CURRENT_EDIT_RANGE, ChannelProfile, FACTORY, SCPI_SYSTEM_VERSION, VOLTAGE_EDIT_RANGE,
-    format_idn,
+    format_idat, format_idn,
 };
 use crate::dfu::{DfuAction, DfuError, DfuSession};
 use crate::fmt::format_f32;
@@ -1213,6 +1213,21 @@ impl AppCore {
                 ScpiHandleResult {
                     response: ScpiResponse::with_text(buf),
                     tasks: None,
+                }
+            }
+            ScpiCommand::SystIdatQuery => {
+                let mut buf = heapless::String::<RESPONSE_BUF>::new();
+                if format_idat(&mut buf).is_err() {
+                    scpi.push_error(-200, "Identification response too large");
+                    ScpiHandleResult {
+                        response: ScpiResponse::none(),
+                        tasks: None,
+                    }
+                } else {
+                    ScpiHandleResult {
+                        response: ScpiResponse::with_text(buf),
+                        tasks: None,
+                    }
                 }
             }
             ScpiCommand::SystVersQuery => ScpiHandleResult {

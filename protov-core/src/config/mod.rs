@@ -22,10 +22,11 @@ pub use channel::{
 };
 pub use hardware::{HardwareProfile, PROFILE as HARDWARE_PROFILE};
 #[cfg(any(test, feature = "simulator"))]
-pub use identity::{DeviceIdentity, format_idn_parts, format_idn_with};
+pub use identity::{DeviceIdentity, format_idat_with, format_idn_with};
 pub use product::{
     FIRMWARE_REVISION, HARDWARE_REVISION, MANUFACTURER, PRODUCT_NAME, SCPI_SYSTEM_VERSION,
-    SERIAL_NUMBER, USB_MAX_POWER_MA, USB_PID, USB_VID, format_idn,
+    SERIAL_ATTESTATION, SERIAL_NUMBER, USB_MAX_POWER_MA, USB_PID, USB_VID, format_idat,
+    format_idat_parts, format_idn, format_idn_parts,
 };
 pub use protection::{CH_OTP_C, MCU_OTP_C};
 pub use telemetry::{BOOT_TEMP_CH_A, BOOT_TEMP_CH_B, BOOT_TEMP_MCU};

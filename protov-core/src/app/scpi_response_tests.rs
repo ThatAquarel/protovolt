@@ -1,7 +1,8 @@
 //! SCPI bus response contract (v1.3.3): queries emit a line, sets stay silent.
 
 use crate::config::{
-    CH1_FACTORY, CH2_FACTORY, DEFAULT_LCD_BRIGHTNESS, DEFAULT_LED_BRIGHTNESS, format_idn,
+    CH1_FACTORY, CH2_FACTORY, DEFAULT_LCD_BRIGHTNESS, DEFAULT_LED_BRIGHTNESS, format_idat,
+    format_idn,
 };
 use crate::scpi::parser::parse_command;
 use crate::scpi::state::ScpiState;
@@ -214,6 +215,14 @@ fn idn_query_format() {
     let mut expected = heapless::String::<128>::new();
     format_idn(&mut expected);
     assert_line(&mut bench, "*IDN?", expected.as_str());
+}
+
+#[test]
+fn syst_idat_query_format() {
+    let mut bench = TestBench::standby();
+    let mut expected = heapless::String::<RESPONSE_BUF>::new();
+    format_idat(&mut expected).unwrap();
+    assert_line(&mut bench, "SYST:IDAT?", expected.as_str());
 }
 
 #[test]
