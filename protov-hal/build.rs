@@ -54,6 +54,8 @@ fn emit_factory_record(out: &PathBuf) {
         .parse()
         .expect("FACTORY_DAY must be u8");
     let signature = parse_signature_hex(&required_env("SIGNATURE"));
+    // SIGNATURE must be Ed25519 over `{serial},{hw_rev},{YYYY-MM-DD}` — see
+    // protov_nvm::encode_attestation_message.
 
     let image = protov_nvm::FactoryRecord::encode(&hw_rev, &serial, year, month, day, &signature)
         .expect("factory record encode failed");
