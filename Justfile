@@ -35,9 +35,41 @@ test-a2:
 clippy:
     cargo clippy -p protov-core --target {{host_target}} --features hw-a1 -- -D warnings
 
-# Sign release firmware (requires PRIVATE_KEY; optional PUBLIC_KEY for verify)
+# Sign release firmware (requires PRIVATE_KEY and PUBLIC_KEY in CI; optional locally).
 sign-firmware *args:
     just -f protov-hal/Justfile sign-all {{args}}
+
+# Sign protov-{version}-{revision}.bin for each profile (requires PRIVATE_KEY + PUBLIC_KEY).
+release-sign version:
+    just _release-sign A.0 {{version}}
+    just _release-sign A.1 {{version}}
+    just _release-sign A.2 {{version}}
+
+_release-sign revision version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    in_ci=0
+    if [[ -n "${CI:-}" || -n "${GITHUB_ACTIONS:-}" ]]; then
+      in_ci=1
+    fi
+    if [[ -z "${PRIVATE_KEY:-}" ]]; then
+      if (( in_ci )); then
+        echo "release-sign: PRIVATE_KEY is required in CI" >&2
+        exit 1
+      fi
+      echo "release-sign: PRIVATE_KEY not set; skipping {{revision}}" >&2
+      exit 0
+    fi
+    if [[ -z "${PUBLIC_KEY:-}" ]]; then
+      echo "release-sign: PUBLIC_KEY is required when signing" >&2
+      exit 1
+    fi
+    bin="$(pwd)/dist/{{revision}}/protov-{{version}}-{{revision}}.bin"
+    if [[ ! -f "$bin" ]]; then
+      echo "release-sign: missing firmware binary: $bin" >&2
+      exit 1
+    fi
+    just -f protov-hal/Justfile sign-release-bin "$bin"
 
 # Cross-compile firmware for RP2040 (production A.1)
 build: build-a1
@@ -153,6 +185,7 @@ release-bundle version:
     just _release-profile hw-a0 A.0 {{version}}
     just _release-profile hw-a1 A.1 {{version}}
     just _release-profile hw-a2 A.2 {{version}}
+    just release-sign {{version}}
     just _release-manifest {{version}}
     just _release-archive {{version}}
 
@@ -193,7 +226,7 @@ _release-manifest version:
       echo "git_tag=${git_tag}"
       echo "target={{embedded_target}}"
       echo "profiles=A.0,A.1,A.2"
-      echo "artifacts=.elf,.uf2,.bin,.map,.d"
+      echo "artifacts=.elf,.uf2,.bin,.hash.bin,.sign.bin,.map,.d"
     } > dist/MANIFEST.txt
     (cd dist && find A.0 A.1 A.2 -type f | sort | xargs sha256sum) > dist/SHA256SUMS
 

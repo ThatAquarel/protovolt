@@ -4,27 +4,78 @@ default:
 embedded_target := "thumbv6m-none-eabi"
 elf := "../target/" + embedded_target + "/release/protov"
 release_dir := "../dist"
+keys_dir := "../protov-nvm/keys"
+sign_helpers := "../scripts/sign-helpers.sh"
 
-private_key := env_var("PRIVATE_KEY")
-public_key := env_var_or_default("PUBLIC_KEY", "../protov-nvm/keys/public.pem")
+fw_bin := release_dir + "/protov.bin"
+fw_hash := release_dir + "/protov_hash.bin"
+fw_sign := release_dir + "/protov_sign.bin"
 
-bin := release_dir + "/protov.bin"
-hash := release_dir + "/protov_hash.bin"
-sign := release_dir + "/protov_sign.bin"
+# Materialize CI0 public key (first slot in CIx manifest) as PEM for local verify.
+ci0-public-pem pem="{{release_dir}}/ci0_public.pem":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    pem="{{pem}}"
+    mkdir -p "$(dirname "$pem")"
+    raw="$(mktemp)"
+    der="$(mktemp)"
+    trap 'rm -f "$raw" "$der"' EXIT
+    dd if="{{keys_dir}}/protov_public_CIx.key" of="$raw" bs=1 skip=0 count=32 status=none
+    ( printf '\x30\x2a\x30\x05\x06\x03\x2b\x65\x70\x03\x21\x00'; cat "$raw" ) > "$der"
+    openssl pkey -pubin -inform DER -in "$der" -outform PEM -out "$pem"
 
-objcopy-firmware elf=elf bin=bin:
+objcopy-firmware elf=elf fw_bin=fw_bin:
     mkdir -p {{release_dir}}
-    cargo objcopy --release --bin protov -- -O binary {{bin}}
+    cargo objcopy --release --bin protov -- -O binary {{fw_bin}}
 
-hash-firmware bin=bin hash=hash:
-    mkdir -p {{release_dir}}
-    openssl dgst -sha512 -binary {{bin}} > {{hash}}
+hash-firmware fw_bin=fw_bin fw_hash=fw_hash:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source "{{sign_helpers}}"
+    hash_firmware "{{fw_bin}}" "{{fw_hash}}"
 
-sign-firmware hash=hash sign=sign:
-    openssl pkeyutl -sign -inkey {{private_key}} -rawin -in {{hash}} -out {{sign}}
+sign-firmware fw_hash=fw_hash fw_sign=fw_sign:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source "{{sign_helpers}}"
+    sign_digest "{{fw_hash}}" "{{fw_sign}}"
 
-verify-firmware bin=bin sign=sign:
-    openssl dgst -sha512 -binary {{bin}} > /tmp/protov_hash.bin
-    openssl pkeyutl -verify -pubin -inkey {{public_key}} -rawin -in /tmp/protov_hash.bin -sigfile {{sign}}
+verify-firmware fw_bin=fw_bin fw_sign=fw_sign fw_hash=fw_hash:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source "{{sign_helpers}}"
+    verify_firmware "{{fw_bin}}" "{{fw_sign}}" "{{fw_hash}}"
 
-sign-all: objcopy-firmware hash-firmware sign-firmware verify-firmware
+# Debug path after `just build`: objcopy + sign the default release .bin in ../dist/
+sign-all:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ -z "${PRIVATE_KEY:-}" ]]; then
+      echo "PRIVATE_KEY is required (PEM content or path to .pem file)" >&2
+      exit 1
+    fi
+    pub="${PUBLIC_KEY:-}"
+    if [[ -z "$pub" ]]; then
+      pub="{{release_dir}}/ci0_public.pem"
+      just ci0-public-pem pem="$pub"
+      export PUBLIC_KEY="$pub"
+    fi
+    just objcopy-firmware
+    just hash-firmware
+    just sign-firmware
+    just verify-firmware
+
+# Sign a release firmware .bin -> {base}.hash.bin + {base}.sign.bin (absolute path recommended)
+sign-release-bin firmware_bin:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ -z "${PRIVATE_KEY:-}" ]]; then
+      echo "PRIVATE_KEY is required (PEM content or path to .pem file)" >&2
+      exit 1
+    fi
+    if [[ -z "${PUBLIC_KEY:-}" ]]; then
+      echo "PUBLIC_KEY is required (PEM content or path to .pem file)" >&2
+      exit 1
+    fi
+    source "{{sign_helpers}}"
+    sign_firmware_bin "{{firmware_bin}}"

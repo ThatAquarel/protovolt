@@ -12,7 +12,7 @@ env:
   TARGET: thumbv6m-none-eabi
 
 jobs:
-  release:
+  release-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +26,6 @@ jobs:
       - name: Install packaging tools
         run: |
           sudo apt-get update
-          # arm-none-eabi-objcopy for .bin; libudev-dev/pkg-config for host elf2uf2-rs build
           sudo apt-get install -y binutils-arm-none-eabi libudev-dev pkg-config
           cargo install elf2uf2-rs --locked
 
@@ -41,8 +40,50 @@ jobs:
           fi
           echo "version=${tag}" >> "${GITHUB_OUTPUT}"
 
-      - name: Build firmware bundle
-        run: just release-bundle "${{ steps.version.outputs.version }}"
+      - name: Build firmware bundle (unsigned)
+        run: |
+          just _release-profile hw-a0 A.0 "${{ steps.version.outputs.version }}"
+          just _release-profile hw-a1 A.1 "${{ steps.version.outputs.version }}"
+          just _release-profile hw-a2 A.2 "${{ steps.version.outputs.version }}"
+
+      - name: Upload unsigned dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: protov-dist-unsigned
+          path: dist/
+          if-no-files-found: error
+
+  release-sign:
+    needs: release-build
+    runs-on: ubuntu-latest
+    environment: release-signature
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: extractions/setup-just@v2
+
+      - name: Resolve release version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "${GITHUB_OUTPUT}"
+
+      - name: Download unsigned dist
+        uses: actions/download-artifact@v4
+        with:
+          name: protov-dist-unsigned
+          path: dist/
+
+      - name: Sign firmware binaries
+        env:
+          PRIVATE_KEY: ${{ secrets.PROTOV_PRIVATE_CI0 }}
+          PUBLIC_KEY: ${{ secrets.PROTOV_PUBLIC_CI0 }}
+        run: |
+          if [[ -z "${PRIVATE_KEY}" || -z "${PUBLIC_KEY}" ]]; then
+            echo "PROTOV_PRIVATE_CI0 and PROTOV_PUBLIC_CI0 must be configured in release-signature" >&2
+            exit 1
+          fi
+          just release-sign "${{ steps.version.outputs.version }}"
+          just _release-manifest "${{ steps.version.outputs.version }}"
+          just _release-archive "${{ steps.version.outputs.version }}"
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
@@ -51,7 +92,13 @@ jobs:
           files: |
             dist/protov-firmware-${{ steps.version.outputs.version }}.tar.gz
             dist/A.0/protov-${{ steps.version.outputs.version }}-A.0.uf2
+            dist/A.0/protov-${{ steps.version.outputs.version }}-A.0.bin
+            dist/A.0/protov-${{ steps.version.outputs.version }}-A.0.sign.bin
             dist/A.1/protov-${{ steps.version.outputs.version }}-A.1.uf2
+            dist/A.1/protov-${{ steps.version.outputs.version }}-A.1.bin
+            dist/A.1/protov-${{ steps.version.outputs.version }}-A.1.sign.bin
             dist/A.2/protov-${{ steps.version.outputs.version }}-A.2.uf2
+            dist/A.2/protov-${{ steps.version.outputs.version }}-A.2.bin
+            dist/A.2/protov-${{ steps.version.outputs.version }}-A.2.sign.bin
             dist/SHA256SUMS
             dist/MANIFEST.txt
