@@ -60,8 +60,45 @@ Slot commands require exactly one digit after the prefix (e.g. `*SAV 3`). `*SAV 
 |---------|------|-------|
 | `SYST:ERR?` | Query | Error queue; see [Errors](#errors) |
 | `SYST:VERS?` | Query | System / protocol version string |
+| `SYST:IDAT?` | Query | Authenticated device identification; see [Device identification](#device-identification) |
 | `SYST:LOC` | Mutation | Local front-panel control |
 | `SYST:REM` | Mutation | Remote (SCPI) control |
+
+### Device identification
+
+| Command | Type | Response |
+|---------|------|----------|
+| `*IDN?` | Query | Full identity string (manufacturer, product, serial, firmware, hardware) |
+| `SYST:IDAT?` | Query | Serial number, hardware revision, and Ed25519 serial attestation signature |
+
+`*IDN?` returns a comma-separated identity line (see [IEEE 488.2 common commands](#ieee-4882-common-commands)).
+
+`SYST:IDAT?` returns authenticated manufacturing identity for host verification against the
+embedded HW trust manifest (`protov-nvm`):
+
+```
+{serial},{hw_version},#H{128 hex uppercase}
+```
+
+| Field | Description |
+|-------|-------------|
+| `serial` | Device serial number (ASCII, same token as field 3 of `*IDN?`) |
+| `hw_version` | Hardware revision string (same token as field 5 of `*IDN?`) |
+| `#H…` | 64-byte Ed25519 signature over the **raw serial bytes** (UTF-8/ASCII, no pre-hash), encoded as `#H` plus 128 uppercase hex digits |
+
+Example (truncated):
+
+```
+550e8400,A.1,#H55…55
+```
+
+Hosts verify the signature with any public key listed in the root-signed HW manifest
+(`PUBLIC_KEY_HWX` in `protov-nvm`). Firmware revision is intentionally omitted; use `*IDN?`
+for the full five-field identity string.
+
+Both identification queries are non-mutations and remain available during FWUP update mode.
+
+Host tools may verify `SYST:IDAT?` responses with `protov_nvm::verify_serial_attestation(serial, &signature_bytes)`.
 
 ### Measurement
 

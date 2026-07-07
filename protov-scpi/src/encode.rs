@@ -124,6 +124,7 @@ pub fn encode_command_line(cmd: &ScpiCommand) -> alloc::string::String {
         },
         ScpiCommand::SystErrQuery => "SYST:ERR?\n".into(),
         ScpiCommand::SystVersQuery => "SYST:VERS?\n".into(),
+        ScpiCommand::SystIdatQuery => "SYST:IDAT?\n".into(),
         ScpiCommand::SystLoc => "SYST:LOC\n".into(),
         ScpiCommand::SystRem => "SYST:REM\n".into(),
         ScpiCommand::TelemQuery => "SYST:TELEM?\n".into(),

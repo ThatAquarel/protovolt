@@ -75,6 +75,27 @@ fn hex_nibble(b: u8) -> Option<u8> {
     }
 }
 
+/// Hex encoding failed (buffer too small).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HexFormatError;
+
+/// Format raw bytes as `#H` followed by uppercase hex (Ed25519 signatures in responses).
+pub fn format_hex_block<const CAP: usize>(
+    bytes: &[u8],
+    buf: &mut heapless::String<CAP>,
+) -> Result<(), HexFormatError> {
+    use core::fmt::Write;
+
+    if buf.len() + 2 + bytes.len() * 2 > CAP {
+        return Err(HexFormatError);
+    }
+    buf.push_str("#H").map_err(|_| HexFormatError)?;
+    for b in bytes {
+        let _ = write!(buf, "{:02X}", b);
+    }
+    Ok(())
+}
+
 /// Encode payload as IEEE `#Nd` definite-length block (host / std).
 #[cfg(feature = "std")]
 pub fn encode_definite_block(payload: &[u8]) -> alloc::vec::Vec<u8> {

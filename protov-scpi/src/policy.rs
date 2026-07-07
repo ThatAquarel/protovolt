@@ -11,6 +11,7 @@ pub fn is_mutation(cmd: &ScpiCommand) -> bool {
             | ScpiCommand::LedBrightnessQuery
             | ScpiCommand::SystErrQuery
             | ScpiCommand::SystVersQuery
+            | ScpiCommand::SystIdatQuery
             | ScpiCommand::TelemQuery
             | ScpiCommand::TempQuery { .. }
             | ScpiCommand::InpQuery
@@ -28,6 +29,7 @@ pub fn is_allowed_in_update_mode(cmd: &ScpiCommand) -> bool {
         ScpiCommand::IdnQuery
             | ScpiCommand::SystErrQuery
             | ScpiCommand::SystVersQuery
+            | ScpiCommand::SystIdatQuery
             | ScpiCommand::FwupStatQuery
             | ScpiCommand::FwupData
             | ScpiCommand::FwupAbor

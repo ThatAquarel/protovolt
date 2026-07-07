@@ -55,6 +55,9 @@ pub fn parse_command(raw: &str) -> Option<ScpiCommand> {
     if s == "SYST:VERS?" {
         return Some(ScpiCommand::SystVersQuery);
     }
+    if s == "SYST:IDAT?" {
+        return Some(ScpiCommand::SystIdatQuery);
+    }
     if s == "SYST:LOC" {
         return Some(ScpiCommand::SystLoc);
     }

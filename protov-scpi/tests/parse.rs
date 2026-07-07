@@ -16,6 +16,20 @@ fn parse_idn_and_rst() {
 }
 
 #[test]
+fn parse_syst_idat() {
+    assert_eq!(
+        parse_command("SYST:IDAT?"),
+        Some(ScpiCommand::SystIdatQuery)
+    );
+    assert_eq!(
+        parse_command("syst:idat?"),
+        Some(ScpiCommand::SystIdatQuery)
+    );
+    assert!(!is_mutation(&ScpiCommand::SystIdatQuery));
+    assert!(is_allowed_in_update_mode(&ScpiCommand::SystIdatQuery));
+}
+
+#[test]
 fn parse_fwup_commands() {
     assert_eq!(
         parse_command("SYST:FWUP:STAT?"),

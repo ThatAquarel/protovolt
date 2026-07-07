@@ -70,6 +70,7 @@ pub enum ScpiCommand {
     },
     SystErrQuery,
     SystVersQuery,
+    SystIdatQuery,
     SystLoc,
     SystRem,
     TelemQuery,
