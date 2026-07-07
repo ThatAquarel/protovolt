@@ -52,3 +52,27 @@ just nvm::test             # from repo root
 just nvm::build-bootloader
 just nvm::build-application
 ```
+
+## Factory sector (`FACTORY`, 4 KiB @ `0x101FF000`)
+
+Manufacturing identity is stored at the start of the factory partition:
+
+| Field | Size | Notes |
+|-------|------|-------|
+| Magic | 4 | `PFAC` |
+| Version | 1 | `1` |
+| HW rev len / serial len | 2 | ASCII byte counts |
+| Date | 4 | `year` (u16 LE), `month`, `day`, pad |
+| HW revision | 8 | null-padded ASCII |
+| Serial | 16 | null-padded ASCII |
+| Signature | 64 | Ed25519 over serial bytes |
+
+256 bytes are programmed (padded with `0xFF`); the rest of the 4 KiB sector is erased.
+
+Rust API: [`factory`](src/factory.rs). Application firmware loads this at boot via
+`protov_core::config::init_from_factory_flash()`.
+
+To program a unit at manufacturing time, build and flash with the `factory-program` feature
+and compile-time env vars (`SERIAL_NUMBER`, `HARDWARE_REV`, `FACTORY_YEAR`, `FACTORY_MONTH`,
+`FACTORY_DAY`, `SIGNATURE`). See repo-root `just factory-program`.
+

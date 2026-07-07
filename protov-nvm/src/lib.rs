@@ -28,10 +28,12 @@
 //! }
 //! ```
 
+pub mod factory;
 pub mod fwup;
 pub mod keys;
 pub mod layout;
 
+pub use factory::*;
 pub use fwup::*;
 pub use keys::*;
 pub use layout::*;
