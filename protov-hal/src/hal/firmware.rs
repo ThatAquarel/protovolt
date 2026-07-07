@@ -13,7 +13,7 @@ use embedded_storage::nor_flash::NorFlash;
 use embassy_embedded_hal::flash::partition::BlockingPartition;
 
 use protov_core::model::DfuEvent;
-use protov_nvm::{FLASH_SIZE, FWUP_SIGNATURE_LEN, PUBLIC_KEY};
+use protov_nvm::{FLASH_SIZE, FWUP_SIGNATURE_LEN, ci_public_keys, verify_cix_manifest};
 use static_cell::StaticCell;
 
 use crate::hal::watchdog;
@@ -116,22 +116,26 @@ where
         if !self.session_active {
             return Err(());
         }
-        match with_flash(|| {
-            self.updater
-                .verify_and_mark_updated(PUBLIC_KEY, &signature, len)
-                .map_err(|e| {
-                    warn!("verify_and_mark_updated: {:?}", defmt::Debug2Format(&e));
-                })
-        }) {
-            Ok(()) => {
-                self.session_active = false;
-                Ok(())
-            }
-            Err(()) => {
-                self.session_active = false;
-                Err(())
+        verify_cix_manifest().map_err(|_| ())?;
+
+        for key in ci_public_keys().iter() {
+            match with_flash(|| {
+                self.updater
+                    .verify_and_mark_updated(key, &signature, len)
+                    .map_err(|e| {
+                        warn!("verify_and_mark_updated: {:?}", defmt::Debug2Format(&e));
+                    })
+            }) {
+                Ok(()) => {
+                    self.session_active = false;
+                    return Ok(());
+                }
+                Err(()) => {}
             }
         }
+
+        self.session_active = false;
+        Err(())
     }
 
     pub fn dfu_abort(&mut self) {
