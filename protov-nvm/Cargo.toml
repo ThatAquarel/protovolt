@@ -14,3 +14,6 @@ bootloader = []
 application = []
 
 [lib]
+
+[dev-dependencies]
+ed25519-dalek = { version = "2.2", default-features = false, features = ["std"] }

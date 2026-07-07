@@ -29,10 +29,14 @@
 //! ```
 
 pub mod fwup;
+pub mod keys;
 pub mod layout;
 
 pub use fwup::*;
+pub use keys::*;
 pub use layout::*;
 
+#[cfg(test)]
+mod keys_tests;
 #[cfg(test)]
 mod layout_tests;
