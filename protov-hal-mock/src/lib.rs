@@ -1,6 +1,7 @@
 pub mod device;
 pub mod dispatch;
 pub mod pool;
+pub mod scpi;
 pub mod server;
 pub mod state;
 pub mod telemetry;

@@ -2,6 +2,8 @@ use protov_core::app::AppCore;
 use protov_core::scpi::ScpiContext;
 use protov_core::scpi::state::ScpiState;
 
+use crate::scpi::{MockFirmwareStore, ScpiReader};
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MockIdentity {
     pub serial: String,
@@ -24,6 +26,7 @@ pub struct MockDevice {
     pub scpi: ScpiState,
     pub ctx: ScpiContext,
     pub identity: MockIdentity,
+    pub firmware: MockFirmwareStore,
 }
 
 impl MockDevice {
@@ -35,6 +38,7 @@ impl MockDevice {
             scpi: ScpiState::default(),
             ctx: ScpiContext::default(),
             identity,
+            firmware: MockFirmwareStore::default(),
         }
     }
 
@@ -42,9 +46,25 @@ impl MockDevice {
         self.identity = identity;
         self.app.reset_to_factory(&mut self.scpi);
         self.ctx = ScpiContext::default();
+        self.firmware.abort();
     }
 
     pub fn handle(&mut self, command: &str) -> Option<String> {
         crate::dispatch::handle_command(self, command)
+    }
+
+    pub fn handle_bytes(&mut self, chunk: &[u8]) -> Vec<String> {
+        let mut reader = ScpiReader::new();
+        reader.push(chunk);
+        reader.drain(self)
+    }
+
+    pub fn handle_bytes_with_reader(
+        &mut self,
+        reader: &mut ScpiReader,
+        chunk: &[u8],
+    ) -> Vec<String> {
+        reader.push(chunk);
+        reader.drain(self)
     }
 }

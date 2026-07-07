@@ -1715,6 +1715,7 @@ dependencies = [
  "futures-util",
  "heapless 0.8.0",
  "protov-core",
+ "protov-scpi",
  "serde",
  "serde_json",
  "serial_test",
