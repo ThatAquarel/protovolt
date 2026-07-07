@@ -220,6 +220,7 @@ async fn main(spawner: Spawner) {
                 input_voltage,
                 input_current,
                 scpi_state,
+                firmware::flash_unique_id(),
             );
             let (mut response, tasks) = match cmd {
                 ScpiCommand::Ina226RegQuery { channel } => {
@@ -485,6 +486,7 @@ fn build_scpi_context(
     input_voltage: f32,
     input_current: f32,
     scpi_state: &ScpiState,
+    flash_unique_id: &[u8; 8],
 ) -> ScpiContext {
     let prot_a = scpi_state.prot_latched(scpi::ScpiChannel::Ch1);
     let prot_b = scpi_state.prot_latched(scpi::ScpiChannel::Ch2);
@@ -500,6 +502,7 @@ fn build_scpi_context(
         converter_ok: sense_ok,
         prot_latched_a: prot_a,
         prot_latched_b: prot_b,
+        flash_unique_id: *flash_unique_id,
     }
 }
 

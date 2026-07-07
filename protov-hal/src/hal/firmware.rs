@@ -2,6 +2,8 @@
 
 use core::cell::RefCell;
 
+use core::sync::atomic::{AtomicPtr, Ordering};
+
 use defmt::{error, info, warn};
 use embassy_boot_rp::{AlignedBuffer, BlockingFirmwareUpdater, FirmwareUpdaterConfig, State};
 use embassy_rp::flash::{Blocking, Flash};
@@ -14,7 +16,7 @@ use embassy_embedded_hal::flash::partition::BlockingPartition;
 
 use protov_core::model::DfuEvent;
 use protov_nvm::{FLASH_SIZE, FWUP_SIGNATURE_LEN, ci_public_keys, verify_cix_manifest};
-use static_cell::StaticCell;
+use static_cell::{ConstStaticCell, StaticCell};
 
 use crate::hal::watchdog;
 
@@ -27,6 +29,8 @@ pub type BoardFirmwareCtx = FirmwareCtx<'static, DfuPartition<'static>, DfuParti
 static FLASH_BUS: StaticCell<FlashBus> = StaticCell::new();
 static UPDATER_STATE: StaticCell<AlignedBuffer<1>> = StaticCell::new();
 static FW_CTX: StaticCell<BoardFirmwareCtx> = StaticCell::new();
+static BOARD_FLASH_UID: ConstStaticCell<[u8; 8]> = ConstStaticCell::new([0; 8]);
+static BOARD_FLASH_UID_PTR: AtomicPtr<[u8; 8]> = AtomicPtr::new(core::ptr::null_mut());
 
 pub struct FirmwareCtx<'d, DFU, STATE>
 where
@@ -49,7 +53,20 @@ where
 
 /// Init flash updater and confirm swap on boot (Embassy b.rs).
 pub fn init(flash: embassy_rp::Peri<'static, FLASH>) -> &'static mut BoardFirmwareCtx {
-    let flash = InnerFlash::new_blocking(flash);
+    let mut flash = InnerFlash::new_blocking(flash);
+
+    let mut uid = [0u8; 8];
+    match flash.blocking_unique_id(&mut uid) {
+        Ok(()) => info!(
+            "unique id: {:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
+            uid[0], uid[1], uid[2], uid[3], uid[4], uid[5], uid[6], uid[7]
+        ),
+        Err(e) => warn!("flash unique id read failed: {:?}", defmt::Debug2Format(&e)),
+    }
+    let uid_slot = ConstStaticCell::take(&BOARD_FLASH_UID);
+    *uid_slot = uid;
+    BOARD_FLASH_UID_PTR.store(uid_slot, Ordering::Release);
+
     let flash_bus = FLASH_BUS.init(Mutex::new(RefCell::new(flash)));
     let state_aligned = UPDATER_STATE.init(AlignedBuffer([0; 1]));
 
@@ -61,6 +78,14 @@ pub fn init(flash: embassy_rp::Peri<'static, FLASH>) -> &'static mut BoardFirmwa
 
     on_boot(&mut ctx.updater);
     ctx
+}
+
+/// RP2040 flash unique ID read during [`init`].
+pub fn flash_unique_id() -> &'static [u8; 8] {
+    let ptr = BOARD_FLASH_UID_PTR.load(Ordering::Acquire);
+    debug_assert!(!ptr.is_null());
+    // SAFETY: pointer set once in `init` to a `ConstStaticCell` slot that lives forever.
+    unsafe { &*ptr }
 }
 
 impl<'d, DFU, STATE> FirmwareCtx<'d, DFU, STATE>
