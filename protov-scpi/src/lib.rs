@@ -24,8 +24,8 @@ mod wasm;
 pub use wasm::WasmScpiClient;
 
 pub use block::{
-    decode_hex_block, format_hex_block, is_valid_block_len, parse_definite_block_at,
-    parse_definite_block_in_ascii, HexFormatError,
+    HexFormatError, decode_hex_block, format_hex_block, is_valid_block_len,
+    parse_definite_block_at, parse_definite_block_in_ascii,
 };
 #[cfg(feature = "std")]
 pub use block::{encode_definite_block, encode_fwup_appl_line, encode_fwup_data_line};
