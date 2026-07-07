@@ -86,7 +86,7 @@ embedded HW trust manifest (`protov-nvm`):
 | `hw_version` | Hardware revision string (same token as field 5 of `*IDN?`) |
 | `YYYY-MM-DD` | Manufacturing / attestation date (ISO 8601 calendar date) |
 | `#H…` (16 hex) | 8-byte RP2040 flash unique ID |
-| `#H…` (128 hex) | 64-byte Ed25519 signature over the **raw serial bytes** (UTF-8/ASCII, no pre-hash) |
+| `#H…` (128 hex) | 64-byte Ed25519 signature over **`{serial},{hw_version},{YYYY-MM-DD}`** (UTF-8/ASCII, no pre-hash) |
 
 Example (truncated):
 
@@ -100,7 +100,10 @@ for the full five-field identity string.
 
 Both identification queries are non-mutations and remain available during FWUP update mode.
 
-Host tools may verify `SYST:IDAT?` responses with `protov_nvm::verify_serial_attestation(serial, &signature_bytes)`.
+Host tools may verify `SYST:IDAT?` responses with
+`protov_nvm::verify_serial_attestation(serial, hw_version, (year, month, day), &signature_bytes)`
+after parsing the comma-separated fields (or build the message with
+`protov_nvm::encode_attestation_message`).
 
 ### Measurement
 
