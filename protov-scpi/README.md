@@ -11,6 +11,8 @@ Centralized ProtoV SCPI wire protocol: parse, encode, IEEE `#Nd` / `#H` blocks, 
 | `limits` | FWUP constants from `protov-nvm` |
 | `wasm` | `WasmScpiClient` for browsers (Web Serial via JS transport) |
 
+Full wire-format reference: **[PROTOCOL.md](PROTOCOL.md)** (derived from `parse.rs`).
+
 ## Rust usage
 
 ```rust
