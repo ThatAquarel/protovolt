@@ -7,7 +7,7 @@ description = "ProtoV SCPI wire protocol (parse, encode, host client)"
 publish = false
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 name = "protov_scpi"
 
 [dependencies]
