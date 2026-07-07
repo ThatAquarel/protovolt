@@ -64,9 +64,10 @@ impl ScpiReader {
                         let inline = self.buf.len().saturating_sub(header_end);
                         let take = inline.min(payload_len);
                         if take > 0 {
-                            device
-                                .firmware
-                                .write_payload_at(0, &self.buf.as_slice()[header_end..header_end + take]);
+                            device.firmware.write_payload_at(
+                                0,
+                                &self.buf.as_slice()[header_end..header_end + take],
+                            );
                         }
                         consume_front(&mut self.buf, header_end + take);
                         if take == payload_len {
@@ -139,7 +140,11 @@ impl ScpiReader {
         responses
     }
 
-    fn finish_fwup_block(&mut self, device: &mut MockDevice, _payload_len: usize) -> Option<String> {
+    fn finish_fwup_block(
+        &mut self,
+        device: &mut MockDevice,
+        _payload_len: usize,
+    ) -> Option<String> {
         super::router::dispatch_command(device, ScpiCommand::FwupData)
     }
 

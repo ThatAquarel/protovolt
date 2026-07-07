@@ -29,9 +29,7 @@ pub fn dispatch_command(device: &mut MockDevice, cmd: ScpiCommand) -> Option<Str
         }
         ScpiCommand::FwupData => {
             let len = device.firmware.payload_len() as u32;
-            let result = device
-                .app
-                .handle_fwup_data(len, &mut device.scpi);
+            let result = device.app.handle_fwup_data(len, &mut device.scpi);
             (result.response, result.tasks)
         }
         ScpiCommand::FwupAbor => {

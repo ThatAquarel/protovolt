@@ -59,10 +59,7 @@ impl MockFirmwareStore {
         self.image.clear();
     }
 
-    pub fn dfu_hardware_event(
-        task: HardwareTask,
-        store: &mut Self,
-    ) -> Option<DfuEvent> {
+    pub fn dfu_hardware_event(task: HardwareTask, store: &mut Self) -> Option<DfuEvent> {
         match task {
             HardwareTask::DfuPrepare => {
                 if store.prepare().is_ok() {
@@ -118,11 +115,7 @@ impl MockFirmwareStore {
         Ok(())
     }
 
-    fn verify_apply(
-        &mut self,
-        len: u32,
-        _signature: [u8; FWUP_SIGNATURE_LEN],
-    ) -> Result<(), ()> {
+    fn verify_apply(&mut self, len: u32, _signature: [u8; FWUP_SIGNATURE_LEN]) -> Result<(), ()> {
         if !self.session_active {
             return Err(());
         }

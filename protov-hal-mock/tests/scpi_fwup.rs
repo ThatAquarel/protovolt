@@ -26,7 +26,10 @@ fn send_fwup_data(device: &mut MockDevice, payload: &[u8]) -> Option<String> {
 fn fwup_star_prepare_recv() {
     let mut device = device();
     assert_eq!(device.handle("SYST:FWUP:STAT?").as_deref(), Some("IDLE"));
-    assert_eq!(send_line(&mut device, "SYST:FWUP:STAR 4096").as_deref(), Some("OK"));
+    assert_eq!(
+        send_line(&mut device, "SYST:FWUP:STAR 4096").as_deref(),
+        Some("OK")
+    );
     assert_eq!(
         device.handle("SYST:FWUP:STAT?").as_deref(),
         Some("RECV,0/4096")
@@ -58,10 +61,7 @@ fn fwup_full_image_ready_appl_ok() {
 
     let sig = [0xCD; 64];
     let appl_line = encode_fwup_appl_line(&sig);
-    assert_eq!(
-        send_line(&mut device, &appl_line).as_deref(),
-        Some("OK")
-    );
+    assert_eq!(send_line(&mut device, &appl_line).as_deref(), Some("OK"));
     assert_eq!(device.handle("SYST:FWUP:STAT?").as_deref(), Some("IDLE"));
 }
 
@@ -69,7 +69,10 @@ fn fwup_full_image_ready_appl_ok() {
 fn fwup_abor_mid_transfer() {
     let mut device = device();
     send_line(&mut device, "SYST:FWUP:STAR 4096");
-    assert_eq!(send_line(&mut device, "SYST:FWUP:ABOR").as_deref(), Some("OK"));
+    assert_eq!(
+        send_line(&mut device, "SYST:FWUP:ABOR").as_deref(),
+        Some("OK")
+    );
     assert!(!device.app.is_update_mode());
     assert_eq!(device.handle("SYST:FWUP:STAT?").as_deref(), Some("IDLE"));
 }
@@ -78,7 +81,10 @@ fn fwup_abor_mid_transfer() {
 fn fwup_data_before_star() {
     let mut device = device();
     let payload = vec![0u8; 64];
-    assert_eq!(send_fwup_data(&mut device, &payload).as_deref(), Some("ERR"));
+    assert_eq!(
+        send_fwup_data(&mut device, &payload).as_deref(),
+        Some("ERR")
+    );
 }
 
 #[test]

@@ -347,11 +347,15 @@ async fn scpi_websocket_fwup_happy_path() {
     let (mut ws, _) = connect_async(ws_url(server.scpi_addr)).await.unwrap();
 
     assert_eq!(
-        ws_scpi_roundtrip(&mut ws, "SYST:FWUP:STAR 256").await.as_deref(),
+        ws_scpi_roundtrip(&mut ws, "SYST:FWUP:STAR 256")
+            .await
+            .as_deref(),
         Some("OK")
     );
     assert_eq!(
-        ws_scpi_roundtrip(&mut ws, "SYST:FWUP:STAT?").await.as_deref(),
+        ws_scpi_roundtrip(&mut ws, "SYST:FWUP:STAT?")
+            .await
+            .as_deref(),
         Some("RECV,0/256")
     );
 
@@ -368,7 +372,9 @@ async fn scpi_websocket_fwup_happy_path() {
         "OK"
     );
     assert_eq!(
-        ws_scpi_roundtrip(&mut ws, "SYST:FWUP:STAT?").await.as_deref(),
+        ws_scpi_roundtrip(&mut ws, "SYST:FWUP:STAT?")
+            .await
+            .as_deref(),
         Some("READY,256")
     );
 
@@ -379,7 +385,9 @@ async fn scpi_websocket_fwup_happy_path() {
         Some("OK")
     );
     assert_eq!(
-        ws_scpi_roundtrip(&mut ws, "SYST:FWUP:STAT?").await.as_deref(),
+        ws_scpi_roundtrip(&mut ws, "SYST:FWUP:STAT?")
+            .await
+            .as_deref(),
         Some("IDLE")
     );
 
@@ -419,7 +427,9 @@ async fn scpi_websocket_fwup_split_frames() {
         Some("OK")
     );
     assert_eq!(
-        ws_scpi_roundtrip(&mut ws, "SYST:FWUP:STAT?").await.as_deref(),
+        ws_scpi_roundtrip(&mut ws, "SYST:FWUP:STAT?")
+            .await
+            .as_deref(),
         Some("READY,128")
     );
 

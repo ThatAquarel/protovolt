@@ -5,6 +5,5 @@ pub fn handle_command(device: &mut crate::device::MockDevice, raw: &str) -> Opti
     if trimmed.is_empty() {
         return None;
     }
-    protov_scpi::parse_command(trimmed)
-        .and_then(|cmd| dispatch_command(device, cmd))
+    protov_scpi::parse_command(trimmed).and_then(|cmd| dispatch_command(device, cmd))
 }

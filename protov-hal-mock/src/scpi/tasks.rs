@@ -34,14 +34,14 @@ fn handle_mock_dfu(
     };
 
     match event {
-            protov_core::model::DfuEvent::VerifyApplyComplete => DfuOutcome::VerifySucceeded(
-                app.handle_event(AppEvent::Dfu(event), scpi),
-            ),
-            protov_core::model::DfuEvent::VerifyApplyFailed => DfuOutcome::VerifyFailed(
-                app.handle_event(AppEvent::Dfu(event), scpi),
-            ),
-            other => DfuOutcome::Progress(app.handle_event(AppEvent::Dfu(other), scpi)),
+        protov_core::model::DfuEvent::VerifyApplyComplete => {
+            DfuOutcome::VerifySucceeded(app.handle_event(AppEvent::Dfu(event), scpi))
         }
+        protov_core::model::DfuEvent::VerifyApplyFailed => {
+            DfuOutcome::VerifyFailed(app.handle_event(AppEvent::Dfu(event), scpi))
+        }
+        other => DfuOutcome::Progress(app.handle_event(AppEvent::Dfu(other), scpi)),
+    }
 }
 
 pub fn run_tasks(
