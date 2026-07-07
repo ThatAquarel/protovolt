@@ -119,6 +119,10 @@ openssl pkeyutl -verify -pubin -inkey /tmp/hw0.pem \
   -rawin -in serial_record.bin -sigfile serial_record.sig
 ```
 
+On a connected device, query the provisioned attestation with `SYST:IDAT?` (see
+`protov-scpi/PROTOCOL.md`). Host tools verify the response with
+`protov_nvm::verify_serial_attestation(serial, &signature_bytes)`.
+
 A successful check prints `Signature Verified Successfully`. Anything else
 means the file, key, or signature don't match — do not trust the artifact.
 

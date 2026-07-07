@@ -69,3 +69,31 @@ pub fn verify_cix_manifest() -> Result<(), ManifestVerifyError> {
 pub fn verify_hwx_manifest() -> Result<(), ManifestVerifyError> {
     verify_manifest(PUBLIC_KEY_HWX, PUBLIC_KEY_HWX_SIG)
 }
+
+/// Serial attestation verification failed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SerialAttestationError {
+    InvalidHwManifest,
+    InvalidSignature,
+}
+
+/// Verify an Ed25519 signature over the raw serial string using the embedded HW key set.
+///
+/// The HW manifest must be root-signed (`verify_hwx_manifest`). Verification succeeds when
+/// any trusted HW key validates the signature over `serial.as_bytes()` (raw, no pre-hash).
+pub fn verify_serial_attestation(
+    serial: &str,
+    signature: &[u8; 64],
+) -> Result<(), SerialAttestationError> {
+    verify_hwx_manifest().map_err(|_| SerialAttestationError::InvalidHwManifest)?;
+    let sig = Signature::from_bytes(signature);
+    for key in hw_public_keys() {
+        let Ok(verifier) = VerifyingKey::from_bytes(&key) else {
+            continue;
+        };
+        if verifier.verify(serial.as_bytes(), &sig).is_ok() {
+            return Ok(());
+        }
+    }
+    Err(SerialAttestationError::InvalidSignature)
+}

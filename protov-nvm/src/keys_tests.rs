@@ -63,4 +63,11 @@ mod tests {
             assert_eq!(&key[..], &PUBLIC_KEY_HWX[start..start + HW_KEY_LEN]);
         }
     }
+
+    #[test]
+    fn verify_serial_attestation_rejects_invalid_signature() {
+        use crate::verify_serial_attestation;
+
+        assert!(verify_serial_attestation("550e8400", &[0u8; 64]).is_err());
+    }
 }
