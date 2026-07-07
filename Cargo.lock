@@ -1640,7 +1640,7 @@ dependencies = [
 
 [[package]]
 name = "protov-bootloader"
-version = "1.5.3"
+version = "1.5.4"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -1657,7 +1657,7 @@ dependencies = [
 
 [[package]]
 name = "protov-core"
-version = "1.5.3"
+version = "1.5.4"
 dependencies = [
  "embedded-graphics",
  "heapless 0.8.0",
@@ -1670,7 +1670,7 @@ dependencies = [
 
 [[package]]
 name = "protov-hal"
-version = "1.5.3"
+version = "1.5.4"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -1709,7 +1709,7 @@ dependencies = [
 
 [[package]]
 name = "protov-hal-mock"
-version = "1.5.3"
+version = "1.5.4"
 dependencies = [
  "clap",
  "futures-util",
@@ -1727,11 +1727,11 @@ dependencies = [
 
 [[package]]
 name = "protov-nvm"
-version = "1.5.3"
+version = "1.5.4"
 
 [[package]]
 name = "protov-scpi"
-version = "1.5.3"
+version = "1.5.4"
 dependencies = [
  "heapless 0.8.0",
  "js-sys",
