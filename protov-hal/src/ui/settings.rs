@@ -6,7 +6,7 @@ use embedded_graphics::{
     },
 };
 
-use protov_core::config::{FIRMWARE_REVISION, HARDWARE_REVISION, SERIAL_NUMBER};
+use protov_core::config::{FIRMWARE_REVISION, hardware_revision, serial_number};
 use u8g2_fonts::types::{FontColor, HorizontalAlignment, VerticalPosition};
 
 use crate::ui::{Display, Fonts, color_scheme, labels, settings_layout};
@@ -101,7 +101,7 @@ impl SettingsScreen {
             labels::SERIAL_NUMBER,
         ];
 
-        let values = [FIRMWARE_REVISION, HARDWARE_REVISION, SERIAL_NUMBER];
+        let values = [FIRMWARE_REVISION, hardware_revision(), serial_number()];
 
         for i in 0..values.len() {
             let current_y = i as i32 * y_skip + y_offset;

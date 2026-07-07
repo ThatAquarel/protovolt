@@ -40,6 +40,7 @@ mod device;
 
 pub mod converter;
 pub mod event;
+pub mod factory_program;
 pub mod firmware;
 pub mod measure;
 pub mod power;

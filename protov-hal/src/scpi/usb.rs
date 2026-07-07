@@ -12,7 +12,7 @@ use protov_core::scpi::parser::{self, FWUP_DATA_PREFIX, ScpiCommand};
 use protov_nvm::FWUP_MAX_BLOCK_LEN;
 
 use crate::config::{
-    MANUFACTURER, PRODUCT_NAME, SERIAL_NUMBER, USB_MAX_POWER_MA, USB_PID, USB_VID,
+    MANUFACTURER, PRODUCT_NAME, USB_MAX_POWER_MA, USB_PID, USB_VID, serial_number,
 };
 use crate::scpi::{SCPI_CMD, SCPI_RESP, set_serial_connected};
 
@@ -53,7 +53,7 @@ pub fn build_usb_cdc(driver: RpUsbDriver) -> ScpiUsbStack {
     let mut config = embassy_usb::Config::new(USB_VID, USB_PID);
     config.manufacturer = Some(MANUFACTURER);
     config.product = Some(PRODUCT_NAME);
-    config.serial_number = Some(SERIAL_NUMBER);
+    config.serial_number = Some(serial_number());
     config.max_power = USB_MAX_POWER_MA;
     config.max_packet_size_0 = 64;
 

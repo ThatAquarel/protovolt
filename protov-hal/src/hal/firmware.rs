@@ -18,6 +18,8 @@ use protov_core::model::DfuEvent;
 use protov_nvm::{FLASH_SIZE, FWUP_SIGNATURE_LEN, ci_public_keys, verify_cix_manifest};
 use static_cell::{ConstStaticCell, StaticCell};
 
+use protov_core::config::init_from_factory_flash;
+
 use crate::hal::watchdog;
 
 pub type InnerFlash = Flash<'static, FLASH, Blocking, FLASH_SIZE>;
@@ -41,7 +43,7 @@ where
     session_active: bool,
 }
 
-fn with_flash<F, R>(f: F) -> R
+pub(crate) fn with_flash<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
 {
@@ -66,6 +68,11 @@ pub fn init(flash: embassy_rp::Peri<'static, FLASH>) -> &'static mut BoardFirmwa
     let uid_slot = ConstStaticCell::take(&BOARD_FLASH_UID);
     *uid_slot = uid;
     BOARD_FLASH_UID_PTR.store(uid_slot, Ordering::Release);
+
+    if crate::hal::factory_program::program_if_requested(&mut flash).is_err() {
+        warn!("factory programming skipped or failed");
+    }
+    init_from_factory_flash();
 
     let flash_bus = FLASH_BUS.init(Mutex::new(RefCell::new(flash)));
     let state_aligned = UPDATER_STATE.init(AlignedBuffer([0; 1]));

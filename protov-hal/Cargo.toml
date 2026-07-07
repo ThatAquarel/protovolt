@@ -54,3 +54,7 @@ hw-a0 = ["protov-core/hw-a0"]
 hw-a1 = ["protov-core/hw-a1"]
 hw-a2 = ["protov-core/hw-a2"]
 demo = []
+factory-program = []
+
+[build-dependencies]
+protov-nvm = { path = "../protov-nvm" }
