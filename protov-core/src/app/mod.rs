@@ -2,9 +2,9 @@
 use micromath::F32Ext;
 
 use crate::config::{
-    CURRENT_EDIT_RANGE, ChannelProfile, FACTORY, HARDWARE_REVISION, MANUFACTURING_DATE,
-    SCPI_SYSTEM_VERSION, SERIAL_ATTESTATION, SERIAL_NUMBER, VOLTAGE_EDIT_RANGE, format_idat_parts,
-    format_idn,
+    CURRENT_EDIT_RANGE, ChannelProfile, FACTORY, SCPI_SYSTEM_VERSION, VOLTAGE_EDIT_RANGE,
+    format_idat_parts, format_idn, hardware_revision, manufacturing_date, serial_attestation,
+    serial_number,
 };
 use crate::dfu::{DfuAction, DfuError, DfuSession};
 use crate::fmt::format_f32;
@@ -1219,11 +1219,11 @@ impl AppCore {
             ScpiCommand::SystIdatQuery => {
                 let mut buf = heapless::String::<RESPONSE_BUF>::new();
                 if format_idat_parts(
-                    SERIAL_NUMBER,
-                    HARDWARE_REVISION,
-                    MANUFACTURING_DATE,
+                    serial_number(),
+                    hardware_revision(),
+                    manufacturing_date(),
                     &ctx.flash_unique_id,
-                    &SERIAL_ATTESTATION,
+                    serial_attestation(),
                     &mut buf,
                 )
                 .is_err()

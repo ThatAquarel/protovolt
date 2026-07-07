@@ -1,10 +1,9 @@
 //! Per-device identity overrides for simulator / multi-slot mock pools.
 
 use super::product::{
-    DEFAULT_FLASH_UNIQUE_ID, FIRMWARE_REVISION, MANUFACTURING_DATE, SERIAL_ATTESTATION,
-    format_idat_parts, format_idn_parts,
+    DEFAULT_FLASH_UNIQUE_ID, FIRMWARE_REVISION, format_idat_parts, format_idn_parts,
 };
-use super::{HARDWARE_REVISION, SERIAL_NUMBER};
+use super::{hardware_revision, manufacturing_date, serial_attestation, serial_number};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DeviceIdentity {
@@ -19,12 +18,12 @@ pub struct DeviceIdentity {
 impl Default for DeviceIdentity {
     fn default() -> Self {
         Self {
-            serial: SERIAL_NUMBER,
+            serial: serial_number(),
             fw_version: FIRMWARE_REVISION,
-            hw_version: HARDWARE_REVISION,
-            manufacturing_date: MANUFACTURING_DATE,
+            hw_version: hardware_revision(),
+            manufacturing_date: manufacturing_date(),
             flash_unique_id: DEFAULT_FLASH_UNIQUE_ID,
-            serial_signature: &SERIAL_ATTESTATION,
+            serial_signature: serial_attestation(),
         }
     }
 }
@@ -55,13 +54,13 @@ pub fn format_idat_with<const N: usize>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{SERIAL_ATTESTATION, format_idat_parts, format_idn};
+    use crate::config::{format_idat_parts, format_idn, serial_attestation, serial_number};
 
     #[test]
     fn default_identity_matches_product_constants() {
         let identity = DeviceIdentity::default();
-        assert_eq!(identity.serial, SERIAL_NUMBER);
-        assert_eq!(identity.serial_signature, &SERIAL_ATTESTATION);
+        assert_eq!(identity.serial, serial_number());
+        assert_eq!(identity.serial_signature, serial_attestation());
     }
 
     #[test]

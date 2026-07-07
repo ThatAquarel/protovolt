@@ -1,8 +1,8 @@
-use crate::config::{HARDWARE_PROFILE, HARDWARE_REVISION};
+use crate::config::{HARDWARE_PROFILE, hardware_revision};
 
 #[test]
 fn hardware_revision_matches_profile() {
-    assert_eq!(HARDWARE_REVISION, HARDWARE_PROFILE.revision);
+    assert_eq!(hardware_revision(), HARDWARE_PROFILE.revision);
 }
 
 #[cfg(feature = "hw-a1")]

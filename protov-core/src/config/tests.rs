@@ -14,8 +14,8 @@ fn format_idn_contains_product_fields() {
     let s = buf.as_str();
     assert!(s.contains(MANUFACTURER));
     assert!(s.contains(PRODUCT_NAME));
-    assert!(s.contains(SERIAL_NUMBER));
-    assert!(s.contains(HARDWARE_REVISION));
+    assert!(s.contains(serial_number()));
+    assert!(s.contains(hardware_revision()));
 }
 
 #[test]
