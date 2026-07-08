@@ -21,7 +21,7 @@ async fn ws_scpi_roundtrip(
     ws.send(Message::Text(format!("{command}\n").into()))
         .await
         .unwrap();
-    match tokio::time::timeout(Duration::from_secs(2), ws.next()).await {
+    match tokio::time::timeout(Duration::from_secs(5), ws.next()).await {
         Ok(Some(Ok(msg))) => Some(msg.into_text().unwrap().trim().to_owned()),
         _ => None,
     }
@@ -36,7 +36,7 @@ async fn ws_scpi_bytes(
     ws.send(Message::Binary(data.to_vec().into()))
         .await
         .unwrap();
-    match tokio::time::timeout(Duration::from_secs(2), ws.next()).await {
+    match tokio::time::timeout(Duration::from_secs(5), ws.next()).await {
         Ok(Some(Ok(msg))) => Some(msg.into_text().unwrap().trim().to_owned()),
         _ => None,
     }
@@ -44,9 +44,7 @@ async fn ws_scpi_bytes(
 
 async fn wait_for_scpi(addr: std::net::SocketAddr) {
     for _ in 0..100 {
-        if let Ok((mut ws, _)) = connect_async(ws_url(addr)).await {
-            let _ = ws.close(None).await;
-            tokio::time::sleep(Duration::from_millis(20)).await;
+        if tokio::net::TcpStream::connect(addr).await.is_ok() {
             return;
         }
         tokio::time::sleep(Duration::from_millis(50)).await;
@@ -380,10 +378,24 @@ async fn scpi_websocket_fwup_happy_path() {
 
     let sig = [0xEF; 64];
     let appl = encode_fwup_appl_line(&sig);
+    ws.send(Message::Text(appl.into())).await.unwrap();
     assert_eq!(
-        ws_scpi_roundtrip(&mut ws, appl.trim()).await.as_deref(),
-        Some("OK")
+        ws.next()
+            .await
+            .unwrap()
+            .unwrap()
+            .into_text()
+            .unwrap()
+            .trim(),
+        "OK"
     );
+    match ws.next().await.unwrap().unwrap() {
+        Message::Close(_) => {}
+        other => panic!("expected disconnect after APPL, got {other:?}"),
+    }
+
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    let (mut ws, _) = connect_async(ws_url(server.scpi_addr)).await.unwrap();
     assert_eq!(
         ws_scpi_roundtrip(&mut ws, "SYST:FWUP:STAT?")
             .await

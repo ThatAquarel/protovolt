@@ -62,6 +62,7 @@ fn fwup_full_image_ready_appl_ok() {
     let sig = [0xCD; 64];
     let appl_line = encode_fwup_appl_line(&sig);
     assert_eq!(send_line(&mut device, &appl_line).as_deref(), Some("OK"));
+    device.complete_firmware_reboot(identity_from_profile(SLOT_PROFILES[0]));
     assert_eq!(device.handle("SYST:FWUP:STAT?").as_deref(), Some("IDLE"));
 }
 
