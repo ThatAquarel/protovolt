@@ -73,6 +73,7 @@ pub fn identity_from_profile(profile: SlotProfile) -> MockIdentity {
 struct PoolInner {
     devices: [MockDevice; MAX_MOCK_DEVICES],
     in_use: [bool; MAX_MOCK_DEVICES],
+    rebooting: [bool; MAX_MOCK_DEVICES],
 }
 
 impl PoolInner {
@@ -83,12 +84,13 @@ impl PoolInner {
         Self {
             devices,
             in_use: [false; MAX_MOCK_DEVICES],
+            rebooting: [false; MAX_MOCK_DEVICES],
         }
     }
 
     fn acquire(&mut self) -> Option<usize> {
         for (index, used) in self.in_use.iter_mut().enumerate() {
-            if !*used {
+            if !*used && !self.rebooting[index] {
                 *used = true;
                 return Some(index);
             }
@@ -102,7 +104,7 @@ impl PoolInner {
         }
         let was_in_use = self.in_use[index];
         self.in_use[index] = false;
-        if was_in_use {
+        if was_in_use && !self.rebooting[index] {
             self.devices[index].reset_to_profile(identity_from_profile(SLOT_PROFILES[index]));
         }
     }
@@ -110,8 +112,18 @@ impl PoolInner {
     fn release_all(&mut self) {
         for index in 0..MAX_MOCK_DEVICES {
             self.in_use[index] = false;
+            self.rebooting[index] = false;
             self.devices[index].reset_to_profile(identity_from_profile(SLOT_PROFILES[index]));
         }
+    }
+
+    fn finish_reboot(&mut self, index: usize) {
+        if index >= MAX_MOCK_DEVICES {
+            return;
+        }
+        self.devices[index].complete_firmware_reboot(identity_from_profile(SLOT_PROFILES[index]));
+        self.rebooting[index] = false;
+        self.in_use[index] = false;
     }
 
     fn device_mut(&mut self, index: usize) -> Option<&mut MockDevice> {
@@ -141,6 +153,20 @@ impl DevicePool {
 
     pub fn release_all(&self) {
         self.inner.lock().unwrap().release_all();
+    }
+
+    pub fn begin_fwup_reboot(&self, index: usize) {
+        const BOOT_DELAY: std::time::Duration = std::time::Duration::from_secs(2);
+        let pool = self.clone();
+        {
+            let mut inner = self.inner.lock().unwrap();
+            inner.rebooting[index] = true;
+            inner.in_use[index] = true;
+        }
+        tokio::spawn(async move {
+            tokio::time::sleep(BOOT_DELAY).await;
+            pool.inner.lock().unwrap().finish_reboot(index);
+        });
     }
 
     pub fn with_device<F, R>(&self, index: usize, f: F) -> Option<R>

@@ -6,11 +6,13 @@ use protov_core::scpi::RESPONSE_BUF;
 use protov_core::scpi::registers::{format_ina226_response, format_tps55289_response};
 use protov_scpi::ScpiCommand;
 
-use crate::device::MockDevice;
+use crate::device::{FwupAfter, MockDevice};
 
 use super::tasks::run_tasks;
 
 pub fn dispatch_command(device: &mut MockDevice, cmd: ScpiCommand) -> Option<String> {
+    device.fwup_after = FwupAfter::None;
+    let is_fwup_star = matches!(cmd, ScpiCommand::FwupStar { .. });
     let (mut response, tasks) = match cmd {
         ScpiCommand::IdnQuery => {
             let mut buf = heapless::String::<RESPONSE_BUF>::new();
@@ -61,7 +63,7 @@ pub fn dispatch_command(device: &mut MockDevice, cmd: ScpiCommand) -> Option<Str
     };
 
     if let Some(tasks) = tasks {
-        response = run_tasks(
+        let (next_response, appl_reboot) = run_tasks(
             &mut device.app,
             &mut device.scpi,
             &device.ctx,
@@ -69,6 +71,20 @@ pub fn dispatch_command(device: &mut MockDevice, cmd: ScpiCommand) -> Option<Str
             tasks,
             response,
         );
+        response = next_response;
+        if appl_reboot {
+            device.fwup_after = FwupAfter::ApplReboot;
+        }
+    }
+
+    if is_fwup_star
+        && device.fwup_after == FwupAfter::None
+        && response
+            .text
+            .as_ref()
+            .is_some_and(|text| text.as_str() == "OK")
+    {
+        device.fwup_after = FwupAfter::StarDelay;
     }
 
     if matches!(cmd, ScpiCommand::FwupData) {

@@ -4,7 +4,6 @@ use protov_core::app::AppCore;
 use protov_core::model::{AppEvent, AppTask, HardwareTask, Task};
 use protov_core::scpi::ScpiResponse;
 use protov_core::scpi::state::ScpiState;
-use protov_scpi::ScpiCommand;
 
 use super::dfu::MockFirmwareStore;
 
@@ -51,7 +50,7 @@ pub fn run_tasks(
     firmware: &mut MockFirmwareStore,
     tasks: AppTask,
     mut response: ScpiResponse,
-) -> ScpiResponse {
+) -> (ScpiResponse, bool) {
     let mut fwup_appl_outcome = None;
 
     for task in tasks {
@@ -62,19 +61,25 @@ pub fn run_tasks(
                     DfuOutcome::VerifySucceeded(extra) => {
                         fwup_appl_outcome = Some(true);
                         if let Some(extra) = extra {
-                            response = run_tasks(app, scpi, ctx, firmware, extra, response);
+                            let (next_response, _) =
+                                run_tasks(app, scpi, ctx, firmware, extra, response);
+                            response = next_response;
                         }
                     }
                     DfuOutcome::VerifyFailed(extra) => {
                         fwup_appl_outcome = Some(false);
                         firmware.abort();
                         if let Some(extra) = extra {
-                            response = run_tasks(app, scpi, ctx, firmware, extra, response);
+                            let (next_response, _) =
+                                run_tasks(app, scpi, ctx, firmware, extra, response);
+                            response = next_response;
                         }
                     }
                     DfuOutcome::Progress(extra) => {
                         if let Some(extra) = extra {
-                            response = run_tasks(app, scpi, ctx, firmware, extra, response);
+                            let (next_response, _) =
+                                run_tasks(app, scpi, ctx, firmware, extra, response);
+                            response = next_response;
                         }
                     }
                 }
@@ -85,11 +90,8 @@ pub fn run_tasks(
 
     if let Some(success) = fwup_appl_outcome {
         response = app.fwup_appl_response(success, scpi);
-        if success {
-            let _ = app.handle_scpi(ScpiCommand::FwupAbor, scpi, ctx);
-            firmware.abort();
-        }
+        return (response, success);
     }
 
-    response
+    (response, false)
 }

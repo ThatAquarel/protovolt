@@ -1,8 +1,17 @@
 use protov_core::app::AppCore;
 use protov_core::scpi::ScpiContext;
 use protov_core::scpi::state::ScpiState;
+use protov_scpi::ScpiCommand;
 
 use crate::scpi::{MockFirmwareStore, ScpiReader};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FwupAfter {
+    #[default]
+    None,
+    StarDelay,
+    ApplReboot,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MockIdentity {
@@ -40,6 +49,7 @@ pub struct MockDevice {
     pub ctx: ScpiContext,
     pub identity: MockIdentity,
     pub firmware: MockFirmwareStore,
+    pub fwup_after: FwupAfter,
 }
 
 impl MockDevice {
@@ -54,7 +64,23 @@ impl MockDevice {
             ctx,
             identity,
             firmware: MockFirmwareStore::default(),
+            fwup_after: FwupAfter::None,
         }
+    }
+
+    pub fn complete_firmware_reboot(&mut self, identity: MockIdentity) {
+        self.identity = identity;
+        if self.app.is_update_mode() {
+            let _ = self
+                .app
+                .handle_scpi(ScpiCommand::FwupAbor, &mut self.scpi, &self.ctx);
+        }
+        self.app.reset_to_factory(&mut self.scpi);
+        self.app.force_standby();
+        self.ctx = ScpiContext::default();
+        self.ctx.flash_unique_id = self.identity.flash_unique_id;
+        self.firmware.abort();
+        self.fwup_after = FwupAfter::None;
     }
 
     pub fn reset_to_profile(&mut self, identity: MockIdentity) {

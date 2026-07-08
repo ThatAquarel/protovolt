@@ -1,21 +1,28 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
 use tokio::net::TcpListener;
 use tokio_tungstenite::tungstenite::Message;
 use tracing::{debug, info};
 
+use crate::device::FwupAfter;
 use crate::pool::DevicePool;
 use crate::scpi::ScpiReader;
+
+const FWUP_STAR_POST_DELAY: Duration = Duration::from_secs(2);
 
 struct SlotGuard {
     pool: Arc<DevicePool>,
     slot: usize,
+    skip_release: bool,
 }
 
 impl Drop for SlotGuard {
     fn drop(&mut self) {
-        self.pool.release(self.slot);
+        if !self.skip_release {
+            self.pool.release(self.slot);
+        }
     }
 }
 
@@ -56,9 +63,10 @@ async fn handle_connection(
     };
 
     info!("SCPI client {peer} assigned slot {slot}");
-    let _guard = SlotGuard {
+    let mut guard = SlotGuard {
         pool: Arc::clone(&pool),
         slot,
+        skip_release: false,
     };
 
     let mut reader = ScpiReader::new();
@@ -75,15 +83,33 @@ async fn handle_connection(
             continue;
         }
 
-        let responses = pool.with_device(slot, |device| {
-            device.handle_bytes_with_reader(&mut reader, &data)
-        });
-        if let Some(responses) = responses {
-            for text in responses {
-                write
-                    .send(Message::Text(format!("{text}\n").into()))
-                    .await?;
+        let (responses, fwup_after) = pool
+            .with_device(slot, |device| {
+                let responses = device.handle_bytes_with_reader(&mut reader, &data);
+                let fwup_after = device.fwup_after;
+                device.fwup_after = FwupAfter::None;
+                (responses, fwup_after)
+            })
+            .unwrap_or((Vec::new(), FwupAfter::None));
+
+        for text in responses {
+            write
+                .send(Message::Text(format!("{text}\n").into()))
+                .await?;
+        }
+
+        match fwup_after {
+            FwupAfter::StarDelay => {
+                tokio::time::sleep(FWUP_STAR_POST_DELAY).await;
             }
+            FwupAfter::ApplReboot => {
+                guard.skip_release = true;
+                write.send(Message::Close(None)).await?;
+                pool.begin_fwup_reboot(slot);
+                info!("SCPI client {peer} disconnected for firmware reboot on slot {slot}");
+                return Ok(());
+            }
+            FwupAfter::None => {}
         }
     }
 
