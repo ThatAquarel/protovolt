@@ -52,3 +52,21 @@ sustained high-current loads.
 > [!CAUTION]
 > Do not assume that a solderless breadboard can carry ProtoV MINI's full 5 A
 > output.
+
+## ProtoV App
+
+[ProtoV App](https://protov.app) communicates with the device through the Web
+Serial API. Browser implementation and adoption are tracked by
+[Can I use: Web Serial](https://caniuse.com/web-serial).
+
+| Operating system | Browser | Test status |
+| --- | --- | --- |
+| Windows | Chrome | Tested |
+| Windows | Edge | Tested |
+| Windows | Firefox | Tested with Web Serial-capable versions |
+| Linux | Chrome | Tested |
+| Linux | Firefox | Limited; behavior and device access can be unreliable |
+| macOS / iOS | Safari | Not supported |
+
+Browser support can change between releases. Use a current Chromium-based
+browser when reliable device access is required.
