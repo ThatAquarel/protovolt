@@ -70,7 +70,8 @@ your own trust chain:
    with your own root private key. Adding a public key alone is insufficient:
    the CI manifest must match the root embedded in your firmware.
 3. Build and install that initial custom firmware through
-   [USB BOOTSEL](flashing.md#usb) or [SWD](flashing.md#swd).
+   [USB BOOTSEL](flashing.md#option-2-usb-bootsel) or
+   [SWD](flashing.md#option-3-swd-debug-probe).
 4. Sign future releases with an authorized private release key and configure
    your own build of [`protov_app`](https://github.com/flakeblade/protov_app)
    to provide the matching image and signature. The existing
@@ -78,7 +79,8 @@ your own trust chain:
 
 You may instead modify your firmware to bypass signature verification. The
 stock signed-DFU path cannot install that first modified image, so it must be
-loaded through [USB BOOTSEL](flashing.md#usb) or [SWD](flashing.md#swd).
+loaded through [USB BOOTSEL](flashing.md#option-2-usb-bootsel) or
+[SWD](flashing.md#option-3-swd-debug-probe).
 Afterward, a custom DFU implementation can accept unsigned images.
 
 > [!CAUTION]
