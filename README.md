@@ -1,6 +1,6 @@
 [![ProtoV MINI][cover]][website]
 
-# Power that catalyzes the workspace
+# A power supply to catalyze prototyping
 
 [![Release][release-badge]][release]
 [![CI][ci-badge]][ci]
@@ -25,16 +25,39 @@ rustup target add thumbv6m-none-eabi
 cargo install just
 just build
 ```
-See [development](docs/development.md) for prerequisites, tests, and common
+See [development](#development-1) for prerequisites, tests, and common
 commands. Run `just --list` to see every available recipe.
 
 ## Documentation
 
+### Guides
+
+- [Device overview](docs/product.md)
+
+### Development
+
+Project structure
+- [Repository index, and workspace modules](docs/repository.md)
+- [Firmware roadmap](docs/roadmap.md)
+
+Installation, building, and uploading
+1. [Toolchain installation, and building](docs/development.md)
+2. [Release bundling, and firmware signature](docs/releases.md)
+3. [Flashing to hardware](docs/flashing.md)
+
+
+### References
+
+Hardware compatibility
+- [Power delivery sources](docs/compatibility.md)
+- [Breadboards](docs/compatibility.md)
+
+
 <!-- - [Product overview](docs/product.md)
-- [Repository guide](docs/repository.md)
-- [Development](docs/development.md)
+    
 - [Flashing](docs/flashing.md)
-- [Release builds](docs/releases.md)
+
+
 - [SCPI protocol](protov-scpi/PROTOCOL.md)
 - [SCPI crate](protov-scpi/README.md)
 - [Bootloader](protov-bootloader/README.md)
