@@ -15,6 +15,9 @@ open firmware written in Rust.
 
 ## Getting Started
 
+Start with the [quick-start guide](docs/quick_start.md) to connect a USB-C PD
+power supply, optionally link ProtoV MINI to a computer, and open
+[ProtoV App](https://protov.app).
 
 ## Development
 
@@ -32,6 +35,7 @@ commands. Run `just --list` to see every available recipe.
 
 ### Guides
 
+- [Quick start](docs/quick_start.md)
 - [Device overview](docs/product.md)
 
 ### Development
@@ -51,6 +55,10 @@ Installation, building, and uploading
 Hardware compatibility
 - [Power delivery sources](docs/compatibility.md)
 - [Breadboards](docs/compatibility.md)
+
+Design documentation
+- [Hardware and dimensions](docs/hardware.md)
+- [SCPI protocol reference](protov-scpi/PROTOCOL.md)
 
 
 <!-- - [Product overview](docs/product.md)
