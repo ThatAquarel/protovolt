@@ -118,3 +118,25 @@ Bootloader commands are separate:
 just bootloader::build
 just bootloader::flash
 ```
+
+## Debugging the bootloader and main firmware
+
+> [!IMPORTANT]
+> Do not leave a debug-profile bootloader installed when using `probe-rs`
+> logging or debugging on the main firmware. The debugger can remain associated
+> with the bootloader's vector-table and debug context instead of attaching
+> correctly after control passes to the main firmware.
+
+Debug the [bootloader](../protov-bootloader/README.md) in debug mode when
+needed. Before debugging the main firmware, rebuild and flash the bootloader in
+release mode:
+
+```sh
+just bootloader::build
+just bootloader::flash
+just run
+```
+
+The repository's bootloader recipes include `--release`. Flashing that release
+bootloader restores the expected layout and allows `probe-rs` to attach to and
+log the main firmware normally.
