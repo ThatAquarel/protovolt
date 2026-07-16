@@ -12,7 +12,7 @@
 
 Follow along and be part of the adventure! Launching soon on [CrowdSupply][cs].
 
-![ProtoV MINI powering a breadboard](docs/res/front_page.png)
+![ProtoV MINI powering a breadboard](docs/res/protovolt-connected-on-breadboard.jpg)
 
 ## Features
 
@@ -185,23 +185,17 @@ just release-bundle 1.7.3
 
 ## Gallery
 
-<img src="docs/res/ui.jpg" alt="UI closeup"/>
-
-<img src="docs/res/logo.jpg" alt="PCB closeup"/>
-
-<img src="docs/res/laptop.jpg" alt="Next to laptop"/>
-
-
+![MCU zoom](docs/res/protovolt-mcu-zoom.jpg)
+![Back PCB](docs/res/protovolt-back-pcb.jpg)
+![UI zoom](docs/res/protovolt-user-interface-zoom.jpg)
 
 ## License
 
-This project is open-source under the Eclipse Public License - v 2.0.
-
+This project is licensed under the [Eclipse Public License v2.0](LICENSE).
 
 ## Contact
 
 Created and maintained by [Alex Xia](mailto:alex.xia@flakeblade.com). Contributions and bug reports welcome!
-
 
 
 [release-badge]: https://github.com/flakeblade/protov/actions/workflows/release.yml/badge.svg
