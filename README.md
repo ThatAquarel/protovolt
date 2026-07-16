@@ -1,10 +1,16 @@
-# ProtoV MINI
+[![ProtoV MINI][cover]][website]
+
+# Power that catalyzes the workspace
+
+[![Release][release-badge]][release]
+[![CI][ci-badge]][ci]
+[![Chat][chat-badge]][chat]
+[![CrowdSupply][cs-badge]][cs]
+
 
 **ProtoV MINI** is a dual-channel, USB-C powered, credit card-sized lab power supply for electronics prototyping and field testing. Designed for precision, portability, and rapid iteration.
 
-Follow along and be part of the adventure! Launching soon on <a href="https://www.crowdsupply.com/flake-and-blade-robotics-design/protov-mini" target="_blank" title="Available on Crowd Supply">
-<img src="https://www.crowdsupply.com/_marvin/images/crowd-supply-logo-light.png" alt="Crowd Supply" style="height: 1.2em">
-</a>
+Follow along and be part of the adventure! Launching soon on [CrowdSupply][cs].
 
 ![ProtoV MINI powering a breadboard](docs/res/front_page.png)
 
@@ -19,11 +25,6 @@ Follow along and be part of the adventure! Launching soon on <a href="https://ww
 - ✏️ Open firmware and schematics
 
 ## Quick Specs
-
-<a href="https://www.crowdsupply.com/flake-and-blade-robotics-design/protov-mini" target="_blank" title="Available on Crowd Supply">
-<img src="https://img.shields.io/badge/MORE%20INFO%20on-Crowd%20Supply-00bfa5?style=for-the-badge&logo=crowdsupply&logoColor=white" 
-        alt="Available on Crowd Supply" height="24" style="vertical-align:middle;"/>
-</a>
 
 | Feature           | Description                        |
 |-------------------|------------------------------------|
@@ -201,3 +202,19 @@ This project is open-source under the Eclipse Public License - v 2.0.
 
 Created and maintained by [Alex Xia](mailto:alex.xia@flakeblade.com). Contributions and bug reports welcome!
 
+
+
+[release-badge]: https://github.com/flakeblade/protov/actions/workflows/release.yml/badge.svg
+[release]: https://github.com/flakeblade/protov/actions/workflows/release.yml
+
+[ci-badge]: https://github.com/flakeblade/protov/actions/workflows/ci.yml/badge.svg
+[ci]: https://github.com/flakeblade/protov/actions/workflows/ci.yml
+
+[chat-badge]: https://img.shields.io/badge/chat-discussions-success.svg
+[chat]: https://github.com/flakeblade/protov/discussions
+
+[cs-badge]: https://img.shields.io/badge/Crowd-Supply-099?labelColor=555
+[cs]: https://www.crowdsupply.com/flake-and-blade-robotics-design/protov-mini
+
+[cover]: res/protov_mini_cover.svg
+[website]: https://protov.app
