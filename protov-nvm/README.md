@@ -13,6 +13,36 @@ Three hand-maintained copies of the same layout:
 
 `build.rs` copies the chosen `.x` file to `OUT_DIR/memory.x`.
 
+## Flash layout
+
+The application and bootloader layouts are based on Embassy's RP2040
+[application](https://github.com/embassy-rs/embassy/blob/main/examples/boot/application/rp/memory.x)
+and
+[bootloader](https://github.com/embassy-rs/embassy/blob/main/examples/boot/bootloader/rp/memory.x)
+examples.
+
+| Region / symbols | Purpose |
+| --- | --- |
+| `BOOT2` | RP2040 second-stage boot code at the beginning of external flash. |
+| Bootloader `FLASH` | The ProtoV bootloader image. This region exists only as executable `FLASH` in the bootloader linker script. |
+| `BOOTLOADER_STATE` / `__bootloader_state_*` | Persistent [Embassy Boot](https://docs.rs/embassy-boot-rp/0.10.0/embassy_boot_rp/) update state. It records swap progress so update status is preserved and recovery can continue after power loss. |
+| `ACTIVE` / application `FLASH` / `__bootloader_active_*` | The current application firmware image. The bootloader calls this region `ACTIVE`; the application links itself into the same addresses as `FLASH`. |
+| `DFU` / `__bootloader_dfu_*` | Staging area for a new device firmware image before the bootloader copies or swaps it into `ACTIVE`. It is one erase page larger than the active image as required by the update algorithm. |
+| `RESERVED` / `__reserved_*` | Currently unallocated space reserved for user-defined future features. ProtoV product features must not consume it. |
+| `CONFIG` / `__config_*` | Space reserved for persistent user configuration support to be added in a future release. |
+| `FACTORY` / `__factory_*` | Factory-programmed state, including serial identity, hardware revision, manufacturing date, flash identity, and attestation data. |
+| `RAM` | RP2040 runtime memory; it is not part of persistent flash storage. |
+
+> [!NOTE]
+> The `RESERVED` partition is set aside for user applications and custom data.
+> ProtoV product features must not allocate or depend on this region.
+
+If a contribution requires a new NVM allocation, open an issue or discussion
+before changing the layout. Partition changes can break bootloader and software
+DFU compatibility and therefore require a major version increment. See the
+[contribution guidelines](../CONTRIBUTING.md#breaking-changes-2xx).
+
+
 ## Keeping the layout in sync
 
 Update all three files together. Run `just test` (here) or `just nvm::test` (repo root) after changes.
