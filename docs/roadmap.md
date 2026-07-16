@@ -5,7 +5,8 @@ Critical and security issues are addressed first, followed by feature
 additions, then non-critical bug fixes and quality-of-life improvements.
 
 > [!TIP]
-> Feeling inspired to add, or fix something? See the [contributing guide](contributing.md).
+> Feeling inspired to add or fix something? See the
+> [contributing guide](../CONTRIBUTING.md).
 
 ## Embassy
 
