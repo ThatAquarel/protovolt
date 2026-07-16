@@ -68,6 +68,14 @@ Hardware compatibility
 Bug reports and contributions are welcome in the
 [GitHub repository](https://github.com/flakeblade/protov).
 
+> [!WARNING]
+> Modifying or uploading firmware is done entirely at your own risk. An
+> incompatible image can leave the device inoperable and may require USB
+> BOOTSEL or SWD recovery. Bypassing current, voltage, temperature, power, or
+> other protection limits can damage ProtoV MINI, connected equipment, or
+> wiring and may create an electrical or fire hazard. Verify the hardware
+> revision, understand every safety-related change, and test conservatively.
+
 ## License
 
 [Eclipse Public License 2.0](LICENSE) © Alex Xia — [@ThatAquarel](http://github.com/thataquarel)
