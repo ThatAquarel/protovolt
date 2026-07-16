@@ -9,7 +9,7 @@ to work with most standards-compliant, fixed-supply USB PD sources.
 The USB D+ and D− data lines are routed directly to the RP2040 for device
 communication.
 
-> ![NOTE]
+> [!NOTE]
 > ProtoV MINI therefore does not support Qualcomm Quick Charge or
 > other charging standards that negotiate voltage over the USB data lines.
 > Power-source negotiation must use the USB-C CC pins.
@@ -49,6 +49,6 @@ localized heating; stop using a connection if it becomes warm, loose, or
 discolored. Use appropriately rated wiring, connectors, or a soldered PCB for
 sustained high-current loads.
 
-> ![CAUTION]
+> [!CAUTION]
 > Do not assume that a solderless breadboard can carry ProtoV MINI's full 5 A
 > output.

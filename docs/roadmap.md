@@ -4,7 +4,7 @@ Planned work is tracked in [GitHub Issues](https://github.com/flakeblade/protov/
 Critical and security issues are addressed first, followed by feature
 additions, then non-critical bug fixes and quality-of-life improvements.
 
-> ![TIP]
+> [!TIP]
 > Feeling inspired to add, or fix something? See the [contributing guide](contributing.md).
 
 ## Embassy
