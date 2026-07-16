@@ -5,12 +5,12 @@ uses the [Embassy](https://embassy.dev/) embedded framework.
 
 | Path | Purpose |
 | --- | --- |
-| `protov-core/` | Host-testable product logic and state machines |
-| `protov-hal/` | RP2040 firmware, drivers, and user interface |
-| `protov-bootloader/` | A/B firmware bootloader |
-| `protov-nvm/` | Flash layout, factory data, and firmware verification |
-| `protov-scpi/` | SCPI protocol, host client, and browser WASM build |
-| `protov-hal-mock/` | Host-side WebSocket device simulator |
+| [`protov-core/`](../protov-core/README.md) | Host-testable product logic and state machines |
+| [`protov-hal/`](../protov-hal/README.md) | RP2040 firmware, drivers, and user interface |
+| [`protov-bootloader/`](../protov-bootloader/README.md) | A/B firmware bootloader |
+| [`protov-nvm/`](../protov-nvm/README.md) | Flash layout, factory data, and firmware verification |
+| [`protov-scpi/`](../protov-scpi/README.md) | SCPI protocol, host client, and browser WASM build |
+| [`protov-hal-mock/`](../protov-hal-mock/README.md) | Host-side WebSocket device simulator |
 | `hardware/` | KiCad design files |
 | `docs/` | Project documentation and product images |
 | `scripts/` | Firmware upload and release-signing helpers |
