@@ -46,12 +46,19 @@ Generate the UF2 for the required revision:
 ```sh
 just build-a0    # or build-a1 / build-a2
 just pkg
-```
 
+```
 See [Release builds](releases.md) for complete release bundles. A generated
 development image is written to `target/protov.uf2`.
 
-<!-- TODO: Add image showing the UBOOT jumper being shorted. -->
+To package the bootloader itself as UF2, run:
+
+```sh
+just bootloader::pkg
+```
+
+![Shorting UBOOT jumper](res/bootsel-jumper-usb-flash-software-update.jpg)
+*Shorting the UBOOT jumper with a multimeter in current measurement mode. Shorting the jumper while powering the device over USB allows for BOOTSEL mode flashing.*
 
 To enter BOOTSEL mode:
 
@@ -70,8 +77,6 @@ To enter BOOTSEL mode:
 > connecting USB, and immediately return the multimeter lead and selector to
 > voltage mode. Leaving it configured for current measurement can short the
 > next circuit you test and blow the meter fuse.
-
-To package the bootloader itself as UF2, run `just bootloader::pkg`.
 
 ## Option 3: SWD debug probe
 
@@ -97,11 +102,13 @@ crystal:
 - `G` — ground
 - `<` — SWD clock
 
+![SWD Pads](res/serial-wire-debug-pads-zoom.jpg)
+*Serial wire debug pads next to the RP2040 MCU. The hardware reset jumper is also in view: shorting the jumper resets the MCU.*
+
 Soldering temporary wires to these pads is strongly recommended. Holding loose
 probe wires against the small pads is difficult and can cause an unreliable
 connection during flashing.
 
-<!-- TODO: Add image showing soldered SWD wires and a connected debug probe. -->
 
 Build and flash the firmware for the correct revision:
 
