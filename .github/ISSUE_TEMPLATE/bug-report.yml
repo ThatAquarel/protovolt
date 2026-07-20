@@ -1,0 +1,133 @@
+name: Bug report
+description: Report unexpected behavior in ProtoV MINI firmware, hardware use, or tooling
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+
+        Please search [existing issues](https://github.com/flakeblade/protov/issues)
+        first. For ProtoV App browser or platform problems, prefer filing against
+        [`protov_app`](https://github.com/flakeblade/protov_app) when the defect
+        is clearly on the app side.
+  - type: checkboxes
+    id: existing
+    attributes:
+      label: Existing reports
+      options:
+        - label: I have searched existing issues and did not find a duplicate.
+          required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Where the problem shows up most clearly.
+      options:
+        - Display / UI
+        - Output regulation
+        - Measurement / sensing
+        - USB Power Delivery
+        - USB serial / SCPI
+        - Bootloader / firmware update
+        - Flashing / recovery
+        - Build / CI / tooling
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What went wrong?
+      placeholder: A clear, concise summary of the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: List the exact steps that trigger the problem.
+      placeholder: |
+        1. Connect a USB-C PD supply...
+        2. Set channel A to...
+        3. Observe...
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened. Include on-screen messages, fault indicators, or negotiated power status when relevant.
+    validations:
+      required: true
+  - type: input
+    id: hardware-revision
+    attributes:
+      label: Hardware revision
+      description: See the [hardware revision table](https://github.com/flakeblade/protov/blob/mini/docs/repository.md#hardware-revisions).
+      placeholder: e.g. A.1 or A.2
+    validations:
+      required: true
+  - type: input
+    id: software-version
+    attributes:
+      label: Software version
+      description: Firmware version shown on the device or reported by ProtoV App.
+      placeholder: e.g. 1.7.3
+    validations:
+      required: true
+  - type: input
+    id: power-source
+    attributes:
+      label: Power source and connection
+      description: Supply, cable, and whether an OTG splitter or computer was connected.
+      placeholder: e.g. Anker A2697 on port C1, USB-C to USB-C, no computer
+    validations:
+      required: false
+  - type: textarea
+    id: channel-settings
+    attributes:
+      label: Channel settings
+      description: Voltage, current, and mode for each channel if the bug involves output behavior.
+      placeholder: |
+        Channel A: 5.00 V, 1.00 A
+        Channel B: off
+    validations:
+      required: false
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or recordings
+      description: Attach or describe screenshots of the display, ProtoV App, or a short recording of the failure.
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Paste relevant log output. We prefer `probe-rs` logs from `cargo run` with an SWD debug probe; see the [SWD flashing and debugging guide](https://github.com/flakeblade/protov/blob/mini/docs/flashing.md#option-3-swd-debug-probe). SCPI transcript output is also useful when the issue involves host communication.
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else that might help diagnose the issue.
+    validations:
+      required: false
