@@ -19,14 +19,19 @@ communication.
 The following list is not exhaustive and will expand as more sources are
 tested.
 
-| Source type | Manufacturer | Product and model | Test condition | Negotiated contract | RDO | Position |
-| --- | --- | --- | --- | --- | --- | --- |
-| USB PD | Anker | Laptop Charger 140W, 4-Port, PD 3.1 (A2697) | Port C3 | 20.0 V, 2.0 A, 40.0 W | `0x400320c8` | 4 |
-| USB PD | Anker | Laptop Charger 140W, 4-Port, PD 3.1 (A2697) | Port C1 or C2 | 20.0 V, 5.0 A, 100.0 W | `0x4007d1f4` | 4 |
-| USB PD | Dell | XPS 9315 45W Charger (DA45NM210) | USB-C | 20.0 V, 2.25 A, 45.0 W | `0x400384e1` | 4 |
-| USB PD | Lenovo | ThinkPad X1 Carbon Gen 11 65W Charger (ADLX65YDC3E) | USB-C | 20.0 V, 3.25 A, 65.0 W | `0x40051545` | 4 |
-| Standard USB | Anker | PowerCore 10K (A1229) | Standard/PD | 5.0 V, 3.0 A, 15.0 W | — | — |
-| Standard USB | Dell | XPS 13 9360 laptop USB Type-A | Standard/PD | 5.0 V, 0.5 A, 2.5 W | — | — |
+| Source type | Manufacturer | Product and model | Test condition | Negotiated contract | RDO | Position | Software | Tested by |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| USB PD | Anker | Laptop Charger 140W, 4-Port, PD 3.1 (A2697) | Port C3 | 20.0 V, 2.0 A, 40.0 W | `0x400320c8` | 4 | 1.7.3 | [@ThatAquarel](https://github.com/ThatAquarel) |
+| USB PD | Anker | Laptop Charger 140W, 4-Port, PD 3.1 (A2697) | Port C1 or C2 | 20.0 V, 5.0 A, 100.0 W | `0x4007d1f4` | 4 | 1.7.3 | [@ThatAquarel](https://github.com/ThatAquarel) |
+| USB PD | Dell | XPS 9315 45W Charger (DA45NM210) | USB-C | 20.0 V, 2.25 A, 45.0 W | `0x400384e1` | 4 | 1.7.3 | [@ThatAquarel](https://github.com/ThatAquarel) |
+| USB PD | Lenovo | ThinkPad X1 Carbon Gen 11 65W Charger (ADLX65YDC3E) | USB-C | 20.0 V, 3.25 A, 65.0 W | `0x40051545` | 4 | 1.7.3 | [@ThatAquarel](https://github.com/ThatAquarel) |
+| Standard USB | Anker | PowerCore 10K (A1229) | Standard/PD | 5.0 V, 3.0 A, 15.0 W | — | — | 1.7.3 | [@ThatAquarel](https://github.com/ThatAquarel) |
+| Standard USB | Dell | XPS 13 9360 laptop USB Type-A | Standard/PD | 5.0 V, 0.5 A, 2.5 W | — | — | 1.7.3 | [@ThatAquarel](https://github.com/ThatAquarel) |
+
+> [!TIP]
+> Tested a power source that is not listed here? Open a
+> [tested power source](https://github.com/flakeblade/protov/issues/new?template=power-source.yml)
+> issue with the values shown on ProtoV MINI so it can be added to this table.
 
 ## Breadboards
 
@@ -70,3 +75,8 @@ Serial API. Browser implementation and adoption are tracked by
 
 Browser support can change between releases. Use a current Chromium-based
 browser when reliable device access is required.
+
+> [!TIP]
+> Please submit an issue to the [`protov_app`](https://github.com/flakeblade/protov_app)
+> repository for platform-support related inquiries, or open up a discussion in the
+> current repository.
