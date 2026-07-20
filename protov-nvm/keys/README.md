@@ -141,3 +141,128 @@ If a CI or HW key needs to be replaced (routine rotation, or a suspected leak):
    issued serial attestations use the current trusted key set.
 
 The master key itself is not expected to rotate under normal operation.
+
+## Generating your own keys
+
+Use this workflow to build a custom trust chain for development or a
+forked release process. The stock keys in this directory are for official
+ProtoV builds only. Never commit private keys.
+
+> [!CAUTION]
+> Private keys must stay offline or in CI secrets. Pull requests that add or
+> replace trusted public keys receive additional review; see
+> [Signing](../../docs/releases.md#signing) and
+> [Custom keys and unsigned firmware](../../docs/releases.md#custom-keys-and-unsigned-firmware).
+
+All examples use OpenSSL Ed25519 keys. Raw public-key files must be exactly
+32 bytes each. Manifests are three raw keys concatenated (`cat`), in slot
+order 0, 1, then 2.
+
+### 1. Generate keypairs
+
+Generate a root (master) key and one keypair per CI or HW slot:
+
+```bash
+# Root (master) key — keep offline
+openssl genpkey -algorithm ed25519 -out protov_private.pem
+
+# CI signing keys (CI0, CI1, CI2)
+openssl genpkey -algorithm ed25519 -out protov_private_CI0.pem
+openssl genpkey -algorithm ed25519 -out protov_private_CI1.pem
+openssl genpkey -algorithm ed25519 -out protov_private_CI2.pem
+
+# Hardware attestation keys (HW0, HW1, HW2), if needed
+openssl genpkey -algorithm ed25519 -out protov_private_HW0.pem
+openssl genpkey -algorithm ed25519 -out protov_private_HW1.pem
+openssl genpkey -algorithm ed25519 -out protov_private_HW2.pem
+```
+
+### 2. Export public keys
+
+PEM public keys are useful for OpenSSL tooling. Raw `.key` files are what
+firmware embeds:
+
+```bash
+# Root public key as PEM (for signing/verifying manifests)
+openssl pkey -in protov_private.pem -pubout -out protov_public.pem
+
+# Example: PEM public key for an HW slot
+openssl pkey -in protov_private_HW2.pem -pubout -out protov_public_HW2.pem
+
+# Raw 32-byte public keys (last 32 bytes of the DER SubjectPublicKeyInfo)
+openssl pkey -in protov_private.pem -pubout -outform DER \
+  | tail -c 32 > protov_public.key
+
+openssl pkey -in protov_private_CI0.pem -pubout -outform DER \
+  | tail -c 32 > protov_public_CI0.key
+openssl pkey -in protov_private_CI1.pem -pubout -outform DER \
+  | tail -c 32 > protov_public_CI1.key
+openssl pkey -in protov_private_CI2.pem -pubout -outform DER \
+  | tail -c 32 > protov_public_CI2.key
+
+openssl pkey -in protov_private_HW0.pem -pubout -outform DER \
+  | tail -c 32 > protov_public_HW0.key
+openssl pkey -in protov_private_HW1.pem -pubout -outform DER \
+  | tail -c 32 > protov_public_HW1.key
+openssl pkey -in protov_private_HW2.pem -pubout -outform DER \
+  | tail -c 32 > protov_public_HW2.key
+```
+
+Confirm each raw key is 32 bytes (`wc -c protov_public_CI0.key` should print
+`32`).
+
+### 3. Build CI and HW manifests
+
+Concatenate the three slot public keys in order:
+
+```bash
+cat protov_public_CI0.key protov_public_CI1.key protov_public_CI2.key \
+  > protov_public_CIx.key
+
+cat protov_public_HW0.key protov_public_HW1.key protov_public_HW2.key \
+  > protov_public_HWx.key
+```
+
+Each manifest must be exactly 96 bytes.
+
+### 4. Sign the manifests with the root key
+
+The root private key signs each concatenated manifest:
+
+```bash
+openssl pkeyutl -sign -inkey protov_private.pem -rawin \
+  -in protov_public_CIx.key -out protov_public_CIx.key.sig
+
+openssl pkeyutl -sign -inkey protov_private.pem -rawin \
+  -in protov_public_HWx.key -out protov_public_HWx.key.sig
+```
+
+### 5. Verify the manifest signatures
+
+```bash
+openssl pkeyutl -verify -pubin -inkey protov_public.pem -rawin \
+  -in protov_public_CIx.key -sigfile protov_public_CIx.key.sig
+
+openssl pkeyutl -verify -pubin -inkey protov_public.pem -rawin \
+  -in protov_public_HWx.key -sigfile protov_public_HWx.key.sig
+```
+
+A successful check prints `Signature Verified Successfully`.
+
+### 6. Install the public artifacts
+
+Copy the public files into this directory (or your fork's equivalent):
+
+| Generated file | Role |
+| --- | --- |
+| `protov_public.key` | Root public key embedded in firmware |
+| `protov_public_CIx.key` | CI trust manifest |
+| `protov_public_CIx.key.sig` | Root signature over the CI manifest |
+| `protov_public_HWx.key` | HW trust manifest |
+| `protov_public_HWx.key.sig` | Root signature over the HW manifest |
+
+Then rebuild firmware so the new keys are compiled in, flash that first image
+through [USB BOOTSEL](../../docs/flashing.md#option-2-usb-bootsel) or
+[SWD](../../docs/flashing.md#option-3-swd-debug-probe), and sign later DFU
+releases with an authorized CI private key (`PRIVATE_KEY` / `PUBLIC_KEY` as
+described in [Release builds](../../docs/releases.md#signing)).
