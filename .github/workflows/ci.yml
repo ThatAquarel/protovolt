@@ -2,7 +2,17 @@ name: CI
 
 on:
   push:
+    paths-ignore:
+      - 'docs/**'
+      - 'hardware/**'
+      - 'res/**'
+      - '**.md'
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - 'hardware/**'
+      - 'res/**'
+      - '**.md'
 
 env:
   HOST_TARGET: x86_64-unknown-linux-gnu
