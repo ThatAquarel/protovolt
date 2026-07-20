@@ -1,0 +1,104 @@
+name: Tested power source
+description: Report a USB-C power source you tested with ProtoV MINI
+title: "[Power source]: "
+labels: ["compatibility", "power-source"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping expand the
+        [tested power sources](https://github.com/flakeblade/protov/blob/mini/docs/compatibility.md#tested-power-sources)
+        list.
+
+        Record the values shown in the upper-left corner of the ProtoV MINI
+        display after connecting the supply. See the
+        [quick-start guide](https://github.com/flakeblade/protov/blob/mini/docs/quick_start.md)
+        for connection steps.
+  - type: dropdown
+    id: source-type
+    attributes:
+      label: Source type
+      description: How the supply was identified on ProtoV MINI.
+      options:
+        - USB PD
+        - USB 2.0
+    validations:
+      required: true
+  - type: input
+    id: manufacturer
+    attributes:
+      label: Manufacturer
+      placeholder: e.g. Anker
+    validations:
+      required: true
+  - type: input
+    id: product
+    attributes:
+      label: Product and model
+      description: Include the product name and model or SKU when known.
+      placeholder: e.g. Laptop Charger 140W, 4-Port, PD 3.1 (A2697)
+    validations:
+      required: true
+  - type: input
+    id: test-condition
+    attributes:
+      label: Test condition
+      description: Port used, cable type, splitter setup, or other relevant conditions.
+      placeholder: e.g. Port C1, USB-C to USB-C cable
+    validations:
+      required: true
+  - type: input
+    id: negotiated-contract
+    attributes:
+      label: Negotiated contract
+      description: Voltage, current, and power shown on ProtoV MINI.
+      placeholder: e.g. 20.0 V, 3.25 A, 65.0 W
+    validations:
+      required: true
+  - type: input
+    id: rdo
+    attributes:
+      label: RDO
+      description: Requested Data Object shown for USB PD contracts. Leave blank for standard USB. Access from SWD debug log.
+      placeholder: e.g. 0x40051545
+    validations:
+      required: false
+  - type: input
+    id: position
+    attributes:
+      label: PDO position
+      description: Power Data Object position for USB PD contracts. Leave blank for standard USB. Access from SWD debug log.
+      placeholder: e.g. 4
+    validations:
+      required: false
+  - type: input
+    id: hardware-revision
+    attributes:
+      label: Hardware revision
+      description: ProtoV MINI hardware revision under test.
+      placeholder: e.g. A.1 or A.2
+    validations:
+      required: false
+  - type: input
+    id: software-version
+    attributes:
+      label: Software version
+      description: ProtoV MINI firmware version shown on the device or reported by ProtoV App.
+      placeholder: e.g. 1.7.3
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything else that helps reproduce or interpret the result.
+      placeholder: e.g. Works with OTG splitter; negotiation failed with charge-only cable
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I tested this power source with ProtoV MINI and the values above match what the device displayed.
+          required: true
