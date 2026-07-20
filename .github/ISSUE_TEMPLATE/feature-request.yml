@@ -1,0 +1,79 @@
+name: Feature request
+description: Propose a new capability or improvement for ProtoV MINI
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement.
+
+        Please search [existing issues](https://github.com/flakeblade/protov/issues)
+        and check the [roadmap](https://github.com/flakeblade/protov/blob/mini/docs/roadmap.md)
+        before opening a new request. For ProtoV App-only features, prefer
+        [`protov_app`](https://github.com/flakeblade/protov_app).
+  - type: checkboxes
+    id: existing
+    attributes:
+      label: Existing requests
+      options:
+        - label: I have searched existing issues and the roadmap and did not find a duplicate.
+          required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Where this feature would primarily land.
+      options:
+        - Display / UI
+        - Output regulation
+        - Measurement / sensing
+        - USB Power Delivery
+        - USB serial / SCPI
+        - Bootloader / firmware update
+        - Hardware / enclosure
+        - Build / CI / tooling
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: What limitation or workflow problem does this address?
+      placeholder: As a user, I need... because...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the feature or change you would like to see.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you considered, including workarounds you use today.
+    validations:
+      required: false
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Importance to you
+      description: How much this would affect your use of ProtoV MINI.
+      options:
+        - Nice to have
+        - Would meaningfully improve my workflow
+        - Blocking for my use case
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Mockups, examples from other tools, related issues, or implementation notes.
+    validations:
+      required: false
