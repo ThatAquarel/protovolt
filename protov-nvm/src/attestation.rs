@@ -48,6 +48,9 @@ impl Write for MessageWriter<'_> {
 }
 
 /// Build the canonical attestation bytes for Ed25519 sign/verify (raw, no pre-hash).
+///
+/// Host factory builds sign the same message via `encode_attestation_message` in
+/// `scripts/sign-helpers.sh` (used by `just factory-run` / `just factory-build`).
 pub fn encode_attestation_message(
     serial: &str,
     hw_revision: &str,

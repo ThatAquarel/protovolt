@@ -102,7 +102,35 @@ Manufacturing identity is stored at the start of the factory partition:
 Rust API: [`factory`](src/factory.rs). Application firmware loads this at boot via
 `protov_core::config::init_from_factory_flash()`.
 
-To program a unit at manufacturing time, build and flash with the `factory-program` feature
-and compile-time env vars (`SERIAL_NUMBER`, `HARDWARE_REV`, `FACTORY_YEAR`, `FACTORY_MONTH`,
-`FACTORY_DAY`, `SIGNATURE`). See repo-root `just factory-program`.
+To program a unit at manufacturing time, build or build-and-flash with the
+`factory-program` feature and compile-time identity env vars:
+
+| Variable | Description |
+| --- | --- |
+| `SERIAL_NUMBER` | Device serial (ASCII, max 16 chars) |
+| `HARDWARE_REV` | Hardware revision (e.g. `A.1`) |
+| `FACTORY_YEAR` / `FACTORY_MONTH` / `FACTORY_DAY` | Manufacturing date |
+
+Signing — provide **one** of:
+
+| Option | Variables |
+| --- | --- |
+| Precomputed signature | `SIGNATURE` — 128 hex digits (64-byte Ed25519) |
+| HW key signing | `HW_PRIVATE_KEY` + `HW_PUBLIC_KEY` — `.pem` paths or inline PEM; `SIGNATURE` is derived by the recipe |
+
+The signed payload is `{serial},{hw_revision},{YYYY-MM-DD}`. The bash helper
+`encode_attestation_message` in [`scripts/sign-helpers.sh`](../scripts/sign-helpers.sh)
+must stay in sync with [`encode_attestation_message`](src/attestation.rs) in this
+crate. When HW keys are supplied, `just factory-run` / `just factory-build` sign
+with OpenSSL Ed25519 (`-rawin`, no pre-hash) and verify before invoking Cargo.
+
+```bash
+SERIAL_NUMBER=550e8400 HARDWARE_REV=A.1 \
+  FACTORY_YEAR=2026 FACTORY_MONTH=6 FACTORY_DAY=27 \
+  HW_PRIVATE_KEY=path/to/protov_private_HW0.pem \
+  HW_PUBLIC_KEY=path/to/protov_public_HW0.pem \
+  just factory-run
+```
+
+See repo-root `just factory-run` / `just factory-build`.
 
