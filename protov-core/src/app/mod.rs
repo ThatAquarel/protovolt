@@ -305,6 +305,7 @@ impl AppCore {
             (HardwareState::WaitingMainUi, HardwareEvent::StartMainInterface) => {
                 self.hardware_state = HardwareState::Standby;
                 self.interface_state.screen = Screen::Main;
+                self.interface_state.selected_channel = Some(Channel::A);
 
                 let power_type = self.power_type;
                 let (ch_a_limit, ch_b_limit) = self.get_current_set();
@@ -312,6 +313,8 @@ impl AppCore {
                 self.initialize_converters_task()
                     .hardware(HardwareTask::EnableReadoutLoop)
                     .display(DisplayTask::SetupMain(power_type, ch_a_limit, ch_b_limit))
+                    .extend(self.refresh_channels_display())
+                    .extend(self.setpoints_task())
                     .build()
             }
             (HardwareState::Standby, HardwareEvent::ReadoutAcquired(channel, readout)) => {
@@ -1583,6 +1586,11 @@ impl AppCore {
     pub fn force_standby(&mut self) {
         self.hardware_state = HardwareState::Standby;
         self.interface_state.screen = Screen::Main;
+        self.interface_state.selected_channel = Some(Channel::A);
+    }
+
+    pub fn clear_selected_channel(&mut self) {
+        self.interface_state.selected_channel = None;
     }
 
     pub fn channel_enable(&self, ch: Channel) -> bool {
