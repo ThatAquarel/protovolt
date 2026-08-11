@@ -70,7 +70,11 @@ fn emit_factory_record(out: &PathBuf) {
 
 fn required_env(key: &str) -> String {
     env::var(key).unwrap_or_else(|_| {
-        panic!("factory-program requires {key} to be set at compile time");
+        panic!(
+            "factory-program requires {key} at compile time \
+             (use `just factory-run` or `just factory-build` with identity env vars \
+             and either SIGNATURE or HW_PRIVATE_KEY + HW_PUBLIC_KEY; see scripts/sign-helpers.sh)"
+        );
     })
 }
 

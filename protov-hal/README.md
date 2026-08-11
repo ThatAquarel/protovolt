@@ -77,8 +77,16 @@ Enable exactly one hardware feature. See
 
 The optional `demo` feature changes the startup presentation. The
 `factory-program` feature enables one-shot manufacturing identity programming;
-use the repository's documented factory workflow rather than enabling it in a
-normal firmware build.
+use `just factory-run` (flash) or `just factory-build` (build only).
+
+Factory builds require identity env vars (`SERIAL_NUMBER`, `HARDWARE_REV`,
+`FACTORY_YEAR`, `FACTORY_MONTH`, `FACTORY_DAY`) and either a precomputed
+`SIGNATURE` or `HW_PRIVATE_KEY` + `HW_PUBLIC_KEY` PEM pair. The just recipes
+source [`scripts/sign-helpers.sh`](../scripts/sign-helpers.sh), which signs the
+canonical attestation message from `encode_attestation_message`
+(`{serial},{hw_revision},{YYYY-MM-DD}` — must match
+`protov_nvm::encode_attestation_message`) before Cargo runs. Do not enable
+`factory-program` in normal firmware builds.
 
 > [!WARNING]
 > This crate directly controls power hardware. Confirm pin mappings, register
