@@ -95,9 +95,24 @@ run:
     cargo run -p protov-hal --target {{embedded_target}} --release
 
 # Program the factory identity sector from compile-time env vars, then flash.
-# Required env: SERIAL_NUMBER HARDWARE_REV FACTORY_YEAR FACTORY_MONTH FACTORY_DAY SIGNATURE
-factory-program *args:
+# Identity env: SERIAL_NUMBER HARDWARE_REV FACTORY_YEAR FACTORY_MONTH FACTORY_DAY
+# Signing (one of): SIGNATURE (128 hex digits), or HW_PRIVATE_KEY + HW_PUBLIC_KEY (.pem)
+# Message format: encode_attestation_message in scripts/sign-helpers.sh
+# (must match protov_nvm::encode_attestation_message: {serial},{hw_rev},{YYYY-MM-DD})
+factory-run *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source scripts/sign-helpers.sh
+    resolve_factory_signature
     cargo run -p protov-hal --target {{embedded_target}} --release --features factory-program {{args}}
+
+# Build factory-program firmware without flashing (same env requirements as factory-run).
+factory-build *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source scripts/sign-helpers.sh
+    resolve_factory_signature
+    cargo build -p protov-hal --target {{embedded_target}} --release --features factory-program {{args}}
 
 # Query *IDN? and SYST:IDAT? on a USB CDC serial port (e.g. /dev/ttyACM0).
 scpi-id port:
