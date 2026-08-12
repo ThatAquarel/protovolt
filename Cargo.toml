@@ -1,5 +1,13 @@
 [workspace]
-members = ["protov-bootloader", "protov-core", "protov-hal", "protov-hal-mock", "protov-nvm", "protov-scpi"]
+members = [
+    "protov-bootloader",
+    "protov-core",
+    "protov-hal",
+    "protov-hal-mock",
+    "protov-nvm",
+    "protov-scpi",
+    "protov-ui",
+]
 resolver = "2"
 
 [workspace.package]
