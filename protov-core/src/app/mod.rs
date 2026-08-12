@@ -1707,6 +1707,79 @@ impl AppCore {
     }
 }
 
+#[cfg(feature = "simulator")]
+impl AppCore {
+    pub fn set_power_type(&mut self, power_type: PowerType) {
+        self.power_type = power_type;
+    }
+
+    pub fn power_type(&self) -> PowerType {
+        self.power_type
+    }
+
+    pub fn set_selected_channel(&mut self, channel: Option<Channel>) {
+        self.interface_state.selected_channel = channel;
+    }
+
+    pub fn set_settings_open(&mut self, open: bool) {
+        self.interface_state.settings_open = open;
+    }
+
+    pub fn set_set_state(&mut self, state: SetState) {
+        self.set_state = state;
+    }
+
+    pub fn set_arrows_function(&mut self, function: ArrowsFunction) {
+        self.interface_state.arrows_function = function;
+    }
+
+    pub fn set_channel_set_select(&mut self, channel: Channel, select: SetSelect) {
+        self.channel_mut(channel).set_select = select;
+    }
+
+    pub fn set_edit_precision_exponent(&mut self, exponent: i8) {
+        if let Some(field) = self.get_select_precision_mut() {
+            field.precision.set_exponent(exponent);
+        }
+    }
+
+    pub fn main_screen_display_tasks(
+        &mut self,
+        nav_button: Option<FunctionButton>,
+    ) -> heapless::Vec<DisplayTask, 16> {
+        let power_type = self.power_type;
+        let (ch_a_limit, ch_b_limit) = self.get_current_set();
+        let mut tasks = heapless::Vec::new();
+        let _ = tasks.push(DisplayTask::SetupMain(power_type, ch_a_limit, ch_b_limit));
+        push_builder_tasks(&mut tasks, self.refresh_channels_display());
+        if let Some(button) = nav_button {
+            let confirm = self.get_confirm_state();
+            let _ = tasks.push(DisplayTask::UpdateButton(confirm, Some(button)));
+        }
+        push_builder_tasks(&mut tasks, self.setpoints_task());
+        for channel in [Channel::A, Channel::B] {
+            let readout = self.channel_readout(channel).unwrap_or(Readout {
+                voltage: 0.0,
+                current: 0.0,
+                power: 0.0,
+            });
+            let _ = tasks.push(DisplayTask::UpdateReadout(channel, readout));
+        }
+        tasks
+    }
+}
+
+#[cfg(feature = "simulator")]
+fn push_builder_tasks(tasks: &mut heapless::Vec<DisplayTask, 16>, builder: AppTaskBuilder) {
+    if let Some(batch) = builder.build() {
+        for task in batch {
+            if let Task::Display(display_task) = task {
+                let _ = tasks.push(display_task);
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod dfu_tests;
 #[cfg(test)]
