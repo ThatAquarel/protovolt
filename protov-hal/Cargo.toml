@@ -15,6 +15,7 @@ path = "src/lib.rs"
 
 [dependencies]
 protov-core = { path = "../protov-core" }
+protov-ui = { path = "../protov-ui" }
 protov-nvm = { path = "../protov-nvm", features = ["application"] }
 defmt = "1.1.0"
 defmt-rtt = "0.4"
@@ -42,9 +43,6 @@ mipidsi = "0.8.0"
 display-interface = "0.5.0"
 heapless = "0.8"
 static_cell = "2.1.0"
-u8g2-fonts = { version = "0.7.0", features = ["embedded_graphics_textstyle"] }
-tinybmp = "0.6.0"
-embedded-graphics-framebuf = "0.5.0"
 micromath = "2.1.0"
 smart-leds = "0.4.0"
 
