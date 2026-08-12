@@ -35,8 +35,10 @@ commands. Run `just --list` to see every available recipe.
 
 ### Guides
 
-- [Quick start](docs/quick_start.md)
-- [Device overview](docs/product.md)
+- [Device overview](docs/product.md) — hardware overview, and dimensions
+- [Quick start](docs/quick_start.md) — quickstart wiring guide
+- [Interface guide](docs/interface_guide.md) — normal UI flow with example screens
+- [Troubleshooting](docs/troubleshooting.md) — faults, protection, and boot failures
 
 ### Development
 
@@ -60,6 +62,8 @@ Design documentation
 - [Hardware and dimensions](docs/hardware.md)
 - [SCPI protocol reference](protov-scpi/PROTOCOL.md)
 
+Support
+- [Troubleshooting](docs/troubleshooting.md)
 
 <!-- - [Product overview](docs/product.md)
     

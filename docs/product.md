@@ -1,5 +1,10 @@
 # Product overview
 
+Start here:
+
+- [Quick start](quick_start.md) — connect USB-C PD power and optionally link a computer
+- [Interface guide](interface_guide.md) — screen-by-screen UI walkthrough with example renders
+
 ProtoV MINI is a portable lab power supply designed for electronics
 prototyping and field testing.
 
