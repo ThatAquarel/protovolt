@@ -7,6 +7,9 @@ pub mod state;
 pub mod telemetry;
 mod ws;
 
+#[cfg(feature = "render-ui")]
+pub mod render;
+
 pub use device::MockDevice;
 pub use pool::{DevicePool, MAX_MOCK_DEVICES, SLOT_PROFILES, SlotProfile};
 pub use server::{MockServer, RunningServer, ServerConfig};

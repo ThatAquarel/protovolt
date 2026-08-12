@@ -1,13 +1,21 @@
 mod schema;
 
 pub use schema::{
-    ChannelSnapshot, ControlRequest, ControlResponse, IdnSnapshot, MeasuredSnapshot, StateSnapshot,
+    ChannelSnapshot, ControlRequest, ControlResponse, IdnSnapshot, InterfaceSnapshot,
+    MeasuredSnapshot, PowerSnapshot, StateSnapshot, UiMode,
 };
 
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
-use protov_core::config::{DEFAULT_CH1, DEFAULT_CH2, MANUFACTURER, PRODUCT_NAME};
-use protov_core::model::{Channel, ChannelHardwareState, ConverterFlags, Readout};
+use protov_core::app::ArrowsFunction;
+use protov_core::config::{
+    CH1_FACTORY, CH2_FACTORY, DEFAULT_CH1, DEFAULT_CH2, FACTORY, MANUFACTURER, PRODUCT_NAME,
+};
+use protov_core::model::{
+    Channel, ChannelHardwareState, ConverterFlags, FunctionButton, Limits, PowerType, Readout,
+    SetSelect, SetState,
+};
 use protov_core::scpi::ScpiChannel;
 use protov_core::scpi::colors::Rgb;
 
@@ -16,6 +24,7 @@ use crate::telemetry::refresh_context;
 
 pub fn apply_snapshot(device: &mut MockDevice, snapshot: &StateSnapshot) {
     device.app.reset_to_factory(&mut device.scpi);
+    device.app.force_standby();
 
     if !snapshot.idn.serial.is_empty() {
         device.identity.serial = snapshot.idn.serial.clone();
@@ -35,6 +44,9 @@ pub fn apply_snapshot(device: &mut MockDevice, snapshot: &StateSnapshot) {
     if let Some(value) = snapshot.led_brightness {
         device.scpi.led_brightness = value;
     }
+
+    apply_power(device, snapshot.power.as_ref());
+    apply_interface(device, snapshot.interface.as_ref());
 
     if let Some(ch) = snapshot.channel("CH1") {
         apply_channel(device, Channel::A, ScpiChannel::Ch1, ch, DEFAULT_CH1);
@@ -57,6 +69,75 @@ pub fn apply_snapshot(device: &mut MockDevice, snapshot: &StateSnapshot) {
     );
 }
 
+fn apply_power(device: &mut MockDevice, power: Option<&PowerSnapshot>) {
+    let Some(power) = power else {
+        return;
+    };
+
+    let limits = Limits {
+        voltage: power.voltage.unwrap_or(5.0),
+        current: power.current.unwrap_or(0.5),
+    };
+    device.app.set_power_type(match power.kind.as_deref() {
+        Some("power_delivery") | Some("PowerDelivery") | Some("PD") => {
+            PowerType::PowerDelivery(limits)
+        }
+        _ => PowerType::Standard(limits),
+    });
+    device.ctx.input_type_pd = matches!(device.app.power_type(), PowerType::PowerDelivery(_));
+    device.ctx.input_voltage = limits.voltage;
+    device.ctx.input_current = limits.current;
+}
+
+fn apply_interface(device: &mut MockDevice, interface: Option<&InterfaceSnapshot>) {
+    let Some(interface) = interface else {
+        return;
+    };
+
+    if let Some(channel) = &interface.selected_channel {
+        device.app.set_selected_channel(parse_channel(channel));
+    }
+
+    device.app.set_settings_open(interface.settings_open);
+
+    if let Some(set_state) = &interface.set_state {
+        device.app.set_set_state(parse_set_state(set_state));
+    }
+
+    if let Some(arrows) = &interface.arrows_function {
+        device
+            .app
+            .set_arrows_function(parse_arrows_function(arrows));
+    }
+
+    if let (Some(channel), Some(set_select)) = (&interface.selected_channel, &interface.set_select)
+    {
+        if let Some(ch) = parse_channel(channel) {
+            device
+                .app
+                .set_channel_set_select(ch, parse_set_select(set_select));
+        }
+    }
+
+    if let Some(exp) = interface.edit_precision {
+        device.app.set_edit_precision_exponent(exp);
+    }
+}
+
+pub fn nav_button_from_snapshot(interface: Option<&InterfaceSnapshot>) -> Option<FunctionButton> {
+    let nav = interface.and_then(|i| i.nav_button.as_deref())?;
+    match nav.to_ascii_lowercase().as_str() {
+        "enter" => Some(FunctionButton::Enter),
+        "switch" => Some(FunctionButton::Switch),
+        "settings" => Some(FunctionButton::Settings),
+        _ => None,
+    }
+}
+
+pub fn serial_connected_from_snapshot(power: Option<&PowerSnapshot>) -> bool {
+    power.is_some_and(|p| p.serial_connected)
+}
+
 pub fn dump_snapshot(device: &MockDevice) -> StateSnapshot {
     let mut channels = HashMap::new();
     channels.insert(
@@ -68,7 +149,19 @@ pub fn dump_snapshot(device: &MockDevice) -> StateSnapshot {
         dump_channel(device, Channel::B, ScpiChannel::Ch2),
     );
 
+    let (power_kind, power_voltage, power_current) = match device.app.power_type() {
+        PowerType::PowerDelivery(limits) => (
+            Some("power_delivery".to_owned()),
+            limits.voltage,
+            limits.current,
+        ),
+        PowerType::Standard(limits) => {
+            (Some("standard".to_owned()), limits.voltage, limits.current)
+        }
+    };
+
     StateSnapshot {
+        description: String::new(),
         idn: IdnSnapshot {
             manufacturer: MANUFACTURER.to_owned(),
             model: PRODUCT_NAME.to_owned(),
@@ -79,6 +172,33 @@ pub fn dump_snapshot(device: &MockDevice) -> StateSnapshot {
         remote: device.scpi.remote,
         lcd_brightness: Some(device.scpi.lcd_brightness),
         led_brightness: Some(device.scpi.led_brightness),
+        hardware_state: Some("Standby".to_owned()),
+        interface: Some(InterfaceSnapshot {
+            selected_channel: device
+                .app
+                .selected_channel()
+                .map(|ch| channel_name(ch).to_owned()),
+            settings_open: device.app.settings_open(),
+            set_state: Some(set_state_name(device.app.set_state()).to_owned()),
+            arrows_function: Some(if device.app.is_setpoint_edit() {
+                "setpoint_edit".to_owned()
+            } else {
+                "navigation".to_owned()
+            }),
+            set_select: device
+                .app
+                .selected_channel()
+                .map(|ch| set_select_name(device.app.set_select(ch)).to_owned()),
+            edit_precision: None,
+            nav_button: None,
+        }),
+        power: Some(PowerSnapshot {
+            kind: power_kind,
+            voltage: Some(power_voltage),
+            current: Some(power_current),
+            serial_connected: false,
+        }),
+        ui: Some(UiMode::Main),
         channels,
         error_queue: Vec::new(),
     }
@@ -247,5 +367,233 @@ pub fn parse_hw_mode(mode: &str) -> Option<ChannelHardwareState> {
 }
 
 pub fn load_snapshot_json(text: &str) -> Result<StateSnapshot, serde_json::Error> {
-    serde_json::from_str(text)
+    let overlay = serde_json::from_str::<StateSnapshot>(text)?;
+    Ok(merge_with_default(overlay))
 }
+
+pub fn load_state_file(path: &Path) -> Result<StateSnapshot, StateLoadError> {
+    let value = load_state_value(path)?;
+    serde_yaml::from_value(value).map_err(|source| StateLoadError::YamlParse { source })
+}
+
+fn load_state_value(path: &Path) -> Result<serde_yaml::Value, StateLoadError> {
+    let content = std::fs::read_to_string(path).map_err(|source| StateLoadError::Io {
+        path: path.to_path_buf(),
+        source,
+    })?;
+    let mut value: serde_yaml::Value =
+        serde_yaml::from_str(&content).map_err(|source| StateLoadError::YamlParse { source })?;
+
+    if let Some(extends) = value
+        .as_mapping()
+        .and_then(|map| map.get(serde_yaml::Value::from("extends")))
+        .and_then(|v| v.as_str())
+    {
+        let parent_path = path
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .join(extends);
+        let mut base = load_state_value(&parent_path)?;
+        if let Some(map) = value.as_mapping_mut() {
+            map.remove(serde_yaml::Value::from("extends"));
+        }
+        merge_yaml_values(&mut base, value);
+        return Ok(base);
+    }
+
+    Ok(value)
+}
+
+pub fn merge_with_default(overlay: StateSnapshot) -> StateSnapshot {
+    let default = default_snapshot();
+    let mut base_value = serde_json::to_value(&default).expect("default snapshot serializes");
+    let overlay_value = serde_json::to_value(&overlay).expect("overlay snapshot serializes");
+    merge_json_values(&mut base_value, overlay_value);
+    serde_json::from_value(base_value).expect("merged snapshot deserializes")
+}
+
+pub fn default_snapshot() -> StateSnapshot {
+    StateSnapshot {
+        description: "Post-boot standby main screen".to_owned(),
+        idn: IdnSnapshot {
+            serial: "550e8400".to_owned(),
+            fw_version: "1.0.0".to_owned(),
+            hw_version: "A.1".to_owned(),
+            ..Default::default()
+        },
+        remote: true,
+        lcd_brightness: Some(FACTORY.appearance.lcd_brightness),
+        led_brightness: Some(FACTORY.appearance.led_brightness),
+        hardware_state: Some("Standby".to_owned()),
+        interface: Some(InterfaceSnapshot {
+            selected_channel: Some("A".to_owned()),
+            settings_open: false,
+            set_state: Some("set".to_owned()),
+            arrows_function: Some("navigation".to_owned()),
+            set_select: Some("voltage".to_owned()),
+            edit_precision: None,
+            nav_button: None,
+        }),
+        power: Some(PowerSnapshot {
+            kind: Some("standard".to_owned()),
+            voltage: Some(5.0),
+            current: Some(0.5),
+            serial_connected: false,
+        }),
+        ui: Some(UiMode::Main),
+        channels: HashMap::from([
+            (
+                "CH1".to_owned(),
+                channel_from_factory(
+                    CH1_FACTORY.voltage_set,
+                    CH1_FACTORY.current_set,
+                    CH1_FACTORY.ovp,
+                    CH1_FACTORY.ocp,
+                ),
+            ),
+            (
+                "CH2".to_owned(),
+                channel_from_factory(
+                    CH2_FACTORY.voltage_set,
+                    CH2_FACTORY.current_set,
+                    CH2_FACTORY.ovp,
+                    CH2_FACTORY.ocp,
+                ),
+            ),
+        ]),
+        error_queue: Vec::new(),
+    }
+}
+
+fn channel_from_factory(voltage: f32, current: f32, ovp: f32, ocp: f32) -> ChannelSnapshot {
+    ChannelSnapshot {
+        voltage,
+        current,
+        ovp,
+        ocp,
+        output: false,
+        prot_latched: false,
+        latched_mode: None,
+        color: None,
+        color_r: None,
+        color_g: None,
+        color_b: None,
+        measured: None,
+        load_ratio: None,
+        voltage_droop: None,
+    }
+}
+
+fn merge_yaml_values(base: &mut serde_yaml::Value, overlay: serde_yaml::Value) {
+    match (base, overlay) {
+        (serde_yaml::Value::Mapping(base_map), serde_yaml::Value::Mapping(overlay_map)) => {
+            for (key, overlay_val) in overlay_map {
+                if key.as_str() == Some("extends") {
+                    continue;
+                }
+                match base_map.get_mut(&key) {
+                    Some(base_val) if base_val.is_mapping() && overlay_val.is_mapping() => {
+                        merge_yaml_values(base_val, overlay_val);
+                    }
+                    _ => {
+                        base_map.insert(key, overlay_val);
+                    }
+                }
+            }
+        }
+        (base_slot, overlay) => *base_slot = overlay,
+    }
+}
+
+fn merge_json_values(base: &mut serde_json::Value, overlay: serde_json::Value) {
+    match (base, overlay) {
+        (serde_json::Value::Object(base_map), serde_json::Value::Object(overlay_map)) => {
+            for (key, overlay_val) in overlay_map {
+                if key == "extends" {
+                    continue;
+                }
+                match base_map.get_mut(&key) {
+                    Some(base_val) if base_val.is_object() && overlay_val.is_object() => {
+                        merge_json_values(base_val, overlay_val);
+                    }
+                    _ => {
+                        base_map.insert(key, overlay_val);
+                    }
+                }
+            }
+        }
+        (base_slot, overlay) => *base_slot = overlay,
+    }
+}
+
+fn parse_channel(name: &str) -> Option<Channel> {
+    match name.to_ascii_uppercase().as_str() {
+        "A" | "CH1" | "CH 1" | "1" => Some(Channel::A),
+        "B" | "CH2" | "CH 2" | "2" => Some(Channel::B),
+        _ => None,
+    }
+}
+
+fn channel_name(channel: Channel) -> &'static str {
+    match channel {
+        Channel::A => "A",
+        Channel::B => "B",
+    }
+}
+
+fn parse_set_state(name: &str) -> SetState {
+    match name.to_ascii_lowercase().as_str() {
+        "limits" => SetState::Limits,
+        _ => SetState::Set,
+    }
+}
+
+fn set_state_name(state: SetState) -> &'static str {
+    match state {
+        SetState::Set => "set",
+        SetState::Limits => "limits",
+    }
+}
+
+fn parse_arrows_function(name: &str) -> ArrowsFunction {
+    match name.to_ascii_lowercase().as_str() {
+        "setpoint_edit" | "edit" => ArrowsFunction::SetpointEdit,
+        _ => ArrowsFunction::Navigation,
+    }
+}
+
+fn parse_set_select(name: &str) -> SetSelect {
+    match name.to_ascii_lowercase().as_str() {
+        "current" | "i" | "a" => SetSelect::Current,
+        _ => SetSelect::Voltage,
+    }
+}
+
+fn set_select_name(select: SetSelect) -> &'static str {
+    match select {
+        SetSelect::Voltage => "voltage",
+        SetSelect::Current => "current",
+    }
+}
+
+#[derive(Debug)]
+pub enum StateLoadError {
+    Io {
+        path: PathBuf,
+        source: std::io::Error,
+    },
+    YamlParse {
+        source: serde_yaml::Error,
+    },
+}
+
+impl std::fmt::Display for StateLoadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Io { path, source } => write!(f, "failed to read {}: {source}", path.display()),
+            Self::YamlParse { source } => write!(f, "failed to parse state yaml: {source}"),
+        }
+    }
+}
+
+impl std::error::Error for StateLoadError {}

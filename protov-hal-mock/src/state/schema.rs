@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct StateSnapshot {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub description: String,
     #[serde(default)]
     pub idn: IdnSnapshot,
     #[serde(default)]
@@ -12,6 +14,14 @@ pub struct StateSnapshot {
     pub lcd_brightness: Option<u8>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub led_brightness: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hardware_state: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub interface: Option<InterfaceSnapshot>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub power: Option<PowerSnapshot>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ui: Option<UiMode>,
     #[serde(default)]
     pub channels: HashMap<String, ChannelSnapshot>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -24,6 +34,56 @@ impl StateSnapshot {
             .get(name)
             .or_else(|| self.channels.get(&name.to_ascii_uppercase()))
     }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct InterfaceSnapshot {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selected_channel: Option<String>,
+    #[serde(default)]
+    pub settings_open: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub set_state: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub arrows_function: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub set_select: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub edit_precision: Option<i8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub nav_button: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct PowerSnapshot {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub voltage: Option<f32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub current: Option<f32>,
+    #[serde(default)]
+    pub serial_connected: bool,
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum UiMode {
+    #[default]
+    Main,
+    BootSplash,
+    BootInputPd,
+    BootInputStd,
+    BootSensePass,
+    BootSenseFail,
+    BootConverterPass,
+    BootConverterFail,
+    Settings,
+    DfuPreparing,
+    DfuTransferring,
+    DfuVerified,
+    DfuFlashing,
+    DfuFailed,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
@@ -40,7 +100,7 @@ pub struct IdnSnapshot {
     pub hw_version: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct ChannelSnapshot {
     #[serde(default, alias = "voltage_set")]
     pub voltage: f32,

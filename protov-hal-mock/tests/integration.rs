@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
-use protov_hal_mock::state::{ControlResponse, apply_snapshot, dump_snapshot, load_snapshot_json};
+use protov_hal_mock::state::{ControlResponse, apply_snapshot, dump_snapshot, load_state_file};
 use protov_hal_mock::{
     MockDevice, RunningServer, SLOT_PROFILES, ServerConfig, pool::identity_from_profile,
 };
@@ -227,7 +227,9 @@ async fn control_websocket_ping_status_load() {
     assert!(pong.ok);
     assert_eq!(pong.message.as_deref(), Some("pong"));
 
-    let state_json = include_str!("../states/ch1-active.json");
+    let ch1_active_path =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("states/ui-main-ch1-active.yaml");
+    let state_json = serde_json::to_string(&load_state_file(&ch1_active_path).unwrap()).unwrap();
     ctrl.send(Message::Text(
         format!(r#"{{"action":"load","slot":{slot},"state":{state_json}}}"#).into(),
     ))
@@ -250,7 +252,7 @@ async fn control_websocket_ping_status_load() {
         .trim()
         .parse()
         .unwrap();
-    assert!((voltage - 3.298).abs() < 0.01);
+    assert!((voltage - 4.998).abs() < 0.01);
 
     server.shutdown();
 }
@@ -296,8 +298,9 @@ fn parity_error_queue() {
 
 #[test]
 fn parity_protection_tripped_preset() {
-    let json = include_str!("../states/protection-tripped.json");
-    let snapshot = load_snapshot_json(json).unwrap();
+    let path =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("states/ui-main-protection-ovp.yaml");
+    let snapshot = load_state_file(&path).unwrap();
     let mut device = MockDevice::with_identity(identity_from_profile(SLOT_PROFILES[2]));
     apply_snapshot(&mut device, &snapshot);
     assert_eq!(device.handle("CH1:MODE?").as_deref(), Some("OVP"));
@@ -306,19 +309,15 @@ fn parity_protection_tripped_preset() {
 #[test]
 fn state_roundtrip_default() {
     for file in [
-        "default.json",
-        "ch1-active.json",
-        "dual-output.json",
-        "protection-tripped.json",
+        "default.yaml",
+        "ui-main-ch1-active.yaml",
+        "ui-main-dual-output.yaml",
+        "ui-main-protection-ovp.yaml",
     ] {
-        let json = match file {
-            "default.json" => include_str!("../states/default.json"),
-            "ch1-active.json" => include_str!("../states/ch1-active.json"),
-            "dual-output.json" => include_str!("../states/dual-output.json"),
-            "protection-tripped.json" => include_str!("../states/protection-tripped.json"),
-            _ => unreachable!(),
-        };
-        let snapshot = load_snapshot_json(json).unwrap();
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("states")
+            .join(file);
+        let snapshot = load_state_file(&path).unwrap();
         let mut device = MockDevice::with_identity(identity_from_profile(SLOT_PROFILES[0]));
         apply_snapshot(&mut device, &snapshot);
         let dumped = dump_snapshot(&device);
