@@ -11,13 +11,18 @@ use embedded_hal::i2c::I2c;
 use crate::app::App;
 use crate::hal::Hal;
 use crate::hal::event::{
-    AppEvent, AppTask, Channel, ChannelFocus, ChannelHardwareState, ConfirmState, DisplayTask,
-    HardwareEvent, HardwareTask, InterfaceEvent, PowerType, SetState, Task,
+    AppEvent, AppTask, DisplayTask, HardwareEvent, HardwareTask, InterfaceEvent, Task,
 };
 use crate::hal::firmware;
 use crate::hal::firmware::BoardFirmwareCtx;
 use crate::scpi::state::ScpiState;
-use crate::ui::{SCREEN_HOLD_TIME, Ui, labels};
+use crate::ui_platform::{HalPlatform, channel_leds_need_refresh};
+use protov_ui::{UiRenderer, dispatch_display_task};
+
+#[cfg(feature = "demo")]
+const SCREEN_HOLD_TIME: u64 = 2000;
+#[cfg(not(feature = "demo"))]
+const SCREEN_HOLD_TIME: u64 = 10;
 
 pub enum DfuOutcome {
     Progress(Option<AppTask>),
@@ -36,8 +41,9 @@ pub fn is_dfu_hardware_task(task: &HardwareTask) -> bool {
 
 pub async fn run_followup_tasks<D, PIO>(
     followup: AppTask,
-    ui: &mut Ui<'_, '_, D, PIO>,
-    scpi: &mut ScpiState,
+    ui: &mut UiRenderer<'_, D>,
+    platform: &mut HalPlatform<'_, '_, PIO>,
+    scpi: &ScpiState,
     hw_sender: &Sender<'_, ThreadModeRawMutex, HardwareEvent, 32>,
     int_sender: &Sender<'_, ThreadModeRawMutex, InterfaceEvent, 32>,
 ) where
@@ -48,7 +54,7 @@ pub async fn run_followup_tasks<D, PIO>(
         match task {
             Task::Hardware(_) => {}
             Task::Display(disp) => {
-                handle_display_task(disp, ui, scpi, hw_sender, int_sender).await;
+                handle_display_task(disp, ui, platform, scpi, hw_sender, int_sender).await;
             }
         }
     }
@@ -134,7 +140,8 @@ pub async fn handle_hardware_task<M, PowerBus, ConverterBus>(
 
 pub async fn handle_display_task<D, PIO>(
     display_task: DisplayTask,
-    ui: &mut Ui<'_, '_, D, PIO>,
+    ui: &mut UiRenderer<'_, D>,
+    platform: &mut HalPlatform<'_, '_, PIO>,
     scpi: &ScpiState,
     _hw_sender: &Sender<'_, ThreadModeRawMutex, HardwareEvent, 32>,
     _int_sender: &Sender<'_, ThreadModeRawMutex, InterfaceEvent, 32>,
@@ -142,162 +149,32 @@ pub async fn handle_display_task<D, PIO>(
     D: DrawTarget<Color = Rgb565>,
     PIO: Instance,
 {
-    let skip_settings_redraw = matches!(
-        display_task,
-        DisplayTask::UpdateSettings(_)
-            | DisplayTask::UpdateChannelUnits(_)
-            | DisplayTask::SetupSplash
-            | DisplayTask::ConfirmPowerDelivery(_)
-            | DisplayTask::ConfirmSense(_)
-            | DisplayTask::ConfirmConverter(_)
-            | DisplayTask::SetupMain(_, _, _)
-            | DisplayTask::DfuStatus(_)
-    );
-
     if ui.dfu_screen_active() && !matches!(display_task, DisplayTask::DfuStatus(_)) {
         return;
     }
 
     match display_task {
         DisplayTask::SetupSplash => {
-            ui.clear().unwrap();
-
+            ui.clear(platform).ok();
             #[cfg(feature = "demo")]
             {
-                ui.boot_demo_mode().unwrap();
+                ui.boot_demo_mode().ok();
                 Timer::after_millis(SCREEN_HOLD_TIME).await;
             }
-
-            ui.boot_splash_screen().unwrap();
+            ui.boot_splash_screen().ok();
             Timer::after_millis(SCREEN_HOLD_TIME).await;
         }
-        DisplayTask::ConfirmPowerDelivery(power_type) => {
-            let (usb_type, valid) = match power_type {
-                PowerType::PowerDelivery(_) => (labels::PD, true),
-                PowerType::Standard(_) => (labels::STD, false),
-            };
-
-            ui.boot_splash_text(0, labels::INPUT, usb_type, valid)
-                .unwrap();
+        DisplayTask::ConfirmPowerDelivery(_)
+        | DisplayTask::ConfirmSense(_)
+        | DisplayTask::ConfirmConverter(_) => {
+            dispatch_display_task(display_task, ui, scpi, platform).ok();
             Timer::after_millis(SCREEN_HOLD_TIME).await;
         }
-        DisplayTask::ConfirmSense(result) => {
-            let (res, valid) = match result {
-                Ok(()) => (labels::PASS, true),
-                Err(()) => (labels::FAIL, false),
-            };
-
-            ui.boot_splash_text(1, labels::SENSE, res, valid).unwrap();
-            Timer::after_millis(SCREEN_HOLD_TIME).await;
-        }
-        DisplayTask::ConfirmConverter(result) => {
-            let (res, valid) = match result {
-                Ok(()) => (labels::PASS, true),
-                Err(()) => (labels::FAIL, false),
-            };
-
-            ui.boot_splash_text(2, labels::CONVERTER, res, valid)
-                .unwrap();
-            Timer::after_millis(SCREEN_HOLD_TIME).await;
-        }
-        DisplayTask::SetupMain(power_type, ch_a_limits, ch_b_limits) => {
-            ui.clear().unwrap();
-
-            ui.nav_power_info(power_type).unwrap();
-            ui.nav_buttons(scpi, ConfirmState::AwaitModify, None)
-                .await
-                .unwrap();
-
-            let channels = [Channel::A, Channel::B];
-            for channel in channels.iter() {
-                let limits = match channel {
-                    Channel::A => ch_a_limits,
-                    Channel::B => ch_b_limits,
-                };
-
-                let initial_focus = ChannelFocus::UnselectedInactive;
-                ui.controls_channel_box(scpi, *channel, initial_focus)
-                    .await
-                    .unwrap();
-                ui.controls_header_chip(scpi, *channel, initial_focus, ChannelHardwareState::Off)
-                    .unwrap();
-                ui.controls_channel_units(*channel).unwrap();
-
-                ui.controls_submeasurement(
-                    scpi,
-                    *channel,
-                    None,
-                    limits,
-                    ConfirmState::AwaitModify,
-                    None,
-                )
-                .unwrap();
-                ui.controls_submeasurement_tag(
-                    scpi,
-                    *channel,
-                    SetState::Set,
-                    None,
-                    ConfirmState::AwaitModify,
-                )
-                .unwrap();
+        _ => {
+            dispatch_display_task(display_task, ui, scpi, platform).ok();
+            if channel_leds_need_refresh(display_task) {
+                platform.refresh_leds().await;
             }
         }
-        DisplayTask::UpdatePowerInfo(power_type) => {
-            ui.nav_power_info(power_type).unwrap();
-        }
-        DisplayTask::UpdateReadout(channel, readout) => {
-            ui.controls_measurement(channel, readout).unwrap();
-        }
-        DisplayTask::UpdateSetpoint(channel, limits, set_select, confirm_state, precision) => {
-            ui.controls_submeasurement(scpi, channel, set_select, limits, confirm_state, precision)
-                .unwrap();
-        }
-        DisplayTask::UpdateChannelFocus(focus_a, focus_b, hw_state_a, hw_state_b) => {
-            let focuses = [focus_a, focus_b];
-            for (i, focus) in focuses.iter().enumerate() {
-                let (channel, hw_state) = match i {
-                    0 => (Channel::A, hw_state_a),
-                    _ => (Channel::B, hw_state_b),
-                };
-                ui.controls_channel_box(scpi, channel, *focus)
-                    .await
-                    .unwrap();
-                ui.controls_header_chip(scpi, channel, *focus, hw_state)
-                    .unwrap();
-            }
-        }
-        DisplayTask::UpdateButton(confirm_state, function_button_state) => {
-            ui.nav_buttons(scpi, confirm_state, function_button_state)
-                .await
-                .unwrap();
-        }
-        DisplayTask::UpdateSetState(channel, set_state, set_select, confirm_state) => {
-            ui.controls_submeasurement_tag(scpi, channel, set_state, set_select, confirm_state)
-                .unwrap();
-        }
-        DisplayTask::UpdateChannelHardwareState(channel, focus, hw_state) => {
-            ui.controls_header_chip(scpi, channel, focus, hw_state)
-                .unwrap();
-        }
-        DisplayTask::UpdateSettings(visible) => {
-            ui.set_settings_visible(visible);
-            if visible {
-                ui.draw_settings_overlay().unwrap();
-            } else {
-                ui.clear_settings_section().unwrap();
-            }
-        }
-        DisplayTask::UpdateChannelUnits(channel) => {
-            if !ui.settings_visible() {
-                ui.controls_channel_units(channel).unwrap();
-            }
-        }
-        DisplayTask::DfuStatus(status) => {
-            ui.draw_dfu_status(status).ok();
-        }
-    }
-
-    if !skip_settings_redraw {
-        ui.redraw_settings_overlay_if_visible().ok();
     }
 }

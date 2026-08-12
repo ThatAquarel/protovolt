@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use protov_hal::{app, config, hal, scpi, task, ui};
+use protov_hal::{app, config, hal, scpi, task, ui_platform};
 
 use core::cell::RefCell;
 
@@ -36,7 +36,8 @@ use task::{
     DfuOutcome, handle_dfu_task, handle_display_task, handle_hardware_task, is_dfu_hardware_task,
     run_followup_tasks,
 };
-use ui::Ui;
+use protov_ui::{DisplayGeometry, UiPlatform, UiRenderer};
+use ui_platform::HalPlatform;
 
 use hal::event::{
     AppTask, AppTaskBuilder, Channel as OutputChannel, DfuStatus, DisplayTask, HardwareTask,
@@ -183,9 +184,10 @@ async fn main(spawner: Spawner) {
 
     // App logic
     let mut app = App::default();
-    let mut ui = Ui::new(&mut display.target, leds, backlight);
-    ui.clear().unwrap();
-    ui.set_lcd_brightness(scpi_state.lcd_brightness);
+    let mut platform = HalPlatform::new(backlight, leds);
+    let mut ui = UiRenderer::new(&mut display.target, DisplayGeometry::default());
+    ui.clear(&mut platform).unwrap();
+    platform.set_lcd_brightness(scpi_state.lcd_brightness);
 
     // Start core 1 and spawn poll_interface there
     spawn_core1(
@@ -208,8 +210,8 @@ async fn main(spawner: Spawner) {
     let mut poll_counter = 0u32;
 
     loop {
-        if scpi_state.lcd_brightness != ui.lcd_brightness() {
-            ui.set_lcd_brightness(scpi_state.lcd_brightness);
+        if scpi_state.lcd_brightness != platform.lcd_brightness() {
+            platform.set_lcd_brightness(scpi_state.lcd_brightness);
         }
 
         if let Ok(cmd) = SCPI_CMD.try_receive() {
@@ -265,6 +267,7 @@ async fn main(spawner: Spawner) {
                         handle_display_task(
                             *disp_task,
                             &mut ui,
+                            &mut platform,
                             scpi_state,
                             &hw_sender,
                             &int_sender,
@@ -290,6 +293,7 @@ async fn main(spawner: Spawner) {
                                         run_followup_tasks(
                                             extra,
                                             &mut ui,
+                                            &mut platform,
                                             scpi_state,
                                             &hw_sender,
                                             &int_sender,
@@ -304,6 +308,7 @@ async fn main(spawner: Spawner) {
                                         run_followup_tasks(
                                             extra,
                                             &mut ui,
+                                            &mut platform,
                                             scpi_state,
                                             &hw_sender,
                                             &int_sender,
@@ -316,6 +321,7 @@ async fn main(spawner: Spawner) {
                                         run_followup_tasks(
                                             extra,
                                             &mut ui,
+                                            &mut platform,
                                             scpi_state,
                                             &hw_sender,
                                             &int_sender,
@@ -339,6 +345,7 @@ async fn main(spawner: Spawner) {
                 handle_display_task(
                     DisplayTask::DfuStatus(DfuStatus::Flashing),
                     &mut ui,
+                    &mut platform,
                     scpi_state,
                     &hw_sender,
                     &int_sender,
@@ -431,6 +438,7 @@ async fn main(spawner: Spawner) {
             handle_display_task(
                 DisplayTask::UpdatePowerInfo(power_type),
                 &mut ui,
+                &mut platform,
                 scpi_state,
                 &hw_sender,
                 &int_sender,
@@ -445,7 +453,14 @@ async fn main(spawner: Spawner) {
                         handle_hardware_task(hw_task, &mut hal, &hw_sender, &int_sender).await;
                     }
                     Task::Display(disp_task) => {
-                        handle_display_task(disp_task, &mut ui, scpi_state, &hw_sender, &int_sender)
+                        handle_display_task(
+                            disp_task,
+                            &mut ui,
+                            &mut platform,
+                            scpi_state,
+                            &hw_sender,
+                            &int_sender,
+                        )
                             .await
                     }
                 }
