@@ -145,7 +145,7 @@ build-mock:
     cargo build -p protov-hal-mock --target {{host_target}} --release --features hw-a1
 
 run-mock:
-    cargo run -p protov-hal-mock --target {{host_target}} --release --features hw-a1
+    cargo run -p protov-hal-mock --target {{host_target}} --release --features hw-a1 --bin protov-mock
 
 render-ui:
     cargo run -p protov-hal-mock --target {{host_target}} --release --features hw-a1,render-ui --bin render-ui
