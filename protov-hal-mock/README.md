@@ -26,6 +26,21 @@ Override them with `--bind`, `--scpi-port`, and `--control-port`, or the
 > hardware. It follows the same core state machine and is faster to reset,
 > inspect, and automate.
 
+## UI state renders
+
+YAML presets under [`states/`](states) describe full device snapshots (SCPI
+channels, interface fields, power input, and UI mode). Extend
+[`states/default.yaml`](states/default.yaml) for deltas.
+
+Export headless PNG catalog images for documentation:
+
+```sh
+just render-ui
+```
+
+This writes PNGs to [`docs/res/ui/`](../docs/res/ui/) and refreshes
+[`docs/ui-states.md`](../docs/ui-states.md).
+
 ## How it works
 
 The server maintains four independent mock-device slots. A SCPI WebSocket
@@ -42,6 +57,7 @@ Ready-made snapshots for common states live under [`states/`](states).
 - [`src/state/`](src/state) — snapshots and control request schema
 - [`src/scpi/`](src/scpi) — framing, routing, tasks, and simulated DFU
 - [`src/telemetry.rs`](src/telemetry.rs) — generated measurements
+- [`src/render.rs`](src/render.rs) — headless UI render pipeline (`render-ui` feature)
 
 SCPI commands follow the
 [ProtoV wire protocol](../protov-scpi/PROTOCOL.md). The mock uses the
