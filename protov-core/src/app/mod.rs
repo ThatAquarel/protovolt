@@ -9,6 +9,8 @@ use crate::config::{
 use crate::dfu::{DfuAction, DfuError, DfuSession};
 use crate::fmt::format_f32;
 use crate::model::ConverterFlags;
+#[cfg(feature = "simulator")]
+use crate::model::Task;
 use crate::model::TemperatureReading;
 use crate::model::{
     AppEvent, AppTask, AppTaskBuilder, Change, Channel, ChannelFocus, ChannelHardwareState,
