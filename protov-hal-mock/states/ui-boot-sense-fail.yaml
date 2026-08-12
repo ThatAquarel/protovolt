@@ -1,0 +1,3 @@
+extends: default.yaml
+description: Boot sense calibration failed
+ui: boot_sense_fail

@@ -1,0 +1,32 @@
+description: Post-boot standby main screen
+idn:
+  serial: "550e8400"
+  fw_version: "1.0.0"
+  hw_version: "A.1"
+remote: true
+hardware_state: Standby
+interface:
+  selected_channel: A
+  settings_open: false
+  set_state: set
+  arrows_function: navigation
+  set_select: voltage
+power:
+  kind: standard
+  voltage: 5.0
+  current: 0.5
+  serial_connected: false
+ui: main
+channels:
+  CH1:
+    voltage: 5.0
+    current: 1.0
+    ovp: 20.0
+    ocp: 5.0
+    output: false
+  CH2:
+    voltage: 3.3
+    current: 1.0
+    ovp: 20.0
+    ocp: 5.0
+    output: false

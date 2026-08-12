@@ -1,0 +1,4 @@
+extends: default.yaml
+description: Main screen with serial host connected (navbar indicator)
+power:
+  serial_connected: true

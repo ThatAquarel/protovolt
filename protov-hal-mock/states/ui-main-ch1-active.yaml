@@ -1,0 +1,11 @@
+extends: default.yaml
+description: Main screen with CH1 output active
+idn:
+  fw_version: "1.2.3"
+channels:
+  CH1:
+    output: true
+    measured:
+      voltage: 4.998
+      current: 0.487
+      power: 2.434

@@ -1,0 +1,10 @@
+extends: default.yaml
+description: Main screen showing CH1 constant-current (CC) mode chip
+channels:
+  CH1:
+    current: 0.5
+    output: true
+    measured:
+      voltage: 1.850
+      current: 0.498
+      power: 0.921

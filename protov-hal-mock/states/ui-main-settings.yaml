@@ -1,0 +1,5 @@
+extends: default.yaml
+description: Settings overlay open on main screen
+interface:
+  settings_open: true
+ui: settings

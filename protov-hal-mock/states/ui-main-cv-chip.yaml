@@ -1,0 +1,9 @@
+extends: default.yaml
+description: Main screen showing CH1 constant-voltage (CV) mode chip
+channels:
+  CH1:
+    output: true
+    measured:
+      voltage: 5.000
+      current: 0.350
+      power: 1.750

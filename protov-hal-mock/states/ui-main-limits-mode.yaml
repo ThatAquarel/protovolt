@@ -1,0 +1,4 @@
+extends: default.yaml
+description: Main screen in limits (OVP/OCP) edit mode
+interface:
+  set_state: limits

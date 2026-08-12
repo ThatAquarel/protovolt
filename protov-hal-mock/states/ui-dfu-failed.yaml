@@ -1,0 +1,4 @@
+extends: default.yaml
+description: Firmware update failed
+hardware_state: FirmwareUpdate
+ui: dfu_failed

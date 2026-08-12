@@ -1,0 +1,17 @@
+extends: default.yaml
+description: Main screen with CHA TEMP protection latched
+idn:
+  serial: "deadbeef"
+  fw_version: "0.9.0"
+  hw_version: "A.0"
+error_queue:
+  - [-221, "Settings conflict"]
+channels:
+  CH1:
+    output: false
+    prot_latched: true
+    latched_mode: TEMP
+    measured:
+      voltage: 0.0
+      current: 0.0
+      power: 0.0

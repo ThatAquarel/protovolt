@@ -1,0 +1,7 @@
+extends: default.yaml
+description: Main screen editing CHA current setpoint (selected)
+interface:
+  selected_channel: A
+  arrows_function: setpoint_edit
+  set_select: current
+  edit_precision: 0

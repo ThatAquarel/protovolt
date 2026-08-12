@@ -1,0 +1,17 @@
+extends: default.yaml
+description: Main screen with custom channel colors (CH1 green, CH2 yellow)
+channels:
+  CH1:
+    color: [52, 168, 83]
+    output: true
+    measured:
+      voltage: 5.000
+      current: 0.350
+      power: 1.750
+  CH2:
+    color: [251, 188, 5]
+    output: true
+    measured:
+      voltage: 3.300
+      current: 0.420
+      power: 1.386

@@ -1,0 +1,18 @@
+extends: default.yaml
+description: Main screen with both channels output active
+idn:
+  serial: "32983fe4"
+  hw_version: "B.2"
+channels:
+  CH1:
+    output: true
+    measured:
+      voltage: 5.000
+      current: 0.500
+      power: 2.500
+  CH2:
+    output: true
+    measured:
+      voltage: 3.300
+      current: 0.750
+      power: 2.475

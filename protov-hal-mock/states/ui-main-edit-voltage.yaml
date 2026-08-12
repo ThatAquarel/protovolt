@@ -1,0 +1,7 @@
+extends: default.yaml
+description: Main screen editing CHA voltage setpoint, cursor on ones digit
+interface:
+  selected_channel: A
+  arrows_function: setpoint_edit
+  set_select: voltage
+  edit_precision: 0

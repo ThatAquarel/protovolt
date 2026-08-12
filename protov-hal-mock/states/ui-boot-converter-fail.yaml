@@ -1,0 +1,3 @@
+extends: default.yaml
+description: Boot converter self-test failed
+ui: boot_converter_fail

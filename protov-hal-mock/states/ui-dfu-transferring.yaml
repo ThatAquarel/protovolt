@@ -1,0 +1,4 @@
+extends: default.yaml
+description: Firmware update receiving image
+hardware_state: FirmwareUpdate
+ui: dfu_transferring

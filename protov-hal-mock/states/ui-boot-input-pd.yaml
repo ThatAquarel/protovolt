@@ -1,0 +1,7 @@
+extends: default.yaml
+description: Boot power input confirmation (USB PD)
+ui: boot_input_pd
+power:
+  kind: power_delivery
+  voltage: 9.0
+  current: 3.0

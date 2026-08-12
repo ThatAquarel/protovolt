@@ -1,0 +1,4 @@
+extends: default.yaml
+description: Firmware update flashing
+hardware_state: FirmwareUpdate
+ui: dfu_flashing
