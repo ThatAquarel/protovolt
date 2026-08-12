@@ -105,9 +105,7 @@ where
     }
 
     pub fn clear<P: UiPlatform>(&mut self, platform: &mut P) -> Result<(), ()> {
-        platform.with_backlight_suppressed(|| {
-            self.target.clear(theme::BACKGROUND).map_err(|_| ())
-        })
+        platform.with_backlight_suppressed(|| self.target.clear(theme::BACKGROUND).map_err(|_| ()))
     }
 
     #[cfg(feature = "demo")]
@@ -301,12 +299,8 @@ where
         confirm_state: ConfirmState,
         button_state: Option<FunctionButton>,
     ) -> Result<(), ()> {
-        self.navbar.draw_button(
-            &mut *self.target,
-            &self.fonts,
-            confirm_state,
-            button_state,
-        )?;
+        self.navbar
+            .draw_button(&mut *self.target, &self.fonts, confirm_state, button_state)?;
 
         platform.set_nav_button_leds(appearance, confirm_state, button_state);
 

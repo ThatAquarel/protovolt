@@ -34,8 +34,8 @@ pub fn channel_focus_color<A: ChannelAppearance>(
     channel: Channel,
     focus: protov_core::model::ChannelFocus,
 ) -> Rgb565 {
-    use protov_core::model::ChannelFocus;
     use crate::theme;
+    use protov_core::model::ChannelFocus;
 
     match focus {
         ChannelFocus::SelectedInactive => theme::SELECTED,

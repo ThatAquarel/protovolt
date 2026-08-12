@@ -4,12 +4,7 @@ use protov_core::model::{
     Channel, ChannelFocus, ChannelHardwareState, ConfirmState, DisplayTask, PowerType, SetState,
 };
 
-use crate::{
-    appearance::ChannelAppearance,
-    labels,
-    platform::UiPlatform,
-    renderer::UiRenderer,
-};
+use crate::{appearance::ChannelAppearance, labels, platform::UiPlatform, renderer::UiRenderer};
 
 pub fn dispatch_display_task<D, A, P>(
     display_task: DisplayTask,

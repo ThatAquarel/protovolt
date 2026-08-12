@@ -140,13 +140,7 @@ impl<'b> BootScreen<'b> {
         };
 
         let font = &fonts.info_small;
-        draw_dfu_stripe(
-            target,
-            font,
-            headline,
-            DFU_STATUS_Y,
-            FONT_MAIN,
-        )?;
+        draw_dfu_stripe(target, font, headline, DFU_STATUS_Y, FONT_MAIN)?;
 
         let (received, total) = match status {
             DfuStatus::Preparing { total } => (0, total),

@@ -32,11 +32,11 @@ use hal::interface::{ButtonsInterface, matrix};
 use hal::watchdog;
 
 use app::App;
+use protov_ui::{DisplayGeometry, UiPlatform, UiRenderer};
 use task::{
     DfuOutcome, handle_dfu_task, handle_display_task, handle_hardware_task, is_dfu_hardware_task,
     run_followup_tasks,
 };
-use protov_ui::{DisplayGeometry, UiPlatform, UiRenderer};
 use ui_platform::HalPlatform;
 
 use hal::event::{
@@ -461,7 +461,7 @@ async fn main(spawner: Spawner) {
                             &hw_sender,
                             &int_sender,
                         )
-                            .await
+                        .await
                     }
                 }
             }

@@ -1,6 +1,6 @@
 use embedded_graphics::{
-    draw_target::Translated,
     draw_target::DrawTargetExt,
+    draw_target::Translated,
     pixelcolor::Rgb565,
     prelude::{DrawTarget, Point},
 };
