@@ -5,6 +5,10 @@ hardware-independent state machine in
 [`protov-core`](../protov-core/README.md) to the power converters, measurement
 devices, display, buttons, USB, LEDs, watchdog, and flash.
 
+Display rendering lives in [`protov-ui`](../protov-ui/README.md); this crate
+implements `HalPlatform` (backlight + RGB LEDs) and an async display wrapper with
+boot hold timers.
+
 The crate builds the `protov` binary for `thumbv6m-none-eabi` with
 [Embassy](https://embassy.dev/).
 
@@ -30,6 +34,7 @@ channels.
 - [`src/main.rs`](src/main.rs) — startup, multicore setup, task spawning, and
   main event loop
 - [`src/task.rs`](src/task.rs) — executes display, hardware, and DFU tasks
+- [`src/ui_platform.rs`](src/ui_platform.rs) — `HalPlatform` (backlight, WS2812)
 - [`src/hal/converter.rs`](src/hal/converter.rs) — TPS55289 output control
 - [`src/hal/measure.rs`](src/hal/measure.rs) — INA226 voltage and current
   measurement
@@ -40,7 +45,6 @@ channels.
   verification
 - [`src/scpi/usb.rs`](src/scpi/usb.rs) — USB CDC transport and update payload
   assembly
-- [`src/ui/`](src/ui) — display rendering, controls, settings, and navigation
 - [`src/hal/factory_program.rs`](src/hal/factory_program.rs) — manufacturing
   identity programming
 - [`src/hal/watchdog.rs`](src/hal/watchdog.rs) — boot and runtime watchdog
