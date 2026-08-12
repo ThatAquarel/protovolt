@@ -1,0 +1,20 @@
+[package]
+name = "protov-ui"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "ProtoV MINI embedded-graphics UI"
+publish = false
+
+[dependencies]
+protov-core = { path = "../protov-core" }
+embedded-graphics = { version = "0.8.1", default-features = false }
+u8g2-fonts = { version = "0.7.0", features = ["embedded_graphics_textstyle"] }
+embedded-graphics-framebuf = "0.5.0"
+tinybmp = "0.6.0"
+heapless = "0.8"
+smart-leds = "0.4.0"
+
+[features]
+default = []
+demo = []
